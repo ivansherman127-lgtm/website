@@ -73,6 +73,13 @@ async function fetchJson<T>(path: string): Promise<T> {
   return parseBody(path, ct1, txt1);
 }
 
+async function fetchStaticJson<T>(path: string): Promise<T> {
+  const url = staticUrl(path);
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${path}: ${response.status}`);
+  return response.json() as Promise<T>;
+}
+
 function num(v: unknown): number {
   if (typeof v === "number" && !Number.isNaN(v)) return v;
   if (typeof v === "string" && v.trim() !== "") {
@@ -1874,8 +1881,8 @@ async function boot(): Promise<void> {
     dealRevenueById.clear();
     yandexProjectLeadMetrics.clear();
     yandexMonthLeadMetrics.clear();
-    loadEmailOverridesMap(await fetch(staticUrl("data/email_group_overrides.json")).then(r => r.json() as Promise<EmailOverridesFile>));
-    const yandexHierarchy = await fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
+    loadEmailOverridesMap(await fetchStaticJson<EmailOverridesFile>("data/email_group_overrides.json"));
+    const yandexHierarchy = await fetchStaticJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
     for (const r of yandexHierarchy) {
       const lvl = String(r["Level"] ?? "").trim();
       if (lvl === "Campaign") {
@@ -1918,7 +1925,7 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
     fetchJson<Record<string, unknown>[]>("data/bitrix_contacts_uid.json"),
     fetchJson<Record<string, unknown>[]>("data/email_operational_summary.json"),
     fetchJson<Record<string, unknown>[]>("data/global/yandex_projects_revenue_by_month.json"),
-    fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json"),
+    fetchStaticJson<Record<string, unknown>[]>("data/yd_hierarchy.json"),
   ]);
 
   const monthRows = bitrixMonths.filter((r) => !isTotalValue(r["Месяц"]));
