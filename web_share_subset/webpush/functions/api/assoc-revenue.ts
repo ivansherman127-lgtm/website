@@ -586,9 +586,8 @@ export async function onRequestGet(context: {
 
     const sourceYandexAdExpr = sqlExtractYandexAdId(`src."UTM Content"`);
 
-    const sourceDealsCte = `
-      source_deals AS (
-        ${hasYandexStats ? `WITH yandex_map AS (
+    const yandexMapCte = hasYandexStats
+      ? `yandex_map AS (
           SELECT
             REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
             MIN(NULLIF(TRIM(COALESCE("Название кампании", '')), '')) AS project_name,
@@ -596,11 +595,16 @@ export async function onRequestGet(context: {
           FROM stg_yandex_stats
           WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
           GROUP BY 1
-        )` : ""}
+        ),
+      `
+      : "";
+
+    const sourceDealsCte = `
+      source_deals AS (
         SELECT
           src.*,
           ${yandexCampaignExpr} AS yandex_campaign_group,
-          COALESCE(ym.ad_label, '(без маппинга в Yandex raw)') AS yandex_ad_group,
+          ${hasYandexStats ? `COALESCE(ym.ad_label, '(без маппинга в Yandex raw)')` : `'(без маппинга в Yandex raw)'`} AS yandex_ad_group,
           ${emailCampaignExpr} AS email_release_group,
           CASE
             WHEN COALESCE(src.is_attacking_january, 0) = 1 THEN 'Attacking January'
@@ -613,7 +617,7 @@ export async function onRequestGet(context: {
       )`;
 
     const sql = `
-      WITH ${sourceDealsCte},
+      WITH ${yandexMapCte}${sourceDealsCte},
       source_scoped AS (
         SELECT
           ${selectParts.join(",\n          ")},
@@ -693,7 +697,7 @@ export async function onRequestGet(context: {
 
     if (dims.length === 1 && dims[0] === "event") {
       const breakdownSql = `
-        WITH ${sourceDealsCte},
+        WITH ${yandexMapCte}${sourceDealsCte},
         source_scoped AS (
           SELECT
             event_group AS parent_event,
