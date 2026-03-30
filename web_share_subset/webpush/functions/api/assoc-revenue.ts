@@ -403,6 +403,7 @@ export async function onRequestGet(context: {
   if (dims.includes("yandex_campaign") || dims.includes("yandex_ad")) {
     wheres.push("LOWER(TRIM(COALESCE(\"UTM Source\", ''))) LIKE 'y%'");
     wheres.push("LOWER(TRIM(COALESCE(\"UTM Source\", ''))) <> 'yah'");
+    wheres.push("is_revenue_variant3 = 1");
   }
 
   if (dims.includes("email_campaign")) {

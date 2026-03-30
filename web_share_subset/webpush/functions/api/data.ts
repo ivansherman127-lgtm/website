@@ -2,6 +2,7 @@
  * GET /api/data?path=<relative path under public/data>
  */
 import { buildYdHierarchyRows } from "../lib/analytics/ydHierarchy";
+import { buildBitrixContactsUidRows } from "../lib/analytics/bitrixContactsUid";
 
 interface Env {
   DB: D1Database;
@@ -33,6 +34,16 @@ export async function onRequestGet(context: {
   if (!parts.length) {
     if (path === "yd_hierarchy.json") {
       const rows = await buildYdHierarchyRows(context.env.DB);
+      return new Response(JSON.stringify(rows), {
+        status: 200,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "public, max-age=60",
+        },
+      });
+    }
+    if (path === "bitrix_contacts_uid.json") {
+      const rows = await buildBitrixContactsUidRows(context.env.DB);
       return new Response(JSON.stringify(rows), {
         status: 200,
         headers: {
