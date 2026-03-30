@@ -1400,7 +1400,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     <div class="toolbar">
       <div class="tabs-row top-tabs">
         <button class="tab-btn ${tab === "year" ? "active" : ""}" data-tab="year">Отчет за год</button>
-        <button class="tab-btn ${tab === "assoc_builder" ? "active" : ""}" data-tab="assoc_builder">Ассоц. конструктор</button>
+        <button class="tab-btn ${tab === "assoc_builder" ? "active" : ""}" data-tab="assoc_builder">Ассоц. выручка</button>
         <button class="tab-btn ${tab === "media" ? "active" : ""}" data-tab="media">Рекламные медиумы</button>
         <button class="tab-btn ${tab === "budget" ? "active" : ""}" data-tab="budget">Бюджет</button>
         <button class="tab-btn ${tab === "months" ? "active" : ""}" data-tab="months">По месяцам</button>
