@@ -263,26 +263,39 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        )
        SELECT
          "Период",
-         (SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '') AS "Актуальная база email",
-         (SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '') AS "Контактов email (DB)",
-         sends AS "Рассылок за месяц",
-         leads AS "Лиды",
-         paid_deals AS "Сделок с выручкой",
-         revenue AS "Выручка",
+         "Актуальная база email",
+         "Контактов email (DB)",
+         "Рассылок за месяц",
+         "Лиды",
+         "Сделок с выручкой",
+         "Выручка",
          month
-       FROM month_rows
-       UNION ALL
-       SELECT
-         'Итого' AS "Период",
-         (SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '') AS "Актуальная база email",
-         (SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '') AS "Контактов email (DB)",
-         SUM(sends) AS "Рассылок за месяц",
-         SUM(leads) AS "Лиды",
-         SUM(paid_deals) AS "Сделок с выручкой",
-         SUM(revenue) AS "Выручка",
-         '' AS month
-       FROM month_rows
-       ORDER BY month DESC, "Период" = 'Итого'`,
+       FROM (
+         SELECT
+           "Период",
+           (SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '') AS "Актуальная база email",
+           (SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '') AS "Контактов email (DB)",
+           sends AS "Рассылок за месяц",
+           leads AS "Лиды",
+           paid_deals AS "Сделок с выручкой",
+           revenue AS "Выручка",
+           month,
+           0 AS _sort_total
+         FROM month_rows
+         UNION ALL
+         SELECT
+           'Итого' AS "Период",
+           (SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '') AS "Актуальная база email",
+           (SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '') AS "Контактов email (DB)",
+           SUM(sends) AS "Рассылок за месяц",
+           SUM(leads) AS "Лиды",
+           SUM(paid_deals) AS "Сделок с выручкой",
+           SUM(revenue) AS "Выручка",
+           '' AS month,
+           1 AS _sort_total
+         FROM month_rows
+       ) q
+       ORDER BY month DESC, _sort_total ASC`,
     )
     .all<Record<string, unknown>>();
   await upsertDataset(db, "email_operational_summary.json", rowsToJson((emailOperationalSummary.results ?? []) as Record<string, unknown>[]));
@@ -320,7 +333,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
                  WHEN lower(COALESCE("Стадия сделки", '')) LIKE '%отказ%' THEN 1
                  ELSE 0
                END) AS refusal,
-           GROUP_CONCAT(COALESCE("ID", '')) AS fl_ids,
+           SUBSTR(GROUP_CONCAT(COALESCE("ID", '')), 1, 50000) AS fl_ids,
            SUM(CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END) AS paid_deals,
            SUM(CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN COALESCE(revenue_amount, 0) ELSE 0 END) AS revenue
          FROM mart_deals_enriched
@@ -382,7 +395,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(qual) AS qual,
            SUM(unqual) AS unqual,
            SUM(refusal) AS refusal,
-           GROUP_CONCAT(fl_ids) AS fl_ids,
+           SUBSTR(GROUP_CONCAT(fl_ids), 1, 50000) AS fl_ids,
            SUM(paid_deals) AS paid_deals,
            SUM(revenue) AS revenue
          FROM send_rows
@@ -758,7 +771,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(is_invalid) AS invalid_leads,
            SUM(is_revenue) AS paid_deals,
            SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           GROUP_CONCAT(deal_id) AS fl_ids
+           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
          FROM filtered
          GROUP BY manager, month_label
        ),
@@ -773,7 +786,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(is_invalid) AS invalid_leads,
            SUM(is_revenue) AS paid_deals,
            SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           GROUP_CONCAT(deal_id) AS fl_ids
+           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
          FROM filtered
          GROUP BY manager
        )
@@ -842,7 +855,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(is_invalid) AS invalid_leads,
            SUM(is_revenue) AS paid_deals,
            SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           GROUP_CONCAT(deal_id) AS fl_ids
+           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
          FROM filtered
          GROUP BY manager, course_code
        ),
@@ -857,7 +870,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(is_invalid) AS invalid_leads,
            SUM(is_revenue) AS paid_deals,
            SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           GROUP_CONCAT(deal_id) AS fl_ids
+           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
          FROM filtered
          GROUP BY manager
        )
@@ -924,7 +937,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(is_invalid) AS invalid_leads,
            SUM(is_revenue) AS paid_deals,
            SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           GROUP_CONCAT(deal_id) AS fl_ids
+           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
          FROM filtered
          GROUP BY manager, month_label
        ),
@@ -939,7 +952,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(is_invalid) AS invalid_leads,
            SUM(is_revenue) AS paid_deals,
            SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           GROUP_CONCAT(deal_id) AS fl_ids
+           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
          FROM filtered
          GROUP BY manager
        )
@@ -1008,7 +1021,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(is_invalid) AS invalid_leads,
            SUM(is_revenue) AS paid_deals,
            SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           GROUP_CONCAT(deal_id) AS fl_ids
+           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
          FROM filtered
          GROUP BY manager, course_code
        ),
@@ -1023,7 +1036,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(is_invalid) AS invalid_leads,
            SUM(is_revenue) AS paid_deals,
            SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           GROUP_CONCAT(deal_id) AS fl_ids
+           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
          FROM filtered
          GROUP BY manager
        )
