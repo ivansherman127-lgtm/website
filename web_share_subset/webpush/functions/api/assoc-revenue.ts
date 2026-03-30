@@ -639,7 +639,7 @@ export async function onRequestGet(context: {
 
     const query = context.env.DB.prepare(sql).bind(...binds);
     const result = await query.all<Record<string, unknown>>();
-    const rows = (result.results ?? []).map((r: Record<string, unknown>) => {
+    let rows = (result.results ?? []).map((r: Record<string, unknown>) => {
       const out: Record<string, unknown> = {};
       specs.forEach((d, i) => {
         out[d.label] = r[`d${i + 1}`];
@@ -657,6 +657,97 @@ export async function onRequestGet(context: {
       }
       return out;
     });
+
+    if (dims.length === 1 && dims[0] === "event") {
+      const breakdownSql = `
+        WITH ${sourceDealsCte},
+        source_scoped AS (
+          SELECT
+            event_group AS parent_event,
+            COALESCE(NULLIF("Контакт: ID", ''), '') AS contact_id
+          FROM source_deals
+          ${whereSql}
+        ),
+        contact_pool AS (
+          SELECT DISTINCT parent_event, contact_id
+          FROM source_scoped
+          WHERE contact_id <> ''
+        ),
+        paid_deals AS (
+          SELECT
+            COALESCE(NULLIF("Контакт: ID", ''), '') AS contact_id,
+            COALESCE(revenue_amount, 0) AS revenue,
+            CASE
+              WHEN COALESCE(is_attacking_january, 0) = 1 THEN 'Attacking January'
+              WHEN COALESCE(NULLIF(event_class, ''), '') <> '' AND COALESCE(event_class, '') <> 'Другое' THEN event_class
+              WHEN LOWER(TRIM(COALESCE("UTM Source", ''))) LIKE 'y%' AND LOWER(TRIM(COALESCE("UTM Source", ''))) <> 'yah' THEN 'Yandex'
+              WHEN LOWER(TRIM(COALESCE("UTM Source", ''))) = 'sendsay' THEN 'Email'
+              ELSE 'Другое'
+            END AS source_label
+          FROM mart_deals_enriched
+          WHERE is_revenue_variant3 = 1
+            AND COALESCE(NULLIF("Контакт: ID", ''), '') <> ''
+        )
+        SELECT
+          cp.parent_event AS parent_event,
+          pd.source_label AS source_label,
+          COUNT(*) AS paid_deals,
+          COUNT(DISTINCT cp.contact_id) AS contacts_with_revenue,
+          COALESCE(SUM(pd.revenue), 0) AS revenue
+        FROM contact_pool cp
+        INNER JOIN paid_deals pd ON pd.contact_id = cp.contact_id
+        GROUP BY cp.parent_event, pd.source_label
+        ORDER BY cp.parent_event, revenue DESC, pd.source_label
+      `;
+
+      const breakdownResult = await context.env.DB.prepare(breakdownSql).bind(...binds).all<Record<string, unknown>>();
+      const breakdownByParent = new Map<string, Record<string, unknown>[]>();
+      for (const r of breakdownResult.results ?? []) {
+        const parentEvent = String(r.parent_event ?? "").trim();
+        const sourceLabel = String(r.source_label ?? "").trim() || "Другое";
+        if (!parentEvent) continue;
+        const paidDeals = Number(r.paid_deals ?? 0);
+        const revenue = Number(r.revenue ?? 0);
+        const child: Record<string, unknown> = {
+          [specs[0].label]: sourceLabel === parentEvent ? `> Прямо: ${sourceLabel}` : `> ${sourceLabel}`,
+          "Сделок_всего": paidDeals,
+          "Контактов_в_пуле": Number(r.contacts_with_revenue ?? 0),
+          "Сделок_с_выручкой": paidDeals,
+          "Контактов_с_выручкой": Number(r.contacts_with_revenue ?? 0),
+          "Выручка": revenue,
+          "Средний_чек": paidDeals > 0 ? revenue / paidDeals : 0,
+          "__assoc_event_detail": 1,
+          "__assoc_event_ctx": parentEvent,
+        };
+        const bucket = breakdownByParent.get(parentEvent);
+        if (bucket) bucket.push(child);
+        else breakdownByParent.set(parentEvent, [child]);
+      }
+
+      for (const [parentEvent, details] of breakdownByParent.entries()) {
+        details.sort((a, b) => {
+          const aLabel = String(a[specs[0].label] ?? "");
+          const bLabel = String(b[specs[0].label] ?? "");
+          const rank = (label: string): number => {
+            if (label.includes("> Прямо:")) return 0;
+            if (label === "> Yandex" || label === "> Email") return 2;
+            if (label === "> Другое") return 3;
+            return 1;
+          };
+          const rankDiff = rank(aLabel) - rank(bLabel);
+          if (rankDiff !== 0) return rankDiff;
+          return Number(b["Выручка"] ?? 0) - Number(a["Выручка"] ?? 0);
+        });
+        breakdownByParent.set(parentEvent, details);
+      }
+
+      rows = rows.flatMap((row) => {
+        const parentEvent = String(row[specs[0].label] ?? "").trim();
+        const details = breakdownByParent.get(parentEvent) ?? [];
+        if (details.length > 0) row["__assoc_event_has_details"] = 1;
+        return [row, ...details];
+      });
+    }
 
     const aliases: Record<string, string> = {
       "Сделок_всего": "Сделок всего",

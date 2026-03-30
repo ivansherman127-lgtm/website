@@ -243,13 +243,14 @@ function renderSingleRowTable(title: string, row: Record<string, unknown>): stri
   `;
 }
 
-type TabKey = "assoc_builder" | "media" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa";
+type TabKey = "assoc_builder" | "media" | "budget" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa";
 type ViewKey =
   | "assoc_dynamic"
   | "media_email"
   | "media_yandex"
   | "media_yandex_month"
   | "media_yandex_assoc_qa"
+  | "budget_monthly"
   | "months_total"
   | "managers_sales_course"
   | "managers_sales_month"
@@ -275,6 +276,7 @@ const VIEW_META: Record<ViewKey, ViewMeta> = {
   media_yandex_month: { tab: "media", label: "Yandex по месяцам", path: "data/global/yandex_projects_revenue_by_month.json", rowsLabel: "Месяцев", title: "Рекламные медиумы" },
   media_yandex_assoc_qa: { tab: "media", label: "Yandex: QA ассоц. выручки", path: "data/qa/yandex_assoc_revenue_qa.json", rowsLabel: "Проектов", title: "Рекламные медиумы" },
   email_ops_summary: { tab: "media", label: "Email: база, рассылки, лиды, выручка", path: "data/email_operational_summary.json", rowsLabel: "Периодов", title: "Рекламные медиумы" },
+  budget_monthly: { tab: "budget", label: "Выручка / расход / прибыль по месяцам", path: "data/global/budget_monthly.json", rowsLabel: "Периодов", title: "Бюджет" },
   months_total: { tab: "months", label: "Bitrix по месяцам", path: "data/bitrix_month_total_full.json", rowsLabel: "Месяцев", title: "Отчеты по месяцам" },
   managers_sales_course: { tab: "managers", label: "Продажи по коду курса", path: "data/manager_sales_by_course.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
   managers_sales_month: { tab: "managers", label: "Продажи по месяцу", path: "data/manager_sales_by_month.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
@@ -978,8 +980,10 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const expandedFunnels = new Set<string>();
   const expandedFunnelMonths = new Set<string>();
   const expandedAssocOtherRows = new Set<string>();
+  const expandedAssocEventRows = new Set<string>();
   const isEmailHierarchy = view === "media_email";
   const isAssocEmailHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_email_detail"]) > 0);
+  const isAssocEventHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_event_detail"]) > 0);
   const isYandexHierarchy = false;
   const isManagerHierarchy = view.startsWith("managers_");
   const isFunnelSourceHierarchy = false;
@@ -1037,8 +1041,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       const q = filter.trim().toLowerCase();
       data = data.filter((r) => cols.some((c) => String(r[c] ?? "").toLowerCase().includes(q)));
     }
-    // Иерархии строят порядок строк сами; глобальная сортировка ломает «По воронкам» / email / менеджеры.
-    if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isAssocEmailHierarchy) {
+    // Иерархии строят порядок строк сами; глобальная сортировка ломает вложенные таблицы.
+    if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isAssocEmailHierarchy && !isAssocEventHierarchy) {
       data.sort((a, b) => compareCell(sortCol, a[sortCol], b[sortCol], sortDir));
     }
     if (isEmailHierarchy) {
@@ -1060,6 +1064,16 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         const ctxToken = ctxKey || "__root__";
         if (!isDetail) ordered.push(r);
         else if (expandedAssocOtherRows.has(`assoc||${ctxToken}`)) ordered.push(r);
+      }
+      data = ordered;
+    }
+    if (isAssocEventHierarchy) {
+      const ordered: Record<string, unknown>[] = [];
+      for (const r of data) {
+        const isDetail = num(r["__assoc_event_detail"]) > 0;
+        const ctxKey = String(r["__assoc_event_ctx"] ?? "");
+        if (!isDetail) ordered.push(r);
+        else if (expandedAssocEventRows.has(ctxKey)) ordered.push(r);
       }
       data = ordered;
     }
@@ -1109,7 +1123,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     const topCountEl = app.querySelector<HTMLElement>(".kpi-grid .kpi:first-child .value");
     if (topCountEl) topCountEl.textContent = data.length.toLocaleString("ru-RU");
 
-    const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isAssocEmailHierarchy;
+    const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy;
     visibleRows = data;
     const th = `${showCtrl ? '<th class="ctrl-col">#</th>' : ""}${cols.map((c) => `<th data-col="${escapeHtml(c)}" title="клик: сортировка · Ctrl+клик: переименовать">${escapeHtml(displayColName(view, c))}</th>`).join("")}`;
     const rendered = data.slice(0, 5000);
@@ -1173,7 +1187,12 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         isAssocEmailHierarchy && num(r["__assoc_email_other_group"]) > 0 && num(r["__assoc_email_has_details"]) > 0
           ? `<button class="assoc-email-expand-btn" data-ctx="${escapeHtml(assocCtxToken)}">${expandedAssocOtherRows.has(`assoc||${assocCtxToken}`) ? "−" : "+"}</button>`
           : "";
-      const row = `<tr>${showCtrl ? `<td class="ctrl-col">${emailBtn || emailOtherBtn || managerBtn || funnelBtn || yandexBtn || assocOtherBtn}</td>` : ""}${cols
+      const assocEventCtx = String(r["__assoc_event_ctx"] ?? r["Мероприятие"] ?? "").trim();
+      const assocEventBtn =
+        isAssocEventHierarchy && num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0
+          ? `<button class="assoc-event-expand-btn" data-ctx="${escapeHtml(assocEventCtx)}">${expandedAssocEventRows.has(assocEventCtx) ? "−" : "+"}</button>`
+          : "";
+      const row = `<tr>${showCtrl ? `<td class="ctrl-col">${emailBtn || emailOtherBtn || managerBtn || funnelBtn || yandexBtn || assocOtherBtn || assocEventBtn}</td>` : ""}${cols
         .map((c) => {
           const editable = isEditableDataColumn(c) ? "1" : "0";
           return `<td data-row="${idx}" data-col="${escapeHtml(c)}" data-editable="${editable}">${escapeHtml(formatCell(c, r[c]))}</td>`;
@@ -1321,12 +1340,22 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       if (expandedAssocOtherRows.has(k)) expandedAssocOtherRows.delete(k); else expandedAssocOtherRows.add(k);
       draw();
     }));
+    app.querySelectorAll<HTMLButtonElement>(".assoc-event-expand-btn").forEach((b) => (b.onclick = () => {
+      const ctx = b.getAttribute("data-ctx") || "";
+      if (!ctx) return;
+      if (expandedAssocEventRows.has(ctx)) expandedAssocEventRows.delete(ctx); else expandedAssocEventRows.add(ctx);
+      draw();
+    }));
   };
 
   const kpiRows =
     view === "funnels_hierarchy"
       ? viewRows.filter((r) => String(r["__node"] ?? "").trim() === "code")
-      : viewRows;
+      : isAssocEmailHierarchy
+        ? viewRows.filter((r) => num(r["__assoc_email_detail"]) === 0)
+        : isAssocEventHierarchy
+          ? viewRows.filter((r) => num(r["__assoc_event_detail"]) === 0)
+          : viewRows;
   const totalRevenue = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Выручка", "выручка"]), 0);
   const deals = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Сделок_с_выручкой", "Сделок с выручкой"]), 0);
   app.innerHTML = `<div class="app-layout">
@@ -1344,6 +1373,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         <button class="tab-btn ${tab === "year" ? "active" : ""}" data-tab="year">Отчет за год</button>
         <button class="tab-btn ${tab === "assoc_builder" ? "active" : ""}" data-tab="assoc_builder">Ассоц. конструктор</button>
         <button class="tab-btn ${tab === "media" ? "active" : ""}" data-tab="media">Рекламные медиумы</button>
+        <button class="tab-btn ${tab === "budget" ? "active" : ""}" data-tab="budget">Бюджет</button>
         <button class="tab-btn ${tab === "months" ? "active" : ""}" data-tab="months">По месяцам</button>
         <button class="tab-btn ${tab === "managers" ? "active" : ""}" data-tab="managers">По менеджерам</button>
         <button class="tab-btn ${tab === "funnels" ? "active" : ""}" data-tab="funnels">По воронкам</button>
@@ -1815,21 +1845,23 @@ async function boot(): Promise<void> {
     yandexProjectLeadMetrics.clear();
     yandexMonthLeadMetrics.clear();
     loadEmailOverridesMap(await fetch(staticUrl("data/email_group_overrides.json")).then(r => r.json() as Promise<EmailOverridesFile>));
-    const [yandexCampaignKpis, yandexMonthKpis] = await Promise.all([
-      fetchJson<Record<string, unknown>[]>("data/global/yandex_campaign_kpis.json"),
-      fetchJson<Record<string, unknown>[]>("data/global/yandex_month_kpis.json"),
-    ]);
-    for (const r of yandexCampaignKpis) {
-      const key = String(r["Название кампании"] ?? "").trim();
-      if (!key) continue;
-      const prev = yandexProjectLeadMetrics.get(key) || yandexEmptyMetrics();
-      yandexProjectLeadMetrics.set(key, addYandexMetrics(prev, toYandexMetrics(r)));
-    }
-    for (const r of yandexMonthKpis) {
-      const key = String(r["month"] ?? "").trim();
-      if (!key) continue;
-      const prev = yandexMonthLeadMetrics.get(key) || yandexEmptyMetrics();
-      yandexMonthLeadMetrics.set(key, addYandexMetrics(prev, toYandexMetrics(r)));
+    const yandexHierarchy = await fetch(staticUrl("data/yd_hierarchy.json")).then(r => r.json() as Promise<Record<string, unknown>[]>);
+    for (const r of yandexHierarchy) {
+      const lvl = String(r["Level"] ?? "").trim();
+      if (lvl === "Campaign") {
+        const key = String(r["Название кампании"] ?? "").trim();
+        if (key) {
+          const prev = yandexProjectLeadMetrics.get(key) || yandexEmptyMetrics();
+          yandexProjectLeadMetrics.set(key, addYandexMetrics(prev, toYandexMetrics(r)));
+        }
+      }
+      if (lvl === "Month") {
+        const key = String(r["Месяц"] ?? "").trim();
+        if (key) {
+          const prev = yandexMonthLeadMetrics.get(key) || yandexEmptyMetrics();
+          yandexMonthLeadMetrics.set(key, addYandexMetrics(prev, toYandexMetrics(r)));
+        }
+      }
     }
     const dealsIndex: DealsIndex = { month: new Map(), event: new Map(), course: new Map() };
     const state = readUrlState();
@@ -1851,12 +1883,12 @@ async function boot(): Promise<void> {
 
 async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
   writeUrlState("dashboard");
-  const [bitrixMonths, contacts, emailOps, yandexMonths, yandexMonthKpis] = await Promise.all([
+  const [bitrixMonths, contacts, emailOps, yandexMonths, yandexHierarchy] = await Promise.all([
     fetchJson<Record<string, unknown>[]>("data/bitrix_month_total_full.json"),
     fetchJson<Record<string, unknown>[]>("data/bitrix_contacts_uid.json"),
     fetchJson<Record<string, unknown>[]>("data/email_operational_summary.json"),
     fetchJson<Record<string, unknown>[]>("data/global/yandex_projects_revenue_by_month.json"),
-    fetchJson<Record<string, unknown>[]>("data/global/yandex_month_kpis.json"),
+    fetch(staticUrl("data/yd_hierarchy.json")).then(r => r.json() as Promise<Record<string, unknown>[]>),
   ]);
 
   const monthRows = bitrixMonths.filter((r) => !isTotalValue(r["Месяц"]));
@@ -1870,9 +1902,9 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
   const yRows = yandexMonths.filter((r) => !isTotalValue(r["month"]));
   yRows.sort((a, b) => compareCell("Период", a["month"], b["month"], "desc"));
   const ym = yRows[0] || {};
-  const ykRows = yandexMonthKpis.filter((r) => !isTotalValue(r["month"]));
-  ykRows.sort((a, b) => compareCell("Период", a["month"], b["month"], "desc"));
-  const yk = ykRows[0] || {};
+  const yhMonthRows = yandexHierarchy.filter((r) => String(r["Level"] ?? "").trim() === "Month");
+  yhMonthRows.sort((a, b) => compareCell("Период", a["Месяц"], b["Месяц"], "desc"));
+  const yh = yhMonthRows[0] || {};
 
   const emailTableRow: Record<string, unknown> = { ...em };
   const bitrixTableRow: Record<string, unknown> = {
@@ -1892,19 +1924,19 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
     "Средний чек": bm["Средний_чек"] ?? 0,
   };
   const yandexTableRow: Record<string, unknown> = {
-    "Период": yk["month"] ?? ym["month"] ?? "-",
-    "Лиды": yk["Leads"] ?? ym["leads_raw"] ?? 0,
-    "Квал": yk["Qual"] ?? 0,
-    "Неквал": yk["Unqual"] ?? 0,
-    "Отказы": yk["Refusal"] ?? 0,
-    "Конверсия в Квал": num(yk["Leads"]) > 0 ? num(yk["Qual"]) / num(yk["Leads"]) : 0,
-    "Конверсия в Неквал": num(yk["Leads"]) > 0 ? num(yk["Unqual"]) / num(yk["Leads"]) : 0,
-    "Конверсия в Отказ": num(yk["Leads"]) > 0 ? num(yk["Refusal"]) / num(yk["Leads"]) : 0,
-    "Клики": yk["Клики"] ?? 0,
-    "Расход, ₽": yk["Расход, ₽"] ?? ym["spend"] ?? 0,
+    "Период": yh["Месяц"] ?? ym["month"] ?? "-",
+    "Лиды": yh["Leads"] ?? ym["leads_raw"] ?? 0,
+    "Квал": yh["Qual"] ?? 0,
+    "Неквал": yh["Unqual"] ?? 0,
+    "Отказы": yh["Refusal"] ?? 0,
+    "Конверсия в Квал": yh["%Qual"] ?? 0,
+    "Конверсия в Неквал": yh["%Unqual"] ?? 0,
+    "Конверсия в Отказ": yh["%Refusal"] ?? 0,
+    "Клики": yh["Клики"] ?? 0,
+    "Расход, ₽": yh["Расход, ₽"] ?? ym["spend"] ?? 0,
     "Оплаты": ym["paid_deals_raw"] ?? 0,
     "Выручка": ym["revenue_raw"] ?? 0,
-    "Прибыль": num(ym["revenue_raw"]) - num(yk["Расход, ₽"] ?? ym["spend"]),
+    "Прибыль": num(ym["revenue_raw"]) - num(yh["Расход, ₽"] ?? ym["spend"]),
   };
 
   app.innerHTML = `<div class="app-layout">

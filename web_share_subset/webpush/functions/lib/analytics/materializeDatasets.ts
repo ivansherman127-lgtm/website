@@ -41,6 +41,13 @@ async function upsertDataset(db: D1Database, path: string, body: string): Promis
 export async function materializeSliceDatasets(db: D1Database): Promise<{ paths: number }> {
   const paths: string[] = [];
   const hasRawP01 = await tableExists(db, "raw_bitrix_deals_p01");
+  const hasSendsayContacts = await tableExists(db, "stg_sendsay_contacts");
+  const totalEmailContactsExpr = hasSendsayContacts
+    ? `(SELECT COUNT(*) FROM stg_sendsay_contacts WHERE COALESCE(email, '') <> '')`
+    : `(SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '')`;
+  const goodEmailContactsExpr = hasSendsayContacts
+    ? `(SELECT COUNT(*) FROM stg_sendsay_contacts WHERE COALESCE(email, '') <> '' AND COALESCE(TRIM(error_message), '') = '')`
+    : totalEmailContactsExpr;
 
   const q1 = await db
     .prepare(
@@ -88,6 +95,68 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     .all<Record<string, unknown>>();
   await upsertDataset(db, "global/month_channel_sendsay.json", rowsToJson((q3.results ?? []) as Record<string, unknown>[]));
   paths.push("global/month_channel_sendsay.json");
+
+  const budgetMonthly = await db
+    .prepare(
+      `WITH paid_revenue AS (
+         SELECT
+           CASE
+             WHEN COALESCE("Дата оплаты", '') LIKE '____-__%' THEN SUBSTR("Дата оплаты", 1, 7)
+             WHEN COALESCE("Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR("Дата оплаты", 7, 4) || '-' || SUBSTR("Дата оплаты", 4, 2)
+             ELSE ''
+           END AS pay_month,
+           COUNT(*) AS paid_deals,
+           SUM(COALESCE(revenue_amount, 0)) AS revenue
+         FROM mart_deals_enriched
+         WHERE COALESCE(is_revenue_variant3, 0) = 1
+         GROUP BY 1
+       ),
+       spend_by_month AS (
+         SELECT
+           COALESCE(month, '') AS spend_month,
+           SUM(COALESCE("Расход, ₽", 0)) AS spend
+         FROM stg_yandex_stats
+         GROUP BY 1
+       ),
+       all_months AS (
+         SELECT pay_month AS month FROM paid_revenue WHERE COALESCE(pay_month, '') <> ''
+         UNION
+         SELECT spend_month AS month FROM spend_by_month WHERE COALESCE(spend_month, '') <> ''
+       )
+       SELECT
+         "Период",
+         "Сделок_с_выручкой",
+         "Выручка",
+         "Расход, ₽",
+         "Прибыль",
+         month
+       FROM (
+         SELECT
+           month AS "Период",
+           COALESCE(pr.paid_deals, 0) AS "Сделок_с_выручкой",
+           COALESCE(pr.revenue, 0) AS "Выручка",
+           COALESCE(sb.spend, 0) AS "Расход, ₽",
+           COALESCE(pr.revenue, 0) - COALESCE(sb.spend, 0) AS "Прибыль",
+           month,
+           0 AS _sort_total
+         FROM all_months am
+         LEFT JOIN paid_revenue pr ON pr.pay_month = am.month
+         LEFT JOIN spend_by_month sb ON sb.spend_month = am.month
+         UNION ALL
+         SELECT
+           'Итого' AS "Период",
+           (SELECT COALESCE(SUM(paid_deals), 0) FROM paid_revenue) AS "Сделок_с_выручкой",
+           (SELECT COALESCE(SUM(revenue), 0) FROM paid_revenue) AS "Выручка",
+           (SELECT COALESCE(SUM(spend), 0) FROM spend_by_month) AS "Расход, ₽",
+           (SELECT COALESCE(SUM(revenue), 0) FROM paid_revenue) - (SELECT COALESCE(SUM(spend), 0) FROM spend_by_month) AS "Прибыль",
+           '' AS month,
+           1 AS _sort_total
+       ) q
+       ORDER BY month DESC, _sort_total ASC`,
+    )
+    .all<Record<string, unknown>>();
+  await upsertDataset(db, "global/budget_monthly.json", rowsToJson((budgetMonthly.results ?? []) as Record<string, unknown>[]));
+  paths.push("global/budget_monthly.json");
 
   const bitrixMonthTotal = await db
     .prepare(
@@ -274,8 +343,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        FROM (
          SELECT
            "Период",
-           (SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '') AS "Актуальная база email",
-           (SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '') AS "Контактов email (DB)",
+           ${goodEmailContactsExpr} AS "Актуальная база email",
+           ${totalEmailContactsExpr} AS "Контактов email (DB)",
            sends AS "Рассылок за месяц",
            leads AS "Лиды",
            paid_deals AS "Сделок с выручкой",
@@ -286,8 +355,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          UNION ALL
          SELECT
            'Итого' AS "Период",
-           (SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '') AS "Актуальная база email",
-           (SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '') AS "Контактов email (DB)",
+           ${goodEmailContactsExpr} AS "Актуальная база email",
+           ${totalEmailContactsExpr} AS "Контактов email (DB)",
            SUM(sends) AS "Рассылок за месяц",
            SUM(leads) AS "Лиды",
            SUM(paid_deals) AS "Сделок с выручкой",
@@ -752,8 +821,10 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          WHERE COALESCE(m.month, '') <> ''
        )`;
 
-  const firstlineFilter = `lower(manager) IN ('алена тиханова', 'георгий воеводин')`;
-  const salesFilter = `lower(manager) IN ('анастасия крисанова', 'василий гореленков', 'глеб барбазанов', 'елена лобода')`;
+  // SQLite lower()/upper() do not reliably normalize Cyrillic in D1.
+  // Use exact trimmed names to keep manager datasets populated.
+  const firstlineFilter = `trim(manager) IN ('Алена Тиханова', 'Георгий Воеводин')`;
+  const salesFilter = `trim(manager) IN ('Анастасия Крисанова', 'Василий Гореленков', 'Глеб Барбазанов', 'Елена Лобода')`;
 
   const managerFirstlineByMonth = await db
     .prepare(
