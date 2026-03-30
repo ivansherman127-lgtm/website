@@ -316,9 +316,10 @@ function writeUrlState(menu: MenuMode, view?: ViewKey): void {
   window.history.replaceState({}, "", url.toString());
 }
 
-type AssocDynamicDim = "yandex_campaign" | "email_campaign" | "event";
+type AssocDynamicDim = "yandex_campaign" | "yandex_ad" | "email_campaign" | "event";
 const ASSOC_DYNAMIC_DIM_OPTIONS: Array<{ key: AssocDynamicDim; label: string }> = [
   { key: "yandex_campaign", label: "Yandex кампания" },
+  { key: "yandex_ad", label: "Yandex объявление" },
   { key: "email_campaign", label: "Email кампания" },
   { key: "event", label: "Мероприятие" },
 ];

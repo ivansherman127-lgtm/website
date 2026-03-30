@@ -22,6 +22,7 @@ interface Env {
 type Cohort = "all" | "attacking_january";
 type DimKey =
   | "yandex_campaign"
+  | "yandex_ad"
   | "email_campaign"
   | "event"
   | "course_code"
@@ -39,6 +40,11 @@ const DIMENSIONS: Record<DimKey, DimSpec> = {
     key: "yandex_campaign",
     label: "Yandex кампания",
     expr: "COALESCE(NULLIF(yandex_campaign_group, ''), '(пусто)')",
+  },
+  yandex_ad: {
+    key: "yandex_ad",
+    label: "Yandex объявление",
+    expr: "COALESCE(NULLIF(yandex_ad_group, ''), '(пусто)')",
   },
   email_campaign: {
     key: "email_campaign",
@@ -338,7 +344,7 @@ function makeCacheKey(params: {
   toMonth: string | null;
 }): string {
   const { dims, cohort, fromMonth, toMonth } = params;
-  return `v7|dims=${dims.join(",")}|cohort=${cohort}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
+  return `v8|dims=${dims.join(",")}|cohort=${cohort}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
 }
 
 export async function onRequestGet(context: {
@@ -351,7 +357,7 @@ export async function onRequestGet(context: {
     return json(400, {
       ok: false,
       error: "invalid_dims",
-      message: "Use 1-2 allowed dims: yandex_campaign,email_campaign,event,course_code,month,funnel",
+      message: "Use 1-2 allowed dims: yandex_campaign,yandex_ad,email_campaign,event,course_code,month,funnel",
     });
   }
 
@@ -432,7 +438,7 @@ export async function onRequestGet(context: {
     let yandexCampaignPairs: Array<[string, string]> = [];
     let yandexSpendAvailable = false;
 
-    if (hasYandexStats && dims.includes("yandex_campaign")) {
+    if (hasYandexStats && (dims.includes("yandex_campaign") || dims.includes("yandex_ad"))) {
       const rawRowsExists = await tableExists(context.env.DB, "mart_yandex_revenue_projects_raw");
       let labelMap = new Map<string, string>();
 
@@ -534,15 +540,38 @@ export async function onRequestGet(context: {
     let yandexSpendJoinSql = "";
     let includeYandexSpend = false;
 
-    if (hasYandexStats && dims.includes("yandex_campaign")) {
-      const yandexDimIdx = dims.indexOf("yandex_campaign") + 1; // 1-based, matches d1/d2 column naming
-      const spendMappingExpr = yandexCampaignPairs.length > 0
-        ? `COALESCE(CASE spend_src."Название кампании" ${yandexCampaignPairs
-            .map(([orig, lbl]) => `WHEN ${sqlQuote(orig)} THEN ${sqlQuote(lbl)}`)
-            .join(" ")} ELSE spend_src."Название кампании" END, '(без маппинга в Yandex raw)')`
-        : `COALESCE(spend_src."Название кампании", '(без маппинга в Yandex raw)')`;
+    if (hasYandexStats && (dims.includes("yandex_campaign") || dims.includes("yandex_ad"))) {
+      if (dims.includes("yandex_ad")) {
+        const yandexAdDimIdx = dims.indexOf("yandex_ad") + 1; // 1-based, matches d1/d2 column naming
+        yandexSpendCteSql = `,
+      yandex_spend_by_label AS (
+        SELECT
+          COALESCE(
+            CASE
+              WHEN TRIM(COALESCE(spend_src."№ Объявления", '')) <> ''
+                THEN COALESCE(NULLIF(TRIM(COALESCE(spend_src."Название кампании", '')), ''), 'UNMAPPED')
+                     || ' #'
+                     || REPLACE(TRIM(COALESCE(spend_src."№ Объявления", '')), '.0', '')
+              ELSE COALESCE(NULLIF(TRIM(COALESCE(spend_src."Название кампании", '')), ''), 'UNMAPPED') || ' #N/A'
+            END,
+            '(без маппинга в Yandex raw)'
+          ) AS ad_label,
+          COALESCE(SUM(COALESCE(spend_src."Расход, ₽", 0)), 0) AS total_spend
+        FROM stg_yandex_stats spend_src
+        GROUP BY ad_label
+      )`;
 
-      yandexSpendCteSql = `,
+        yandexSpendJoinSql = `LEFT JOIN yandex_spend_by_label ysl ON ysl.ad_label = s.d${yandexAdDimIdx}`;
+        includeYandexSpend = true;
+      } else {
+        const yandexDimIdx = dims.indexOf("yandex_campaign") + 1; // 1-based, matches d1/d2 column naming
+        const spendMappingExpr = yandexCampaignPairs.length > 0
+          ? `COALESCE(CASE spend_src."Название кампании" ${yandexCampaignPairs
+              .map(([orig, lbl]) => `WHEN ${sqlQuote(orig)} THEN ${sqlQuote(lbl)}`)
+              .join(" ")} ELSE spend_src."Название кампании" END, '(без маппинга в Yandex raw)')`
+          : `COALESCE(spend_src."Название кампании", '(без маппинга в Yandex raw)')`;
+
+        yandexSpendCteSql = `,
       yandex_spend_by_label AS (
         SELECT
           ${spendMappingExpr} AS campaign_label,
@@ -551,8 +580,9 @@ export async function onRequestGet(context: {
         GROUP BY campaign_label
       )`;
 
-      yandexSpendJoinSql = `LEFT JOIN yandex_spend_by_label ysl ON ysl.campaign_label = s.d${yandexDimIdx}`;
-      includeYandexSpend = true;
+        yandexSpendJoinSql = `LEFT JOIN yandex_spend_by_label ysl ON ysl.campaign_label = s.d${yandexDimIdx}`;
+        includeYandexSpend = true;
+      }
     }
 
     const sourceDealsCte = `
@@ -560,7 +590,12 @@ export async function onRequestGet(context: {
         ${hasYandexStats ? `WITH yandex_map AS (
           SELECT
             REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
-            MIN(NULLIF(TRIM(COALESCE("Название кампании", '')), '')) AS project_name
+            MIN(NULLIF(TRIM(COALESCE("Название кампании", '')), '')) AS project_name,
+            MIN(
+              COALESCE(NULLIF(TRIM(COALESCE("Название кампании", '')), ''), 'UNMAPPED')
+              || ' #'
+              || REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '')
+            ) AS ad_label
           FROM stg_yandex_stats
           WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
           GROUP BY 1
@@ -568,6 +603,7 @@ export async function onRequestGet(context: {
         SELECT
           src.*,
           ${yandexCampaignExpr} AS yandex_campaign_group,
+          COALESCE(ym.ad_label, '(без маппинга в Yandex raw)') AS yandex_ad_group,
           ${emailCampaignExpr} AS email_release_group,
           CASE
             WHEN COALESCE(src.is_attacking_january, 0) = 1 THEN 'Attacking January'
