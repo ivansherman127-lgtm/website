@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "VITE_DATA_SOURCE=d1 vite",
     "prebuild": "rm -f public/data/attacking_january_associative_deals_base.json",
     "build": "VITE_DATA_SOURCE=d1 vite build",
     "preview": "npm run build && wrangler dev",
