@@ -1845,7 +1845,7 @@ async function boot(): Promise<void> {
     yandexProjectLeadMetrics.clear();
     yandexMonthLeadMetrics.clear();
     loadEmailOverridesMap(await fetch(staticUrl("data/email_group_overrides.json")).then(r => r.json() as Promise<EmailOverridesFile>));
-    const yandexHierarchy = await fetch(staticUrl("data/yd_hierarchy.json")).then(r => r.json() as Promise<Record<string, unknown>[]>);
+    const yandexHierarchy = await fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
     for (const r of yandexHierarchy) {
       const lvl = String(r["Level"] ?? "").trim();
       if (lvl === "Campaign") {
@@ -1888,7 +1888,7 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
     fetchJson<Record<string, unknown>[]>("data/bitrix_contacts_uid.json"),
     fetchJson<Record<string, unknown>[]>("data/email_operational_summary.json"),
     fetchJson<Record<string, unknown>[]>("data/global/yandex_projects_revenue_by_month.json"),
-    fetch(staticUrl("data/yd_hierarchy.json")).then(r => r.json() as Promise<Record<string, unknown>[]>),
+    fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json"),
   ]);
 
   const monthRows = bitrixMonths.filter((r) => !isTotalValue(r["Месяц"]));
