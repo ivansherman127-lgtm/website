@@ -20,6 +20,20 @@ export async function onRequestGet(context: {
       headers: { "content-type": "application/json; charset=utf-8" },
     });
   }
+
+  // Always build unique contacts from the canonical UID mapping table.
+  // This avoids stale dataset_json snapshots when contact mapping was updated.
+  if (path === "bitrix_contacts_uid.json") {
+    const rows = await buildBitrixContactsUidRows(context.env.DB);
+    return new Response(JSON.stringify(rows), {
+      status: 200,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": "public, max-age=60",
+      },
+    });
+  }
+
   let parts: { body: string }[] = [];
   try {
     const rows = await context.env.DB.prepare(

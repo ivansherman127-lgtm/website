@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Deploy webpush worker",
+			"type": "shell",
+			"command": "export PATH=\"$HOME/.nvm/versions/node/v24.14.1/bin:$PATH\" && npm run deploy",
+			"isBackground": false
+		},
+		{
+			"label": "Deploy webpush now",
+			"type": "shell",
+			"command": "export PATH=\"$HOME/.nvm/versions/node/v24.14.1/bin:$PATH\" && npm run deploy",
+			"isBackground": false
+		}
+	]
+}
