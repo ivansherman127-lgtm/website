@@ -537,10 +537,10 @@ export async function onRequestGet(context: {
     if (hasYandexStats && dims.includes("yandex_campaign")) {
       const yandexDimIdx = dims.indexOf("yandex_campaign") + 1; // 1-based, matches d1/d2 column naming
       const spendMappingExpr = yandexCampaignPairs.length > 0
-        ? `COALESCE(CASE spend_src.project_name ${yandexCampaignPairs
+        ? `COALESCE(CASE spend_src."Название кампании" ${yandexCampaignPairs
             .map(([orig, lbl]) => `WHEN ${sqlQuote(orig)} THEN ${sqlQuote(lbl)}`)
-            .join(" ")} ELSE spend_src.project_name END, '(без маппинга в Yandex raw)')`
-        : `COALESCE(spend_src.project_name, '(без маппинга в Yandex raw)')`;
+            .join(" ")} ELSE spend_src."Название кампании" END, '(без маппинга в Yandex raw)')`
+        : `COALESCE(spend_src."Название кампании", '(без маппинга в Yandex raw)')`;
 
       yandexSpendCteSql = `,
       yandex_spend_by_label AS (
