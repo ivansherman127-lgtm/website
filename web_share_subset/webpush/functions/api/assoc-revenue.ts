@@ -442,6 +442,7 @@ export async function onRequestGet(context: {
 
     const hasYandexStats = await tableExists(context.env.DB, "stg_yandex_stats");
     const hasEmailSends = await tableExists(context.env.DB, "stg_email_sends");
+    const hasContactsUid = await tableExists(context.env.DB, "stg_contacts_uid");
     let yandexCampaignExpr = "'(без маппинга в Yandex raw)'";
     let emailCampaignExpr = "'(без маппинга в email raw)'";
     let yandexCampaignPairs: Array<[string, string]> = [];
@@ -627,12 +628,58 @@ export async function onRequestGet(context: {
         ` : ""}
       )`;
 
+    const sourceContactExpr = `REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '')`;
+    const contactPoolCteSql = hasContactsUid
+      ? `contact_pool AS (
+        SELECT DISTINCT
+          ${specs.map((_, i) => `sc.d${i + 1}`).join(",\n          ")},
+          COALESCE(cu.contact_uid, sc.contact_id) AS contact_key
+        FROM source_scoped sc
+        LEFT JOIN stg_contacts_uid cu ON cu.contact_id = sc.contact_id
+        WHERE sc.contact_id <> ''
+      )`
+      : `contact_pool AS (
+        SELECT DISTINCT
+          ${dimColumns},
+          contact_id AS contact_key
+        FROM source_scoped
+        WHERE contact_id <> ''
+      )`;
+
+    const paidByContactCteSql = hasContactsUid
+      ? `paid_by_contact AS (
+        SELECT
+          COALESCE(cu.contact_uid, pd.contact_id) AS contact_key,
+          COUNT(*) AS paid_deals,
+          COALESCE(SUM(pd.revenue_amount), 0) AS revenue
+        FROM (
+          SELECT
+            REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id,
+            COALESCE(revenue_amount, 0) AS revenue_amount
+          FROM mart_deals_enriched
+          WHERE is_revenue_variant3 = 1
+        ) pd
+        LEFT JOIN stg_contacts_uid cu ON cu.contact_id = pd.contact_id
+        WHERE pd.contact_id <> ''
+        GROUP BY COALESCE(cu.contact_uid, pd.contact_id)
+      )`
+      : `paid_by_contact AS (
+        SELECT
+          REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_key,
+          COUNT(*) AS paid_deals,
+          COALESCE(SUM(revenue_amount), 0) AS revenue
+        FROM mart_deals_enriched
+        WHERE is_revenue_variant3 = 1
+          AND REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') <> ''
+        GROUP BY REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '')
+      )`;
+
     const sql = `
       WITH ${yandexMapCte}${sourceDealsCte},
       source_scoped AS (
         SELECT
           ${selectParts.join(",\n          ")},
-          COALESCE(NULLIF("Контакт: ID", ''), '') AS contact_id,
+          ${sourceContactExpr} AS contact_id,
           COALESCE(NULLIF(ID, ''), '') AS source_deal_id
         FROM source_deals
         ${whereSql}
@@ -645,29 +692,14 @@ export async function onRequestGet(context: {
         FROM source_scoped
         GROUP BY ${dimColumns}
       ),
-      contact_pool AS (
-        SELECT DISTINCT
-          ${dimColumns},
-          contact_id
-        FROM source_scoped
-        WHERE contact_id <> ''
-      ),
-      paid_by_contact AS (
-        SELECT
-          COALESCE(NULLIF("Контакт: ID", ''), '') AS contact_id,
-          COUNT(*) AS paid_deals,
-          COALESCE(SUM(revenue_amount), 0) AS revenue
-        FROM mart_deals_enriched
-        WHERE is_revenue_variant3 = 1
-          AND COALESCE(NULLIF("Контакт: ID", ''), '') <> ''
-        GROUP BY COALESCE(NULLIF("Контакт: ID", ''), '')
-      )${yandexSpendCteSql}
+      ${contactPoolCteSql},
+      ${paidByContactCteSql}${yandexSpendCteSql}
       SELECT
         ${specs.map((_, i) => `s.d${i + 1}`).join(",\n        ")},
         s.deals_total AS deals_total,
         s.contacts_in_pool AS contacts_in_pool,
         COALESCE(SUM(p.paid_deals), 0) AS paid_deals,
-        COUNT(DISTINCT CASE WHEN p.paid_deals > 0 THEN cp.contact_id ELSE NULL END) AS contacts_with_revenue,
+        COUNT(DISTINCT CASE WHEN p.paid_deals > 0 THEN cp.contact_key ELSE NULL END) AS contacts_with_revenue,
         COALESCE(SUM(p.revenue), 0) AS revenue,
         CASE
           WHEN COALESCE(SUM(p.paid_deals), 0) = 0 THEN 0
@@ -679,7 +711,7 @@ export async function onRequestGet(context: {
       LEFT JOIN contact_pool cp
         ON ${specs.map((_, i) => `cp.d${i + 1} = s.d${i + 1}`).join(" AND ")}
       LEFT JOIN paid_by_contact p
-        ON p.contact_id = cp.contact_id
+        ON p.contact_key = cp.contact_key
       ${yandexSpendJoinSql}
       GROUP BY ${dimColumnsQualified}, s.deals_total, s.contacts_in_pool
       ORDER BY revenue DESC, ${dimColumnsQualified}
@@ -712,38 +744,50 @@ export async function onRequestGet(context: {
         source_scoped AS (
           SELECT
             event_group AS parent_event,
-            COALESCE(NULLIF("Контакт: ID", ''), '') AS contact_id
+            ${sourceContactExpr} AS contact_id
           FROM source_deals
           ${whereSql}
         ),
         contact_pool AS (
-          SELECT DISTINCT parent_event, contact_id
-          FROM source_scoped
-          WHERE contact_id <> ''
+          SELECT DISTINCT
+            sc.parent_event,
+            ${hasContactsUid ? `COALESCE(cu.contact_uid, sc.contact_id)` : `sc.contact_id`} AS contact_key
+          FROM source_scoped sc
+          ${hasContactsUid ? `LEFT JOIN stg_contacts_uid cu ON cu.contact_id = sc.contact_id` : ``}
+          WHERE sc.contact_id <> ''
         ),
         paid_deals AS (
           SELECT
-            COALESCE(NULLIF("Контакт: ID", ''), '') AS contact_id,
-            COALESCE(revenue_amount, 0) AS revenue,
+            ${hasContactsUid ? `COALESCE(cu.contact_uid, pd.contact_id)` : `pd.contact_id`} AS contact_key,
+            pd.revenue,
             CASE
-              WHEN COALESCE(is_attacking_january, 0) = 1 THEN 'Attacking January'
-              WHEN COALESCE(NULLIF(event_class, ''), '') <> '' AND COALESCE(event_class, '') <> 'Другое' THEN event_class
-              WHEN LOWER(TRIM(COALESCE("UTM Source", ''))) LIKE 'y%' AND LOWER(TRIM(COALESCE("UTM Source", ''))) <> 'yah' THEN 'Yandex'
-              WHEN LOWER(TRIM(COALESCE("UTM Source", ''))) = 'sendsay' THEN 'Email'
+              WHEN COALESCE(pd.is_attacking_january, 0) = 1 THEN 'Attacking January'
+              WHEN COALESCE(NULLIF(pd.event_class, ''), '') <> '' AND COALESCE(pd.event_class, '') <> 'Другое' THEN pd.event_class
+              WHEN LOWER(TRIM(COALESCE(pd.utm_source, ''))) LIKE 'y%' AND LOWER(TRIM(COALESCE(pd.utm_source, ''))) <> 'yah' THEN 'Yandex'
+              WHEN LOWER(TRIM(COALESCE(pd.utm_source, ''))) = 'sendsay' THEN 'Email'
               ELSE 'Другое'
             END AS source_label
-          FROM mart_deals_enriched
-          WHERE is_revenue_variant3 = 1
-            AND COALESCE(NULLIF("Контакт: ID", ''), '') <> ''
+          FROM (
+            SELECT
+              REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id,
+              COALESCE(revenue_amount, 0) AS revenue,
+              COALESCE(is_attacking_january, 0) AS is_attacking_january,
+              COALESCE(event_class, '') AS event_class,
+              COALESCE("UTM Source", '') AS utm_source
+            FROM mart_deals_enriched
+            WHERE is_revenue_variant3 = 1
+              AND REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') <> ''
+          ) pd
+          ${hasContactsUid ? `LEFT JOIN stg_contacts_uid cu ON cu.contact_id = pd.contact_id` : ``}
         )
         SELECT
           cp.parent_event AS parent_event,
           pd.source_label AS source_label,
           COUNT(*) AS paid_deals,
-          COUNT(DISTINCT cp.contact_id) AS contacts_with_revenue,
+          COUNT(DISTINCT cp.contact_key) AS contacts_with_revenue,
           COALESCE(SUM(pd.revenue), 0) AS revenue
         FROM contact_pool cp
-        INNER JOIN paid_deals pd ON pd.contact_id = cp.contact_id
+        INNER JOIN paid_deals pd ON pd.contact_key = cp.contact_key
         GROUP BY cp.parent_event, pd.source_label
         ORDER BY cp.parent_event, revenue DESC, pd.source_label
       `;

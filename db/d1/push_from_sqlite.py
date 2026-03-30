@@ -33,6 +33,7 @@ sys.path.insert(0, str(ROOT / "db"))
 DEFAULT_TABLES = [
     "raw_bitrix_deals",
     "raw_source_batches",
+    "stg_contacts_uid",
     "mart_deals_enriched",
     "mart_attacking_january_contacts",
     "mart_attacking_january_cohort_deals",

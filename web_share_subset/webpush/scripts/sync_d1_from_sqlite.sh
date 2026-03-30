@@ -86,7 +86,13 @@ run_slices() {
   "$PYTHON_BIN" "$MAIN_ROOT/db/run_all_slices.py"
 }
 
+run_contacts_uid_stage() {
+  echo "==> Loading bitrix_contacts_uid.csv into local SQLite (stg_contacts_uid)"
+  "$PYTHON_BIN" "$MAIN_ROOT/db/load_contacts_uid_to_sqlite.py"
+}
+
 run_push_remote() {
+  run_contacts_uid_stage
   echo "==> Pushing local SQLite + JSON to remote D1"
   "$PYTHON_BIN" "$MAIN_ROOT/db/d1/push_from_sqlite.py" \
     --remote \
@@ -96,6 +102,7 @@ run_push_remote() {
 }
 
 run_push_local() {
+  run_contacts_uid_stage
   echo "==> Pushing local SQLite + JSON to local D1"
   "$PYTHON_BIN" "$MAIN_ROOT/db/d1/push_from_sqlite.py" \
     --strict \
@@ -143,6 +150,7 @@ case "$MODE" in
   push-raw)
     run_upsert_raw
     run_slices
+    run_contacts_uid_stage
     run_push_remote
     ;;
   rebuild)
@@ -152,6 +160,7 @@ case "$MODE" in
     run_migrate
     run_upsert_raw
     run_slices
+    run_contacts_uid_stage
     run_push_remote
     run_rebuild optional
     ;;

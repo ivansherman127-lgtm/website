@@ -4,6 +4,7 @@
 import { groupYandexProjectsNoMonth } from "./yandexProjectsNoMonth";
 import { sqlExtractYandexAdId } from "./yandexAdId";
 import { buildYdHierarchyRows } from "./ydHierarchy";
+import { buildBitrixContactsUidRows } from "./bitrixContactsUid";
 
 async function tableExists(db: D1Database, tableName: string): Promise<boolean> {
   const row = await db
@@ -617,15 +618,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   await upsertDataset(db, "email_hierarchy_by_send.json", rowsToJson((emailHierarchyBySend.results ?? []) as Record<string, unknown>[]));
   paths.push("email_hierarchy_by_send.json");
 
-  const bitrixContactsUid = await db
-    .prepare(
-      `SELECT DISTINCT COALESCE("Контакт: ID", '') AS uid
-       FROM mart_deals_enriched
-       WHERE COALESCE("Контакт: ID", '') <> ''
-       ORDER BY uid`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "bitrix_contacts_uid.json", rowsToJson((bitrixContactsUid.results ?? []) as Record<string, unknown>[]));
+  const bitrixContactsUid = await buildBitrixContactsUidRows(db);
+  await upsertDataset(db, "bitrix_contacts_uid.json", rowsToJson(bitrixContactsUid as Record<string, unknown>[]));
   paths.push("bitrix_contacts_uid.json");
 
   const bitrixFunnelMonthCode = await db
