@@ -344,7 +344,7 @@ function makeCacheKey(params: {
   toMonth: string | null;
 }): string {
   const { dims, cohort, fromMonth, toMonth } = params;
-  return `v8|dims=${dims.join(",")}|cohort=${cohort}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
+  return `v9|dims=${dims.join(",")}|cohort=${cohort}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
 }
 
 export async function onRequestGet(context: {
@@ -549,10 +549,8 @@ export async function onRequestGet(context: {
           COALESCE(
             CASE
               WHEN TRIM(COALESCE(spend_src."№ Объявления", '')) <> ''
-                THEN COALESCE(NULLIF(TRIM(COALESCE(spend_src."Название кампании", '')), ''), 'UNMAPPED')
-                     || ' #'
-                     || REPLACE(TRIM(COALESCE(spend_src."№ Объявления", '')), '.0', '')
-              ELSE COALESCE(NULLIF(TRIM(COALESCE(spend_src."Название кампании", '')), ''), 'UNMAPPED') || ' #N/A'
+                THEN REPLACE(TRIM(COALESCE(spend_src."№ Объявления", '')), '.0', '')
+              ELSE '(без ad_id)'
             END,
             '(без маппинга в Yandex raw)'
           ) AS ad_label,
@@ -591,11 +589,7 @@ export async function onRequestGet(context: {
           SELECT
             REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
             MIN(NULLIF(TRIM(COALESCE("Название кампании", '')), '')) AS project_name,
-            MIN(
-              COALESCE(NULLIF(TRIM(COALESCE("Название кампании", '')), ''), 'UNMAPPED')
-              || ' #'
-              || REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '')
-            ) AS ad_label
+            MIN(REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '')) AS ad_label
           FROM stg_yandex_stats
           WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
           GROUP BY 1
