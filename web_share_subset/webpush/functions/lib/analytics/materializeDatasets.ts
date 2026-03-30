@@ -3,6 +3,7 @@
  */
 import { groupYandexProjectsNoMonth } from "./yandexProjectsNoMonth";
 import { sqlExtractYandexAdId } from "./yandexAdId";
+import { buildYdHierarchyRows } from "./ydHierarchy";
 
 async function tableExists(db: D1Database, tableName: string): Promise<boolean> {
   const row = await db
@@ -1317,113 +1318,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   await upsertDataset(db, "global/yandex_campaign_kpis.json", rowsToJson((yandexCampaignKpis.results ?? []) as Record<string, unknown>[]));
   paths.push("global/yandex_campaign_kpis.json");
 
-  const toMonthLabel = (monthIso: string): string => {
-    const m = String(monthIso || "").trim();
-    if (!/^\d{4}-\d{2}$/.test(m)) return m;
-    const mon = m.slice(5, 7);
-    const year = m.slice(0, 4);
-    const names: Record<string, string> = {
-      "01": "Январь",
-      "02": "Февраль",
-      "03": "Март",
-      "04": "Апрель",
-      "05": "Май",
-      "06": "Июнь",
-      "07": "Июль",
-      "08": "Август",
-      "09": "Сентябрь",
-      "10": "Октябрь",
-      "11": "Ноябрь",
-      "12": "Декабрь",
-    };
-    return `${names[mon] || m}, ${year}`;
-  };
-
-  const monthRows = (yandexMonthKpis.results ?? []).map((r) => {
-    const leads = Number(r["Leads"] ?? 0) || 0;
-    const qual = Number(r["Qual"] ?? 0) || 0;
-    const unqual = Number(r["Unqual"] ?? 0) || 0;
-    const refusal = Number(r["Refusal"] ?? 0) || 0;
-    const spend = Number(r["Расход, ₽"] ?? 0) || 0;
-    const clicks = Number(r["Клики"] ?? 0) || 0;
-    const month = String(r.month ?? "").trim();
-    return {
-      "Level": "Month",
-      "Месяц": toMonthLabel(month),
-      "№ Кампании": "-",
-      "№ Объявления": "-",
-      "Название кампании": "-",
-      "Заголовок": "-",
-      "Название группы": "-",
-      "Leads": leads,
-      "Qual": qual,
-      "Unqual": unqual,
-      "Refusal": refusal,
-      "Расход, ₽": spend,
-      "Клики": clicks,
-      "%Qual": leads === 0 ? 0 : (qual * 100.0) / leads,
-      "%Unqual": leads === 0 ? 0 : (unqual * 100.0) / leads,
-      "%Refusal": qual === 0 ? 0 : (refusal * 100.0) / qual,
-      "QPA": qual === 0 ? "-" : String(spend / qual),
-      "fl_IDs": null,
-      __month: month,
-      __ord: 0,
-      __campaign: "-",
-    } as Record<string, unknown>;
-  });
-
-  const campaignRows = (yandexCampaignKpis.results ?? []).map((r) => {
-    const leads = Number(r["Leads"] ?? 0) || 0;
-    const qual = Number(r["Qual"] ?? 0) || 0;
-    const unqual = Number(r["Unqual"] ?? 0) || 0;
-    const refusal = Number(r["Refusal"] ?? 0) || 0;
-    const spend = Number(r["Расход, ₽"] ?? 0) || 0;
-    const clicks = Number(r["Клики"] ?? 0) || 0;
-    const month = String(r["Месяц"] ?? "").trim();
-    const campaignName = String(r["Название кампании"] ?? "").trim() || "UNMAPPED";
-    const campaignId = String(r["№ Кампании"] ?? "").trim() || "-";
-    return {
-      "Level": "Campaign",
-      "Месяц": toMonthLabel(month),
-      "№ Кампании": campaignId,
-      "№ Объявления": "-",
-      "Название кампании": campaignName,
-      "Заголовок": "-",
-      "Название группы": "-",
-      "Leads": leads,
-      "Qual": qual,
-      "Unqual": unqual,
-      "Refusal": refusal,
-      "Расход, ₽": spend,
-      "Клики": clicks,
-      "%Qual": leads === 0 ? 0 : (qual * 100.0) / leads,
-      "%Unqual": leads === 0 ? 0 : (unqual * 100.0) / leads,
-      "%Refusal": qual === 0 ? 0 : (refusal * 100.0) / qual,
-      "QPA": qual === 0 ? "-" : String(spend / qual),
-      "fl_IDs": null,
-      __month: month,
-      __ord: 1,
-      __campaign: campaignName,
-    } as Record<string, unknown>;
-  });
-
-  const ydHierarchyRows = [...monthRows, ...campaignRows]
-    .sort((a, b) => {
-      const am = String(a.__month ?? "");
-      const bm = String(b.__month ?? "");
-      if (am !== bm) return bm.localeCompare(am);
-      const ao = Number(a.__ord ?? 0);
-      const bo = Number(b.__ord ?? 0);
-      if (ao !== bo) return ao - bo;
-      return String(a.__campaign ?? "").localeCompare(String(b.__campaign ?? ""), "ru");
-    })
-    .map((row, idx) => {
-      const out = { ...row, "Unnamed: 0": idx };
-      delete out.__month;
-      delete out.__ord;
-      delete out.__campaign;
-      return out;
-    });
+  const ydHierarchyRows = await buildYdHierarchyRows(db);
 
   await upsertDataset(db, "yd_hierarchy.json", rowsToJson(ydHierarchyRows as Record<string, unknown>[]));
   paths.push("yd_hierarchy.json");
