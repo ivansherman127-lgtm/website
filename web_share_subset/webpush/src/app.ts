@@ -804,8 +804,10 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
     return regroupAssocEmailRows(clean);
   }
   if (view === "media_yandex") {
-    return clean.map((r) => {
+    const rowsByProject = new Map<string, Record<string, unknown>>();
+    for (const r of clean) {
       const project = String(r["project_name"] ?? "").trim();
+      if (!project) continue;
       const m = yandexProjectLeadMetrics.get(project) || yandexEmptyMetrics();
       const leads = m.leads > 0 ? m.leads : num(r["leads_raw"]);
       const qual = m.qual;
@@ -817,7 +819,7 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
       const profit = revenue - spend;
       const assocRevenue = num(r["assoc_revenue"]);
       const assocProfit = assocRevenue - spend;
-      return {
+      rowsByProject.set(project, {
         "Проект": project,
         "Лиды": leads,
         "Квал": qual,
@@ -834,8 +836,35 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
         "Прибыль": profit,
         "Ассоц. Выручка": assocRevenue,
         "Ассоц. Прибыль": assocProfit,
-      };
-    });
+      });
+    }
+
+    // Keep spend totals consistent with monthly Yandex totals by adding projects
+    // that have ad spend but no matched Bitrix deal rows.
+    for (const [project, m] of yandexProjectLeadMetrics.entries()) {
+      if (!project || rowsByProject.has(project)) continue;
+      if (m.spend <= 0 && m.clicks <= 0 && m.leads <= 0) continue;
+      rowsByProject.set(project, {
+        "Проект": project,
+        "Лиды": m.leads,
+        "Квал": m.qual,
+        "Конверсия в Квал": m.leads > 0 ? m.qual / m.leads : 0,
+        "Неквал": m.unqual,
+        "Конверсия в Неквал": m.leads > 0 ? m.unqual / m.leads : 0,
+        "Отказы": m.refusal,
+        "Конверсия в Отказ": m.leads > 0 ? m.refusal / m.leads : 0,
+        "Клики": m.clicks,
+        "Расход, ₽": m.spend,
+        "Оплаты": 0,
+        "Конверсия в Оплаты": 0,
+        "Выручка": 0,
+        "Прибыль": -m.spend,
+        "Ассоц. Выручка": 0,
+        "Ассоц. Прибыль": -m.spend,
+      });
+    }
+
+    return Array.from(rowsByProject.values());
   }
   if (view === "media_yandex_month") {
     return clean.map((r) => {
