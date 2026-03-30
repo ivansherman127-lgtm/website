@@ -1,6 +1,8 @@
 /**
  * Port of db/run_all_slices.build_yandex_dedup_marts (merge + project marts + spend dedup).
  */
+import { extractYandexAdIdFromUtmContent } from "./yandexAdId";
+
 function str(v: unknown): string {
   if (v === null || v === undefined) return "";
   const s = String(v).trim();
@@ -118,7 +120,7 @@ export async function rebuildYandexMarts(db: D1Database): Promise<{
   const merged: RawLead[] = [];
   for (const b of bitrix) {
     const did = idNorm(b.ID);
-    const utmContent = idNorm(b.utm_content);
+    const utmContent = extractYandexAdIdFromUtmContent(b.utm_content);
     if (!did || !utmContent || !isYandexSource(b.utm_source)) continue;
     const cid = idNorm(b.contact_id);
     const leadKey = cid || did;

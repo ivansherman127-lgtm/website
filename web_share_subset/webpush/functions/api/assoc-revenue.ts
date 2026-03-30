@@ -3,6 +3,7 @@ import {
   buildYandexProjectLabelMapFromRows,
   type NoMonthRow,
 } from "../lib/analytics/yandexProjectsNoMonth";
+import { sqlExtractYandexAdId } from "../lib/analytics/yandexAdId";
 
 interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
@@ -583,6 +584,8 @@ export async function onRequestGet(context: {
       }
     }
 
+    const sourceYandexAdExpr = sqlExtractYandexAdId(`src."UTM Content"`);
+
     const sourceDealsCte = `
       source_deals AS (
         ${hasYandexStats ? `WITH yandex_map AS (
@@ -605,7 +608,7 @@ export async function onRequestGet(context: {
           END AS event_group
         FROM ${table} src
         ${hasYandexStats ? `LEFT JOIN yandex_map ym
-          ON ym.ad_id = REPLACE(TRIM(COALESCE(src."UTM Content", '')), '.0', '')
+          ON ym.ad_id = ${sourceYandexAdExpr}
         ` : ""}
       )`;
 

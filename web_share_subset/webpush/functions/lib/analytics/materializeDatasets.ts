@@ -2,6 +2,7 @@
  * Materialize dashboard JSON blobs into dataset_json (same SQL as db/run_all_slices.export_*).
  */
 import { groupYandexProjectsNoMonth } from "./yandexProjectsNoMonth";
+import { sqlExtractYandexAdId } from "./yandexAdId";
 
 async function tableExists(db: D1Database, tableName: string): Promise<boolean> {
   const row = await db
@@ -1603,6 +1604,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   // that the same real person with multiple Bitrix contact_ids is counted once and all their
   // deals are found.
   const hasContactsUid = await tableExists(db, "stg_contacts_uid");
+  const sourceYandexAdExpr = sqlExtractYandexAdId(`src."UTM Content"`);
 
   const assocQaSql = hasContactsUid
     ? `WITH
@@ -1624,7 +1626,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE(ym.project_name, 'UNMAPPED') AS project_name
          FROM mart_deals_enriched src
          LEFT JOIN yandex_map ym
-           ON ym.ad_id = REPLACE(TRIM(COALESCE(src."UTM Content", '')), '.0', '')
+           ON ym.ad_id = ${sourceYandexAdExpr}
          WHERE LOWER(TRIM(COALESCE(src."UTM Source", ''))) LIKE 'y%'
            AND LOWER(TRIM(COALESCE(src."UTM Source", ''))) <> 'yah'
        ),
@@ -1706,7 +1708,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE(ym.project_name, 'UNMAPPED') AS project_name
          FROM mart_deals_enriched src
          LEFT JOIN yandex_map ym
-           ON ym.ad_id = REPLACE(TRIM(COALESCE(src."UTM Content", '')), '.0', '')
+           ON ym.ad_id = ${sourceYandexAdExpr}
          WHERE LOWER(TRIM(COALESCE(src."UTM Source", ''))) LIKE 'y%'
            AND LOWER(TRIM(COALESCE(src."UTM Source", ''))) <> 'yah'
        ),
