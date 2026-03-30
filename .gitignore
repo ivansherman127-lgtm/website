@@ -1,0 +1,28 @@
+.DS_Store
+
+# Node / frontend artifacts
+node_modules/
+dist/
+
+# Nested web app build artifacts
+web_share_subset/webpush/node_modules/
+web_share_subset/webpush/dist/
+
+# Cloudflare / Wrangler local state
+.wrangler/
+web_share_subset/webpush/.wrangler/
+
+# Local env files
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
+
+# Python artifacts from db tooling
+__pycache__/
+*.pyc
+.venv/
+
+# Cloudflare Workers/Pages static asset limit (~25 MiB per file).
+# App does not fetch this file.
+web_share_subset/webpush/public/data/attacking_january_associative_deals_base.json
