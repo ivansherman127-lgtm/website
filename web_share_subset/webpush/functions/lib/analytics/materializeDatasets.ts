@@ -1625,8 +1625,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          FROM mart_deals_enriched src
          LEFT JOIN yandex_map ym
            ON ym.ad_id = REPLACE(TRIM(COALESCE(src."UTM Content", '')), '.0', '')
-         WHERE LOWER(COALESCE(src."UTM Source", '')) LIKE 'y%'
-           AND LOWER(COALESCE(src."UTM Source", '')) <> 'yah'
+         WHERE LOWER(TRIM(COALESCE(src."UTM Source", ''))) LIKE 'y%'
+           AND LOWER(TRIM(COALESCE(src."UTM Source", ''))) <> 'yah'
        ),
        yandex_leads AS (
          SELECT project_name, COUNT(*) AS yandex_leads_count
@@ -1707,8 +1707,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          FROM mart_deals_enriched src
          LEFT JOIN yandex_map ym
            ON ym.ad_id = REPLACE(TRIM(COALESCE(src."UTM Content", '')), '.0', '')
-         WHERE LOWER(COALESCE(src."UTM Source", '')) LIKE 'y%'
-           AND LOWER(COALESCE(src."UTM Source", '')) <> 'yah'
+         WHERE LOWER(TRIM(COALESCE(src."UTM Source", ''))) LIKE 'y%'
+           AND LOWER(TRIM(COALESCE(src."UTM Source", ''))) <> 'yah'
        ),
        yandex_leads AS (
          SELECT project_name, COUNT(*) AS yandex_leads_count

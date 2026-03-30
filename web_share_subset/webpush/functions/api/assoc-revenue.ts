@@ -393,8 +393,8 @@ export async function onRequestGet(context: {
   }
 
   if (dims.includes("yandex_campaign") || dims.includes("yandex_ad")) {
-    wheres.push("LOWER(COALESCE(\"UTM Source\", '')) LIKE 'y%'");
-    wheres.push("LOWER(COALESCE(\"UTM Source\", '')) <> 'yah'");
+    wheres.push("LOWER(TRIM(COALESCE(\"UTM Source\", ''))) LIKE 'y%'");
+    wheres.push("LOWER(TRIM(COALESCE(\"UTM Source\", ''))) <> 'yah'");
   }
 
   if (dims.includes("email_campaign")) {
