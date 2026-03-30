@@ -16,6 +16,7 @@ and then POSTs to the rebuild endpoint.
 from __future__ import annotations
 
 import os
+import argparse
 import subprocess
 import sys
 from pathlib import Path
@@ -24,9 +25,9 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 ROOT = Path(__file__).resolve().parents[1]
-DB_PATH = ROOT / "deved.db"
+DEFAULT_DB_PATH = ROOT / "deved.db"
 PUSH_SCRIPT = ROOT / "db" / "d1" / "push_from_sqlite.py"
-WRANGLER_CONFIG = ROOT / "web" / "wrangler.toml"
+WRANGLER_CONFIG = ROOT / "wrangler.jsonc"
 
 # Exact D1 schema for stg_yandex_stats (db/d1/migrations/0001_initial.sql)
 STG_YANDEX_D1_SCHEMA: list[tuple[str, str]] = [
@@ -255,14 +256,14 @@ def upsert_to_sqlite(df: pd.DataFrame, engine) -> int:
 # Push to D1
 # ---------------------------------------------------------------------------
 
-def push_to_d1() -> None:
+def push_to_d1(wrangler_config: Path) -> None:
     python = sys.executable
     cmd = [
         python, str(PUSH_SCRIPT),
         "--remote",
         "--tables", "stg_yandex_stats",
         "--no-json",
-        "--wrangler-config", str(WRANGLER_CONFIG),
+        "--wrangler-config", str(wrangler_config),
     ]
     print(f"\nPushing stg_yandex_stats to D1...", flush=True)
     print(f"  {' '.join(cmd)}", flush=True)
@@ -312,24 +313,40 @@ def trigger_rebuild() -> None:
 # Main
 # ---------------------------------------------------------------------------
 
-def main() -> None:
-    if len(sys.argv) < 2:
-        print(f"Usage: python {Path(__file__).name} <path/to/yandex_upd.csv>", flush=True)
-        sys.exit(1)
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Upsert Yandex CSV into local SQLite, optionally push to D1 and trigger rebuild.")
+    parser.add_argument("csv_path", help="Path to Yandex update CSV")
+    parser.add_argument("--db-path", default=os.environ.get("DEVED_DB_PATH", str(DEFAULT_DB_PATH)), help="Path to local SQLite DB")
+    parser.add_argument("--wrangler-config", default=str(WRANGLER_CONFIG), help="Wrangler config used for D1 push")
+    parser.add_argument("--skip-push", action="store_true", help="Only update local SQLite; do not push stg_yandex_stats to D1")
+    parser.add_argument("--skip-rebuild", action="store_true", help="Do not call cloud analytics rebuild after push")
+    return parser.parse_args()
 
-    csv_path = Path(sys.argv[1])
+
+def main() -> None:
+    args = parse_args()
+
+    csv_path = Path(args.csv_path)
     if not csv_path.is_absolute():
         csv_path = ROOT / csv_path
     if not csv_path.exists():
         print(f"ERROR: file not found: {csv_path}", flush=True)
         sys.exit(1)
 
-    engine = create_engine(f"sqlite:///{DB_PATH}")
+    db_path = Path(args.db_path)
+    if not db_path.is_absolute():
+        db_path = ROOT / db_path
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    engine = create_engine(f"sqlite:///{db_path}")
+    print(f"Using SQLite DB: {db_path}", flush=True)
 
     df = load_and_normalize(csv_path)
     upsert_to_sqlite(df, engine)
-    push_to_d1()
-    trigger_rebuild()
+    if not args.skip_push:
+        push_to_d1(Path(args.wrangler_config))
+        if not args.skip_rebuild:
+            trigger_rebuild()
     print("\nDone.", flush=True)
 
 
