@@ -1,0 +1,11 @@
+name = "deved-webpush"
+compatibility_date = "2025-03-01"
+main = "worker.ts"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cybered"
+database_id = "998b12bc-9fc3-4b55-92d9-aeec027e728d"
+
+# Note: Wrangler v4 prefers wrangler.jsonc when both files exist.
+# Keep wrangler.jsonc and this file in sync.

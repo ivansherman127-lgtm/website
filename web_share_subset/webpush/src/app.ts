@@ -1,0 +1,1946 @@
+import "./style.css";
+import Chart from "chart.js/auto";
+import { dataUrl, staticUrl } from "./data-source";
+
+const app = document.querySelector<HTMLDivElement>("#app")!;
+const columnAliasesByView = new Map<string, Record<string, string>>();
+
+function monthLabelToIso(v: unknown): string {
+  const s = String(v ?? "").trim();
+  if (!s) return "";
+  const ym = /^(\d{4})-(\d{2})$/.exec(s);
+  if (ym) return `${ym[1]}-${ym[2]}`;
+  const ru = /^([А-Яа-яA-Za-z]+),\s*(\d{4})$/.exec(s);
+  if (!ru) return "";
+  const mon = monthNameToNumber(ru[1]);
+  if (!mon) return "";
+  return `${ru[2]}-${String(mon).padStart(2, "0")}`;
+}
+
+function inMonthRange(monthIso: string, fromIso: string, toIso: string): boolean {
+  if (!monthIso) return true;
+  if (fromIso && monthIso < fromIso) return false;
+  if (toIso && monthIso > toIso) return false;
+  return true;
+}
+
+async function fetchJson<T>(path: string): Promise<T> {
+  const parseBody = (urlLabel: string, ct: string, txt: string): T => {
+    if (ct.includes("application/json")) {
+      return JSON.parse(txt) as T;
+    }
+    try {
+      return JSON.parse(txt) as T;
+    } catch {
+      throw new Error(`${urlLabel}: response is not valid JSON`);
+    }
+  };
+
+  const url1 = dataUrl(path);
+  const r1 = await fetch(url1);
+  if (!r1.ok) {
+    if (path.startsWith("/api/assoc-revenue") && r1.status === 404) {
+      return [] as T;
+    }
+    throw new Error(`${path}: ${r1.status}`);
+  }
+  const ct1 = (r1.headers.get("content-type") || "").toLowerCase();
+  const txt1 = await r1.text();
+
+  // Some deployments expose Functions at /api/*, others under BASE_URL/api/*.
+  // If we got HTML for an API request, retry with the alternate route automatically.
+  if (path.startsWith("/api/") && /^\s*<!doctype\s+html/i.test(txt1)) {
+    const base = import.meta.env.BASE_URL || "/";
+    const altUrl = url1.startsWith("/api/") ? `${base}${path.slice(1)}` : path;
+    if (altUrl !== url1) {
+      const r2 = await fetch(altUrl);
+      if (r2.ok) {
+        const ct2 = (r2.headers.get("content-type") || "").toLowerCase();
+        const txt2 = await r2.text();
+        if (!/^\s*<!doctype\s+html/i.test(txt2)) {
+          return parseBody(path, ct2, txt2);
+        }
+      }
+    }
+    if (path.startsWith("/api/assoc-revenue")) {
+      throw new Error(
+        `${path}: assoc report generation requires Cloudflare Functions + D1 runtime. Use \"npm run pages:dev\" locally or open deployed Pages URL.`,
+      );
+    }
+    throw new Error(`${path}: API returned HTML instead of JSON on both route variants.`);
+  }
+
+  return parseBody(path, ct1, txt1);
+}
+
+function num(v: unknown): number {
+  if (typeof v === "number" && !Number.isNaN(v)) return v;
+  if (typeof v === "string" && v.trim() !== "") {
+    const cleaned = v.replace(/\s+/g, "").replace(",", ".");
+    const n = Number(cleaned);
+    if (!Number.isNaN(n)) return n;
+  }
+  return 0;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function isMoneyColumn(col: string): boolean {
+  const c = col.trim().toLowerCase();
+  return (
+    c.includes("₽") ||
+    c.includes("руб") ||
+    c.includes("выруч") ||
+    c === "средний_чек" ||
+    c === "средний чек" ||
+    c === "sum" ||
+    c === "profit" ||
+    c.includes("прибыл") ||
+    c === "qpa" ||
+    c.includes("расход")
+  );
+}
+
+function isPercentColumn(col: string): boolean {
+  const c = col.trim().toLowerCase();
+  return c.includes("конверсия") || c.endsWith("%") || c.includes("ctor");
+}
+
+function isCountColumn(col: string): boolean {
+  const c = col.trim().toLowerCase();
+  return (
+    c === "сделок_с_выручкой" ||
+    c === "сделок с выручкой" ||
+    c === "контактов_с_выручкой" ||
+    c === "контактов с выручкой" ||
+    c === "контактов_в_пуле" ||
+    c === "контактов в пуле" ||
+    c === "лиды_yandex" ||
+    c === "лиды yandex" ||
+    c === "сделок_bitrix" ||
+    c === "сделок bitrix" ||
+    c === "рассылок за месяц" ||
+    c === "лиды" ||
+    c === "актуальная база email" ||
+    c === "контактов email (db)"
+  );
+}
+
+function prettyColName(col: string): string {
+  return col.replaceAll("_", " ");
+}
+
+function displayColName(view: ViewKey, col: string): string {
+  const aliases = columnAliasesByView.get(view) || {};
+  return aliases[col] || prettyColName(col);
+}
+
+function isEditableDataColumn(col: string): boolean {
+  const c = col.trim().toLowerCase();
+  if (c === "level") return false;
+  return !isMoneyColumn(col) && !isCountColumn(col) && !isPercentColumn(col) && !isDateColumn(col);
+}
+
+function formatRub(v: unknown): string {
+  const n = num(v);
+  if (!Number.isFinite(n)) return String(v ?? "");
+  const rub = Math.round(n);
+  return `${rub.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽`;
+}
+
+function formatPercent(v: unknown): string {
+  const n = num(v);
+  if (!Number.isFinite(n)) return String(v ?? "");
+  const pct = Math.abs(n) <= 1 ? n * 100 : n;
+  return `${pct.toLocaleString("ru-RU", { maximumFractionDigits: 1 })}%`;
+}
+
+function formatCell(col: string, v: unknown): string {
+  if (v === null || v === undefined) return "";
+  if (isCountColumn(col)) return Math.round(num(v)).toLocaleString("ru-RU");
+  if (isMoneyColumn(col)) return formatRub(v);
+  if (isPercentColumn(col)) return formatPercent(v);
+  return String(v);
+}
+
+function isTotalValue(v: unknown): boolean {
+  const s = String(v ?? "").trim().toLowerCase();
+  return s === "итого";
+}
+
+function monthNameToNumber(s: string): number {
+  const t = s.toLowerCase();
+  if (t.startsWith("янв")) return 1;
+  if (t.startsWith("фев")) return 2;
+  if (t.startsWith("мар")) return 3;
+  if (t.startsWith("апр")) return 4;
+  if (t.startsWith("май")) return 5;
+  if (t.startsWith("июн")) return 6;
+  if (t.startsWith("июл")) return 7;
+  if (t.startsWith("авг")) return 8;
+  if (t.startsWith("сен")) return 9;
+  if (t.startsWith("окт")) return 10;
+  if (t.startsWith("ноя")) return 11;
+  if (t.startsWith("дек")) return 12;
+  return 0;
+}
+
+function parseDateRank(v: unknown): number | null {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  if (isTotalValue(s)) return Number.POSITIVE_INFINITY;
+
+  const ym = s.match(/^(\d{4})-(\d{2})$/);
+  if (ym) return Number(ym[1]) * 100 + Number(ym[2]);
+  const y = s.match(/^(\d{4})$/);
+  if (y) return Number(y[1]) * 100;
+  const ru = s.match(/^([А-Яа-яA-Za-z]+),\s*(\d{4})$/);
+  if (ru) return Number(ru[2]) * 100 + monthNameToNumber(ru[1]);
+  return null;
+}
+
+function isDateColumn(col: string): boolean {
+  const c = col.trim().toLowerCase();
+  return c === "месяц" || c === "год" || c === "период" || c.includes("date");
+}
+
+function compareCell(col: string, av: unknown, bv: unknown, dir: "asc" | "desc"): number {
+  if (isTotalValue(av) && !isTotalValue(bv)) return -1;
+  if (!isTotalValue(av) && isTotalValue(bv)) return 1;
+
+  if (isDateColumn(col)) {
+    const ar = parseDateRank(av);
+    const br = parseDateRank(bv);
+    if (ar !== null || br !== null) {
+      const aa = ar ?? Number.NEGATIVE_INFINITY;
+      const bb = br ?? Number.NEGATIVE_INFINITY;
+      return dir === "asc" ? aa - bb : bb - aa;
+    }
+  }
+  if (isMoneyColumn(col) || isCountColumn(col) || isPercentColumn(col) || (typeof av === "number" && typeof bv === "number")) {
+    const an = num(av);
+    const bn = num(bv);
+    return dir === "asc" ? an - bn : bn - an;
+  }
+  return dir === "asc"
+    ? String(av ?? "").localeCompare(String(bv ?? ""))
+    : String(bv ?? "").localeCompare(String(av ?? ""));
+}
+
+function renderSingleRowTable(title: string, row: Record<string, unknown>): string {
+  const entries = Object.entries(row).filter(([k]) => String(k).trim() !== "");
+  const head = entries.map(([k]) => `<th>${escapeHtml(prettyColName(k))}</th>`).join("");
+  const body = entries
+    .map(([k, v]) => `<td>${escapeHtml(formatCell(k, v))}</td>`)
+    .join("");
+  return `
+    <section class="chart-wrap">
+      <h3>${escapeHtml(title)}</h3>
+      <div class="table-scroll"><table><thead><tr>${head}</tr></thead><tbody><tr>${body}</tr></tbody></table></div>
+    </section>
+  `;
+}
+
+type TabKey = "assoc_builder" | "media" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa";
+type ViewKey =
+  | "assoc_dynamic"
+  | "media_email"
+  | "media_yandex"
+  | "media_yandex_month"
+  | "media_yandex_assoc_qa"
+  | "months_total"
+  | "managers_sales_course"
+  | "managers_sales_month"
+  | "managers_firstline_course"
+  | "managers_firstline_month"
+  | "funnels_hierarchy"
+  | "contacts_unique"
+  | "year_total"
+  | "email_ops_summary"
+  | "qa_dedup_check"
+  | "qa_raw_vs_dedup"
+  | "qa_unmatched"
+  | "qa_dedup_collisions"
+  | "qa_campaign_mapping"
+  | "qa_top50_cohort"
+  | "qa_share_global";
+
+type ViewMeta = { tab: TabKey; label: string; path: string; rowsLabel: string; title: string; kind?: "assoc" | "email" | "generic" };
+const VIEW_META: Record<ViewKey, ViewMeta> = {
+  assoc_dynamic: { tab: "assoc_builder", label: "Конструктор", path: "/api/assoc-revenue", rowsLabel: "Групп", title: "Ассоциативная выручка (конструктор)" },
+  media_email: { tab: "media", label: "Имейл по месяцам", path: "data/email_hierarchy_by_send.json", rowsLabel: "Строк", title: "Рекламные медиумы" },
+  media_yandex: { tab: "media", label: "Yandex по проектам (без месяцев)", path: "data/global/yandex_projects_revenue_no_month.json", rowsLabel: "Проектов", title: "Рекламные медиумы" },
+  media_yandex_month: { tab: "media", label: "Yandex по месяцам", path: "data/global/yandex_projects_revenue_by_month.json", rowsLabel: "Месяцев", title: "Рекламные медиумы" },
+  media_yandex_assoc_qa: { tab: "media", label: "Yandex: QA ассоц. выручки", path: "data/qa/yandex_assoc_revenue_qa.json", rowsLabel: "Проектов", title: "Рекламные медиумы" },
+  email_ops_summary: { tab: "media", label: "Email: база, рассылки, лиды, выручка", path: "data/email_operational_summary.json", rowsLabel: "Периодов", title: "Рекламные медиумы" },
+  months_total: { tab: "months", label: "Bitrix по месяцам", path: "data/bitrix_month_total_full.json", rowsLabel: "Месяцев", title: "Отчеты по месяцам" },
+  managers_sales_course: { tab: "managers", label: "Продажи по коду курса", path: "data/manager_sales_by_course.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
+  managers_sales_month: { tab: "managers", label: "Продажи по месяцу", path: "data/manager_sales_by_month.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
+  managers_firstline_course: { tab: "managers", label: "1-я линия по коду курса", path: "data/manager_firstline_by_course.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
+  managers_firstline_month: { tab: "managers", label: "1-я линия по месяцу", path: "data/manager_firstline_by_month.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
+  funnels_hierarchy: { tab: "funnels", label: "Воронка → Месяц → Код курса", path: "data/bitrix_funnel_month_code_full.json", rowsLabel: "Строк", title: "Отчеты по воронкам" },
+  contacts_unique: { tab: "contacts", label: "Уникальные контакты", path: "data/bitrix_contacts_uid.json", rowsLabel: "Контактов", title: "Уникальные контакты" },
+  year_total: { tab: "year", label: "Итоги по годам", path: "data/bitrix_month_total_full.json", rowsLabel: "Лет", title: "Отчет за год" },
+  qa_dedup_check: { tab: "qa", label: "Дедупликация: итог", path: "data/qa/dedup_check.json", rowsLabel: "Строк", title: "Контроль качества" },
+  qa_raw_vs_dedup: { tab: "qa", label: "Raw vs Dedup: дельта", path: "data/qa/yandex_raw_vs_dedup_delta.json", rowsLabel: "Строк", title: "Контроль качества" },
+  qa_unmatched: { tab: "qa", label: "Yandex: несопоставленные кампании", path: "data/qa/yandex_unmatched_to_bitrix.json", rowsLabel: "Строк", title: "Контроль качества" },
+  qa_dedup_collisions: { tab: "qa", label: "Ключи дедупликации: коллизии", path: "data/qa/yandex_dedup_keys_top_collisions.json", rowsLabel: "Ключей", title: "Контроль качества" },
+  qa_campaign_mapping: { tab: "qa", label: "Маппинг кампаний", path: "data/qa/yandex_campaign_mapping_seed.json", rowsLabel: "Кампаний", title: "Контроль качества" },
+  qa_top50_cohort: { tab: "qa", label: "Топ-50 когорт", path: "data/qa/other_top50_cohort.json", rowsLabel: "Строк", title: "Контроль качества" },
+  qa_share_global: { tab: "qa", label: "Доля прочих (глобально)", path: "data/qa/other_share_global.json", rowsLabel: "Строк", title: "Контроль качества" },
+};
+const ALL_VIEWS = Object.keys(VIEW_META) as ViewKey[];
+type MenuMode = "dashboard" | "reports" | "charts";
+
+function isViewKey(v: string): v is ViewKey {
+  return (ALL_VIEWS as string[]).includes(v);
+}
+
+function readUrlState(): { menu: MenuMode; view?: ViewKey } {
+  const q = new URLSearchParams(window.location.search);
+  const m = (q.get("m") || "").trim().toLowerCase();
+  const v = (q.get("v") || "").trim();
+  const menu: MenuMode = m === "reports" ? "reports" : m === "charts" ? "charts" : "dashboard";
+  return { menu, view: isViewKey(v) ? v : undefined };
+}
+
+function writeUrlState(menu: MenuMode, view?: ViewKey): void {
+  const url = new URL(window.location.href);
+  url.searchParams.set("m", menu);
+  if (view) url.searchParams.set("v", view);
+  else url.searchParams.delete("v");
+  window.history.replaceState({}, "", url.toString());
+}
+
+type AssocDynamicDim = "yandex_campaign" | "email_campaign" | "event";
+const ASSOC_DYNAMIC_DIM_OPTIONS: Array<{ key: AssocDynamicDim; label: string }> = [
+  { key: "yandex_campaign", label: "Yandex кампания" },
+  { key: "email_campaign", label: "Email кампания" },
+  { key: "event", label: "Мероприятие" },
+];
+let assocDynamicDim1: AssocDynamicDim = "yandex_campaign";
+
+function viewPath(view: ViewKey): string {
+  if (view === "assoc_dynamic") {
+    const q = new URLSearchParams();
+    q.set("dims", assocDynamicDim1);
+    return `/api/assoc-revenue?${q.toString()}`;
+  }
+  return VIEW_META[view].path;
+}
+
+function managerFormulaNote(view: ViewKey): string {
+  if (!view.startsWith("managers_")) return "";
+  return `
+    <div class="calc-note">
+      <strong>Логика расчета:</strong>
+      Выручка считается по <code>variant3</code> (закрытие/стадия + обязательная <code>Дата оплаты</code>).
+      <code>Средний чек = Выручка / Сделок с выручкой</code>.
+      <code>В работе</code> — стадии без признаков закрытия/отказа/неквала/спама/дубля/ЧС.
+    </div>
+  `;
+}
+
+const DEFAULT_WORKSHEET = "AJ associative revenue";
+const REVENUE_FLAG_COL = "Выручка_учитывается";
+const EVENT_COL = "Мероприятие";
+const PAY_DATE_COL = "Дата оплаты";
+const INVALID_MONTH_KEY = "Невалидная дата оплаты";
+
+type DealRow = Record<string, unknown>;
+type DealsIndex = { month: Map<string, DealRow[]>; event: Map<string, DealRow[]>; course: Map<string, DealRow[]> };
+type DealRevenue = { revenue: number; isRevenue: boolean };
+const dealRevenueById = new Map<string, DealRevenue>();
+type YandexLeadMetrics = { leads: number; qual: number; unqual: number; refusal: number; clicks: number; spend: number };
+const yandexProjectLeadMetrics = new Map<string, YandexLeadMetrics>();
+const yandexMonthLeadMetrics = new Map<string, YandexLeadMetrics>();
+const emailGroupByLookup = new Map<string, string>();
+const EMAIL_OTHER_GROUP = "Other";
+
+type EmailOverridesFile = {
+  groups?: Record<string, string[]>;
+};
+
+function normalizeId(v: unknown): string {
+  const s = String(v ?? "").trim();
+  return /^\d+\.0+$/.test(s) ? s.slice(0, s.indexOf(".")) : s;
+}
+
+function parseFlIds(v: unknown): string[] {
+  const s = String(v ?? "").trim();
+  if (!s) return [];
+  return s
+    .split(/[,\s;]+/)
+    .map((x) => normalizeId(x))
+    .filter(Boolean);
+}
+
+function normalizeEmailLookupKey(value: unknown): string {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/[^a-zа-я0-9]+/giu, "");
+}
+
+function stripEmailDateLikeSuffix(value: string): string {
+  let current = String(value ?? "").trim();
+  let prev = "";
+  while (current && current !== prev) {
+    prev = current;
+    current = current.replace(/(?:[_\-\s]+)?\d{1,2}:\d{2}$/u, "").trim();
+    current = current.replace(/(?:[_\-\s]+)?\d{8}$/u, "").trim();
+    current = current.replace(/(?:[_\-\s]+)?\d{6}$/u, "").trim();
+    current = current.replace(/(?:[_\-\s]+)?\d{1,2}[_\-]\d{1,2}(?:[_\-]\d{2,4})?$/u, "").trim();
+  }
+  return current;
+}
+
+function cleanEmailLabel(value: unknown): string {
+  let s = String(value ?? "").replace(/\u00a0/g, " ").trim();
+  const quoted = s.match(/[«"]([^«»"]+)[»"]/u)?.[1]?.trim();
+  if (quoted) s = quoted;
+  s = s.replace(/[\s,]+\d{1,2}\.\d{1,2}\.\d{4}.*$/u, "").trim();
+  return s;
+}
+
+function rememberEmailOverride(alias: string, group: string): void {
+  const key = normalizeEmailLookupKey(alias);
+  if (!key || !group) return;
+  if (!emailGroupByLookup.has(key)) emailGroupByLookup.set(key, group);
+}
+
+function loadEmailOverridesMap(raw: EmailOverridesFile): void {
+  emailGroupByLookup.clear();
+  for (const [group, aliases] of Object.entries(raw.groups || {})) {
+    if (!Array.isArray(aliases)) continue;
+    for (const aliasRaw of aliases) {
+      const alias = cleanEmailLabel(aliasRaw);
+      if (!alias) continue;
+      rememberEmailOverride(alias, group);
+      rememberEmailOverride(stripEmailDateLikeSuffix(alias), group);
+    }
+  }
+}
+
+function resolveEmailGroup(label: unknown): string | null {
+  const cleaned = cleanEmailLabel(label);
+  if (!cleaned || cleaned === "-" || cleaned.toLowerCase() === "unmatched") return null;
+  const exact = emailGroupByLookup.get(normalizeEmailLookupKey(cleaned));
+  if (exact) return exact;
+  const stripped = stripEmailDateLikeSuffix(cleaned);
+  return emailGroupByLookup.get(normalizeEmailLookupKey(stripped)) || null;
+}
+
+function combineFlIds(a: unknown, b: unknown): string {
+  const ids = new Set<string>([...parseFlIds(a), ...parseFlIds(b)]);
+  return [...ids].join(",");
+}
+
+function mergeMetricRows(base: Record<string, unknown>, extra: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...base };
+  for (const [k, v] of Object.entries(extra)) {
+    if (["Level", "Месяц", "Название выпуска", "utm_campaign", "Тема", "QualCheck"].includes(k)) continue;
+    if (k === "fl_IDs") {
+      out[k] = combineFlIds(out[k], v);
+      continue;
+    }
+    const a = num(out[k]);
+    const b = num(v);
+    if ((a !== 0 || String(out[k] ?? "").trim() === "0") || (b !== 0 || String(v ?? "").trim() === "0")) {
+      out[k] = a + b;
+    }
+  }
+  return out;
+}
+
+function regroupMediaEmailRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
+  const out: Record<string, unknown>[] = [];
+  let i = 0;
+  while (i < rows.length) {
+    const r = rows[i];
+    const lvl = String(r["Level"] ?? "").trim();
+    if (lvl !== "Month") {
+      i += 1;
+      continue;
+    }
+
+    const month = String(r["Месяц"] ?? "").trim();
+    out.push({ ...r });
+    i += 1;
+
+    const grouped = new Map<string, Record<string, unknown>>();
+    const groupOrder: string[] = [];
+    const otherDetails: Record<string, unknown>[] = [];
+    let spacerRow: Record<string, unknown> | null = null;
+
+    while (i < rows.length) {
+      const s = rows[i];
+      const sLvl = String(s["Level"] ?? "").trim();
+      const sMonth = String(s["Месяц"] ?? "").trim();
+      if (sLvl === "Month" && sMonth !== month) break;
+      if (sLvl === "Spacer") {
+        spacerRow = { ...s };
+        i += 1;
+        break;
+      }
+      if (sLvl !== "Send") {
+        i += 1;
+        continue;
+      }
+
+      const release = String(s["Название выпуска"] ?? "").trim();
+      const group = resolveEmailGroup(release) || EMAIL_OTHER_GROUP;
+      if (!groupOrder.includes(group)) groupOrder.push(group);
+
+      const template: Record<string, unknown> = {
+        ...s,
+        "Название выпуска": group,
+        utm_campaign: group,
+        "Тема": "-",
+      };
+      if (group === EMAIL_OTHER_GROUP) template["__email_other_group"] = 1;
+      const prev = grouped.get(group);
+      grouped.set(group, prev ? mergeMetricRows(prev, template) : template);
+
+      if (group === EMAIL_OTHER_GROUP) {
+        const detail = {
+          ...s,
+          Level: "SendOtherDetail",
+          "Название выпуска": release || "(без названия)",
+          utm_campaign: s.utm_campaign || "-",
+          "__email_other_detail": 1,
+        };
+        otherDetails.push(detail);
+      }
+
+      i += 1;
+    }
+
+    for (const group of groupOrder) {
+      const gRow = grouped.get(group);
+      if (!gRow) continue;
+      out.push(gRow);
+      if (group === EMAIL_OTHER_GROUP) {
+        out.push(...otherDetails);
+      }
+    }
+
+    if (spacerRow) out.push(spacerRow);
+  }
+  return out;
+}
+
+const ASSOC_METRIC_KEYS = [
+  "Сделок_всего",
+  "Контактов_в_пуле",
+  "Сделок_с_выручкой",
+  "Контактов_с_выручкой",
+  "Выручка",
+  "Средний_чек",
+] as const;
+
+function regroupAssocEmailRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
+  if (!rows.length || !("Email кампания" in rows[0])) return rows;
+
+  const dims = Object.keys(rows[0]).filter((k) => !ASSOC_METRIC_KEYS.includes(k as (typeof ASSOC_METRIC_KEYS)[number]));
+  const dimWithoutEmail = dims.filter((k) => k !== "Email кампания");
+  const ctxOrder: string[] = [];
+  const rowOrder = new Map<string, string[]>();
+  const grouped = new Map<string, Record<string, unknown>>();
+  const details = new Map<string, Map<string, Record<string, unknown>>>();
+
+  const ctxKeyOf = (row: Record<string, unknown>): string => dimWithoutEmail.map((k) => String(row[k] ?? "")).join("||");
+
+  const addAssoc = (target: Map<string, Record<string, unknown>>, key: string, seed: Record<string, unknown>, inc: Record<string, unknown>) => {
+    const prev = target.get(key);
+    if (!prev) {
+      const next = { ...seed };
+      for (const mk of ASSOC_METRIC_KEYS) next[mk] = num(inc[mk]);
+      target.set(key, next);
+      return;
+    }
+    for (const mk of ASSOC_METRIC_KEYS) prev[mk] = num(prev[mk]) + num(inc[mk]);
+  };
+
+  for (const row of rows) {
+    const rawEmail = String(row["Email кампания"] ?? "").trim();
+    const ctxKey = ctxKeyOf(row);
+    if (!ctxOrder.includes(ctxKey)) ctxOrder.push(ctxKey);
+
+    const group = resolveEmailGroup(rawEmail) || EMAIL_OTHER_GROUP;
+    const groupedKey = `${ctxKey}|||${group}`;
+    if (!rowOrder.has(ctxKey)) rowOrder.set(ctxKey, []);
+    const labels = rowOrder.get(ctxKey)!;
+    if (!labels.includes(group)) labels.push(group);
+
+    const groupedSeed = { ...row, "Email кампания": group };
+    if (group === EMAIL_OTHER_GROUP) groupedSeed["__assoc_email_other_group"] = 1;
+    addAssoc(grouped, groupedKey, groupedSeed, row);
+
+    if (group === EMAIL_OTHER_GROUP) {
+      if (!details.has(ctxKey)) details.set(ctxKey, new Map());
+      const detailMap = details.get(ctxKey)!;
+      const detailLabel = rawEmail || "(без названия)";
+      const detailSeed = {
+        ...row,
+        "Email кампания": detailLabel,
+        "__assoc_email_detail": 1,
+        "__assoc_email_ctx": ctxKey,
+      };
+      addAssoc(detailMap, detailLabel, detailSeed, row);
+    }
+  }
+
+  const out: Record<string, unknown>[] = [];
+  for (const ctxKey of ctxOrder) {
+    const labels = rowOrder.get(ctxKey) || [];
+    for (const label of labels) {
+      const key = `${ctxKey}|||${label}`;
+      const row = grouped.get(key);
+      if (!row) continue;
+      if (label === EMAIL_OTHER_GROUP) row["__assoc_email_ctx"] = ctxKey;
+      if (label === EMAIL_OTHER_GROUP && (details.get(ctxKey)?.size || 0) > 0) row["__assoc_email_has_details"] = 1;
+      const deals = num(row["Сделок_с_выручкой"]);
+      row["Средний_чек"] = deals > 0 ? num(row["Выручка"]) / deals : 0;
+      out.push(row);
+      if (label === EMAIL_OTHER_GROUP) {
+        const detailRows = [...(details.get(ctxKey)?.values() || [])];
+        detailRows.sort((a, b) => String(a["Email кампания"] ?? "").localeCompare(String(b["Email кампания"] ?? ""), "ru"));
+        for (const d of detailRows) {
+          const dDeals = num(d["Сделок_с_выручкой"]);
+          d["Средний_чек"] = dDeals > 0 ? num(d["Выручка"]) / dDeals : 0;
+          out.push(d);
+        }
+      }
+    }
+  }
+  return out;
+}
+
+function yandexEmptyMetrics(): YandexLeadMetrics {
+  return { leads: 0, qual: 0, unqual: 0, refusal: 0, clicks: 0, spend: 0 };
+}
+
+function addYandexMetrics(a: YandexLeadMetrics, b: YandexLeadMetrics): YandexLeadMetrics {
+  return {
+    leads: a.leads + b.leads,
+    qual: a.qual + b.qual,
+    unqual: a.unqual + b.unqual,
+    refusal: a.refusal + b.refusal,
+    clicks: a.clicks + b.clicks,
+    spend: a.spend + b.spend,
+  };
+}
+
+function toYandexMetrics(row: Record<string, unknown>): YandexLeadMetrics {
+  return {
+    leads: num(row["Leads"]),
+    qual: num(row["Qual"]),
+    unqual: num(row["Unqual"]),
+    refusal: num(row["Refusal"]),
+    clicks: num(row["Клики"]),
+    spend: num(row["Расход, ₽"]),
+  };
+}
+
+function enrichYandexRow(row: Record<string, unknown>): Record<string, unknown> {
+  const ids = parseFlIds(row["fl_IDs"]);
+  let deals = 0;
+  let revenue = 0;
+  for (const id of ids) {
+    const m = dealRevenueById.get(id);
+    if (!m || !m.isRevenue) continue;
+    deals += 1;
+    revenue += m.revenue;
+  }
+  const spend = num(row["Расход, ₽"]);
+  const out = { ...row };
+  out["Сделок_с_выручкой"] = deals;
+  out["Выручка"] = revenue;
+  out["Прибыль"] = revenue - spend;
+  out["Средний_чек"] = deals > 0 ? revenue / deals : 0;
+  return out;
+}
+
+function addKpi(row: Record<string, unknown>): Record<string, unknown> {
+  const leads = num(row["Лиды"]);
+  const qual = num(row["Квал"]);
+  const unqual = num(row["Неквал"]);
+  const refusal = num(row["Отказы"]);
+  const inWork = num(row["В работе"]);
+  const deals = num(row["Сделок_с_выручкой"]);
+  const revenue = num(row["Выручка"]);
+  return {
+    ...row,
+    "Конверсия в Квал": leads > 0 ? qual / leads : 0,
+    "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+    "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
+    "Конверсия в работе": leads > 0 ? inWork / leads : 0,
+    "Средний_чек": deals > 0 ? revenue / deals : 0,
+  };
+}
+
+function pickNum(row: Record<string, unknown>, keys: string[]): number {
+  for (const k of keys) {
+    if (k in row) return num(row[k]);
+  }
+  return 0;
+}
+
+function parseMonthKey(v: unknown): string {
+  const s = String(v ?? "").trim();
+  if (!s) return "";
+  if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);
+  const m = s.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})/);
+  if (!m) return INVALID_MONTH_KEY;
+  return `${m[3]}-${m[2].padStart(2, "0")}`;
+}
+
+function toBool(v: unknown): boolean {
+  const s = String(v ?? "").trim().toLowerCase();
+  return s === "true" || s === "1" || s === "yes";
+}
+
+function buildDealsIndex(allDeals: DealRow[]): DealsIndex {
+  const month = new Map<string, DealRow[]>();
+  const event = new Map<string, DealRow[]>();
+  const course = new Map<string, DealRow[]>();
+  for (const d of allDeals) {
+    if (!toBool(d[REVENUE_FLAG_COL])) continue;
+    const mk = parseMonthKey(d[PAY_DATE_COL]);
+    const ev = String(d[EVENT_COL] ?? "").trim();
+    const cc = String(d["Нормализованный_код_курса"] ?? d["Код_курса_норм"] ?? d["Код_курса_сайт"] ?? "").trim();
+    if (mk) (month.get(mk) ?? (month.set(mk, []), month.get(mk)!)).push(d);
+    if (ev) (event.get(ev) ?? (event.set(ev, []), event.get(ev)!)).push(d);
+    if (cc) (course.get(cc) ?? (course.set(cc, []), course.get(cc)!)).push(d);
+  }
+  return { month, event, course };
+}
+
+function rowKey(view: ViewKey, row: Record<string, unknown>): string {
+  return [String(row["Level"] ?? ""), String(row["Месяц"] ?? ""), String(row["Название выпуска"] ?? ""), String(row["utm_campaign"] ?? "")].join("::");
+}
+
+function dealsForRow(view: ViewKey, row: Record<string, unknown>, dealsIndex: DealsIndex): DealRow[] {
+  void view;
+  void row;
+  void dealsIndex;
+  return [];
+}
+
+function renderDealsTable(deals: DealRow[]): string {
+  if (!deals.length) return `<div class="dev-empty">No deals found for this row.</div>`;
+  const cols = Object.keys(deals[0] as object);
+  return `<div class="dev-table-wrap"><div class="dev-meta">${deals.length} deals</div><div class="table-scroll dev-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody>${deals.map((r) => `<tr>${cols.map((c) => `<td>${escapeHtml(formatCell(c, r[c]))}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>`;
+}
+
+function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<string, unknown>[] {
+  const clean = rows.map((r) => {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(r)) {
+      const lk = k.trim().toLowerCase();
+      if (!k.startsWith("Unnamed:") && !lk.includes("остаток")) out[k] = v;
+    }
+    return out;
+  });
+  if (view === "months_total") return clean.map(addKpi);
+  if (view === "year_total") {
+    const groups = new Map<string, Record<string, unknown>[]>();
+    for (const r of clean) {
+      const month = String(r["Месяц"] ?? "").trim();
+      const year = /^\d{4}/.test(month) ? month.slice(0, 4) : "Невалидная дата";
+      if (!groups.has(year)) groups.set(year, []);
+      groups.get(year)!.push(r);
+    }
+    const out: Record<string, unknown>[] = [];
+    for (const [year, rowsInYear] of groups.entries()) {
+      const leads = rowsInYear.reduce((a, x) => a + num(x["Лиды"]), 0);
+      const qual = rowsInYear.reduce((a, x) => a + num(x["Квал"]), 0);
+      const unqual = rowsInYear.reduce((a, x) => a + num(x["Неквал"]), 0);
+      const refusal = rowsInYear.reduce((a, x) => a + num(x["Отказы"]), 0);
+      const inWork = rowsInYear.reduce((a, x) => a + num(x["В работе"]), 0);
+      const deals = rowsInYear.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0);
+      const revenue = rowsInYear.reduce((a, x) => a + num(x["Выручка"]), 0);
+      const avgCheck = deals > 0 ? revenue / deals : 0;
+
+      const acc: Record<string, unknown> = {
+        "Год": year,
+        "Лиды": leads,
+        "Квал": qual,
+        "Конверсия в Квал": leads > 0 ? qual / leads : 0,
+        "Неквал": unqual,
+        "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+        "Отказы": refusal,
+        // User rule: refusal conversion is based on qualified leads.
+        "Конверсия в Отказ": qual > 0 ? refusal / qual : 0,
+        "В работе": inWork,
+        "Конверсия в работе": leads > 0 ? inWork / leads : 0,
+        "Сделок_с_выручкой": deals,
+        "Конверсия в Сделки": leads > 0 ? deals / leads : 0,
+        "Выручка": revenue,
+        "Средний_чек": avgCheck,
+      };
+      out.push(acc);
+    }
+    out.sort((a, b) => String(a["Год"] ?? "").localeCompare(String(b["Год"] ?? "")));
+    return out;
+  }
+  if (view === "media_email") {
+    const grouped = regroupMediaEmailRows(clean);
+    return grouped.map((r) => {
+      const out = { ...r };
+      delete out["Лиды с некорр. email"];
+      delete out["Лидов с некорр. email"];
+      delete out["Доля некорр. email (лиды)"];
+      return out;
+    });
+  }
+  if (view === "assoc_dynamic") {
+    return regroupAssocEmailRows(clean);
+  }
+  if (view === "media_yandex") {
+    return clean.map((r) => {
+      const project = String(r["project_name"] ?? "").trim();
+      const m = yandexProjectLeadMetrics.get(project) || yandexEmptyMetrics();
+      const leads = m.leads > 0 ? m.leads : num(r["leads_raw"]);
+      const qual = m.qual;
+      const unqual = m.unqual;
+      const refusal = m.refusal;
+      const paid = num(r["payments_count"] ?? r["paid_deals_raw"]);
+      const revenue = num(r["revenue_raw"]);
+      const spend = m.spend > 0 ? m.spend : num(r["spend"]);
+      const profit = revenue - spend;
+      const assocRevenue = num(r["assoc_revenue"]);
+      const assocProfit = assocRevenue - spend;
+      return {
+        "Проект": project,
+        "Лиды": leads,
+        "Квал": qual,
+        "Конверсия в Квал": leads > 0 ? qual / leads : 0,
+        "Неквал": unqual,
+        "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+        "Отказы": refusal,
+        "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
+        "Клики": m.clicks,
+        "Расход, ₽": spend,
+        "Оплаты": paid,
+        "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
+        "Выручка": revenue,
+        "Прибыль": profit,
+        "Ассоц. Выручка": assocRevenue,
+        "Ассоц. Прибыль": assocProfit,
+      };
+    });
+  }
+  if (view === "media_yandex_month") {
+    return clean.map((r) => {
+      const month = String(r["month"] ?? "").trim();
+      const m = yandexMonthLeadMetrics.get(month) || yandexEmptyMetrics();
+      const leads = m.leads > 0 ? m.leads : num(r["leads_raw"]);
+      const qual = m.qual;
+      const unqual = m.unqual;
+      const refusal = m.refusal;
+      const paid = num(r["paid_deals_raw"]);
+      const revenue = num(r["revenue_raw"]);
+      const spend = m.spend > 0 ? m.spend : num(r["spend"]);
+      const profit = revenue - spend;
+      return {
+        "Период": month,
+        "Лиды": leads,
+        "Квал": qual,
+        "Конверсия в Квал": leads > 0 ? qual / leads : 0,
+        "Неквал": unqual,
+        "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+        "Отказы": refusal,
+        "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
+        "Клики": m.clicks,
+        "Расход, ₽": spend,
+        "Оплаты": paid,
+        "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
+        "Выручка": revenue,
+        "Прибыль": profit,
+      };
+    });
+  }
+  if (view === "funnels_hierarchy") {
+    const out: Record<string, unknown>[] = [];
+    const funnelGroups = new Map<string, Record<string, unknown>[]>();
+    for (const r of clean) {
+      const k = String(r["Воронка"] ?? "").trim();
+      if (!funnelGroups.has(k)) funnelGroups.set(k, []);
+      funnelGroups.get(k)!.push(r);
+    }
+    for (const [funnel, funnelItems] of funnelGroups.entries()) {
+      let funnelRow: Record<string, unknown> = {
+        Level: "Воронка",
+        "Воронка": funnel,
+        "Месяц": "-",
+        "Код_курса_норм": "-",
+        "__node": "funnel",
+        "__funnel": funnel,
+      };
+      funnelRow["Лиды"] = funnelItems.reduce((acc, x) => acc + num(x["Лиды"]), 0);
+      funnelRow["Квал"] = funnelItems.reduce((acc, x) => acc + num(x["Квал"]), 0);
+      funnelRow["Неквал"] = funnelItems.reduce((acc, x) => acc + num(x["Неквал"]), 0);
+      funnelRow["Отказы"] = funnelItems.reduce((acc, x) => acc + num(x["Отказы"]), 0);
+      funnelRow["В работе"] = funnelItems.reduce((acc, x) => acc + num(x["В работе"]), 0);
+      funnelRow["Невалидные_лиды"] = funnelItems.reduce((acc, x) => acc + num(x["Невалидные_лиды"]), 0);
+      funnelRow["Сделок_с_выручкой"] = funnelItems.reduce((acc, x) => acc + num(x["Сделок_с_выручкой"]), 0);
+      funnelRow["Выручка"] = funnelItems.reduce((acc, x) => acc + num(x["Выручка"]), 0);
+      funnelRow = addKpi(funnelRow);
+      out.push(funnelRow);
+
+      const monthGroups = new Map<string, Record<string, unknown>[]>();
+      for (const r of funnelItems) {
+        const m = String(r["Месяц"] ?? "").trim();
+        if (!monthGroups.has(m)) monthGroups.set(m, []);
+        monthGroups.get(m)!.push(r);
+      }
+      for (const [month, monthItems] of monthGroups.entries()) {
+        let monthRow: Record<string, unknown> = {
+          Level: "Месяц",
+          "Воронка": funnel,
+          "Месяц": month,
+          "Код_курса_норм": "-",
+          "__node": "month",
+          "__funnel": funnel,
+          "__month": month,
+        };
+        monthRow["Лиды"] = monthItems.reduce((acc, x) => acc + num(x["Лиды"]), 0);
+        monthRow["Квал"] = monthItems.reduce((acc, x) => acc + num(x["Квал"]), 0);
+        monthRow["Неквал"] = monthItems.reduce((acc, x) => acc + num(x["Неквал"]), 0);
+        monthRow["Отказы"] = monthItems.reduce((acc, x) => acc + num(x["Отказы"]), 0);
+        monthRow["В работе"] = monthItems.reduce((acc, x) => acc + num(x["В работе"]), 0);
+        monthRow["Невалидные_лиды"] = monthItems.reduce((acc, x) => acc + num(x["Невалидные_лиды"]), 0);
+        monthRow["Сделок_с_выручкой"] = monthItems.reduce((acc, x) => acc + num(x["Сделок_с_выручкой"]), 0);
+        monthRow["Выручка"] = monthItems.reduce((acc, x) => acc + num(x["Выручка"]), 0);
+        monthRow = addKpi(monthRow);
+        out.push(monthRow);
+        for (const r of monthItems) {
+          out.push({
+            ...r,
+            Level: "Код курса",
+            "__node": "code",
+            "__funnel": funnel,
+            "__month": month,
+          });
+        }
+      }
+    }
+    return out;
+  }
+  return clean;
+}
+
+function isFlIdsColumn(col: string): boolean {
+  return col.trim().toLowerCase() === "fl_ids";
+}
+
+function isHiddenUiColumn(col: string): boolean {
+  return col.startsWith("__");
+}
+
+async function renderTable(view: ViewKey, rows: Record<string, unknown>[], dealsIndex: DealsIndex): Promise<void> {
+  writeUrlState("reports", view);
+  const meta = VIEW_META[view];
+  const tab = meta.tab;
+  const tabViews = (Object.keys(VIEW_META) as ViewKey[]).filter((k) => VIEW_META[k].tab === tab);
+  const resolvedPath = viewPath(view);
+  const aliasMetaRow = rows.length > 0 && String(rows[0]["__type"] ?? "") === "column_aliases" ? rows[0] : undefined;
+  if (aliasMetaRow) {
+    const viewAliases: Record<string, string> = {};
+    for (const [k, v] of Object.entries(aliasMetaRow)) {
+      if (k !== "__type" && typeof v === "string") viewAliases[k] = v;
+    }
+    columnAliasesByView.set(view, viewAliases);
+  } else {
+    columnAliasesByView.set(view, {});
+  }
+  const dataRows = aliasMetaRow ? rows.slice(1) : rows;
+  const viewRows = toViewRows(view, dataRows);
+  const allCols = viewRows.length ? Object.keys(viewRows[0]) : [];
+  let cols = allCols;
+  const initialDateCol = ["Период", "Месяц", "Год"].find((c) => cols.includes(c));
+  let sortCol = initialDateCol || cols[0] || "";
+  let sortDir: "asc" | "desc" = initialDateCol ? "desc" : "asc";
+  let filter = "";
+  let contactsFullOnly = false;
+  const expanded = new Set<string>();
+  const expandedEmailMonths = new Set<string>();
+  const expandedManagers = new Set<string>();
+  const expandedManagerMonths = new Set<string>();
+  const expandedManagerCodes = new Set<string>();
+  const expandedYandexMonths = new Set<string>();
+  const expandedYandexCampaigns = new Set<string>();
+  const expandedFunnels = new Set<string>();
+  const expandedFunnelMonths = new Set<string>();
+  const expandedAssocOtherRows = new Set<string>();
+  const isEmailHierarchy = view === "media_email";
+  const isAssocEmailHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_email_detail"]) > 0);
+  const isYandexHierarchy = false;
+  const isManagerHierarchy = view.startsWith("managers_");
+  const isFunnelSourceHierarchy = false;
+  const isFunnelMediumHierarchy = false;
+  const isFunnelHierarchy = view === "funnels_hierarchy";
+  let visibleRows: Record<string, unknown>[] = [];
+  const postJson = async (url: string, body: unknown): Promise<{ ok: boolean; rows?: number; error?: string }> => {
+    try {
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const payload = (await resp.json()) as { ok?: boolean; rows?: number; error?: string };
+      if (!resp.ok || !payload.ok) return { ok: false, error: payload.error || `${url} failed` };
+      return { ok: true, rows: payload.rows };
+    } catch (e) {
+      return { ok: false, error: String(e) };
+    }
+  };
+  const saveViewJson = async (): Promise<void> => {
+    const aliases = columnAliasesByView.get(view) || {};
+    const rowsToSave: Record<string, unknown>[] = Object.keys(aliases).length > 0
+      ? [{ __type: "column_aliases", ...aliases }, ...viewRows]
+      : [...viewRows];
+    const local = await postJson("/api/save-view-json", { path: resolvedPath, rows: rowsToSave });
+    if (local.ok) {
+      const s = app.querySelector<HTMLDivElement>(".push-status");
+      if (s) s.textContent = `JSON обновлен локально (${(local.rows ?? viewRows.length).toLocaleString("ru-RU")} строк)`;
+      return;
+    }
+    const cloud = await postJson("/api/save-to-github", { path: resolvedPath, rows: rowsToSave });
+    const s = app.querySelector<HTMLDivElement>(".push-status");
+    if (cloud.ok) {
+      if (s) s.textContent = `JSON закоммичен в GitHub (${(cloud.rows ?? viewRows.length).toLocaleString("ru-RU")} строк)`;
+      return;
+    }
+    if (s) s.textContent = `Ошибка сохранения JSON: ${cloud.error || local.error || "unknown"}`;
+  };
+
+  const draw = (): void => {
+    cols = allCols.filter((c) => !isFlIdsColumn(c) && !isHiddenUiColumn(c));
+    if (sortCol && !cols.includes(sortCol)) sortCol = cols[0] || "";
+
+    let data = [...viewRows];
+    if (view === "contacts_unique" && contactsFullOnly) {
+      data = data.filter((r) => {
+        const hasName = String(r["all_names"] ?? "").trim() !== "";
+        const hasPhone = String(r["all_phones"] ?? "").trim() !== "";
+        const hasEmail = String(r["all_emails"] ?? "").trim() !== "";
+        return hasName && hasPhone && hasEmail;
+      });
+    }
+    if (filter.trim()) {
+      const q = filter.trim().toLowerCase();
+      data = data.filter((r) => cols.some((c) => String(r[c] ?? "").toLowerCase().includes(q)));
+    }
+    // Иерархии строят порядок строк сами; глобальная сортировка ломает «По воронкам» / email / менеджеры.
+    if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isAssocEmailHierarchy) {
+      data.sort((a, b) => compareCell(sortCol, a[sortCol], b[sortCol], sortDir));
+    }
+    if (isEmailHierarchy) {
+      const ordered: Record<string, unknown>[] = [];
+      for (const r of data) {
+        const lvl = String(r["Level"] ?? "").trim();
+        const m = String(r["Месяц"] ?? "").trim();
+        if (lvl === "Month") ordered.push(r);
+        else if ((lvl === "Send" || lvl === "Spacer") && expandedEmailMonths.has(m)) ordered.push(r);
+        else if (lvl === "SendOtherDetail" && expandedEmailMonths.has(m) && expandedAssocOtherRows.has(`email-month||${m}`)) ordered.push(r);
+      }
+      data = ordered;
+    }
+    if (isAssocEmailHierarchy) {
+      const ordered: Record<string, unknown>[] = [];
+      for (const r of data) {
+        const isDetail = num(r["__assoc_email_detail"]) > 0;
+        const ctxKey = String(r["__assoc_email_ctx"] ?? "");
+        const ctxToken = ctxKey || "__root__";
+        if (!isDetail) ordered.push(r);
+        else if (expandedAssocOtherRows.has(`assoc||${ctxToken}`)) ordered.push(r);
+      }
+      data = ordered;
+    }
+    if (isManagerHierarchy) {
+      const ordered: Record<string, unknown>[] = [];
+      for (const r of data) {
+        const lvl = String(r["Level"] ?? "");
+        const mgr = String(r["Менеджер"] ?? "");
+        const month = String(r["Месяц"] ?? "");
+        const code = String(r["Код курса"] ?? "");
+        const mm = `${mgr}||${month}`;
+        const mmc = `${mgr}||${month}||${code}`;
+        if (lvl === "Manager") ordered.push(r);
+        else if ((lvl === "Месяц" || lvl === "Код курса") && expandedManagers.has(mgr)) ordered.push(r);
+        else if (lvl === "Month" && expandedManagerMonths.has(mm)) ordered.push(r);
+        else if (lvl === "Lead" && expandedManagerCodes.has(mmc)) ordered.push(r);
+      }
+      data = ordered;
+    }
+    if (isFunnelHierarchy) {
+      const ordered: Record<string, unknown>[] = [];
+      for (const r of data) {
+        const node = String(r["__node"] ?? "").trim();
+        const month = String(r["__month"] ?? r["Месяц"] ?? "").trim();
+        const funnel = String(r["__funnel"] ?? r["Воронка"] ?? "").trim();
+        const fm = `${funnel}||${month}`;
+        if (node === "funnel") ordered.push(r);
+        else if (node === "month" && expandedFunnels.has(funnel)) ordered.push(r);
+        else if (node === "code" && expandedFunnelMonths.has(fm)) ordered.push(r);
+      }
+      data = ordered;
+    }
+    if (isYandexHierarchy) {
+      const ordered: Record<string, unknown>[] = [];
+      for (const r of data) {
+        const lvl = String(r["Level"] ?? "").trim();
+        const month = String(r["Месяц"] ?? "").trim();
+        const campaign = String(r["№ Кампании"] ?? "").trim();
+        const mc = `${month}||${campaign}`;
+        if (lvl === "Month") ordered.push(r);
+        else if ((lvl === "Campaign" || lvl === "Spacer") && expandedYandexMonths.has(month)) ordered.push(r);
+        else if (lvl === "Ad" && expandedYandexCampaigns.has(mc)) ordered.push(r);
+      }
+      data = ordered;
+    }
+
+    const topCountEl = app.querySelector<HTMLElement>(".kpi-grid .kpi:first-child .value");
+    if (topCountEl) topCountEl.textContent = data.length.toLocaleString("ru-RU");
+
+    const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isAssocEmailHierarchy;
+    visibleRows = data;
+    const th = `${showCtrl ? '<th class="ctrl-col">#</th>' : ""}${cols.map((c) => `<th data-col="${escapeHtml(c)}" title="клик: сортировка · Ctrl+клик: переименовать">${escapeHtml(displayColName(view, c))}</th>`).join("")}`;
+    const rendered = data.slice(0, 5000);
+    visibleRows = rendered;
+    const body = rendered.map((r, idx) => {
+      const key = `${rowKey(view, r)}::${idx}`;
+      const isOpen = expanded.has(key);
+      const lvl = String(r["Level"] ?? "").trim();
+      const month = String(r["Месяц"] ?? "").trim();
+      const emailBtn = isEmailHierarchy && lvl === "Month" ? `<button class="email-expand-btn" data-month="${escapeHtml(month)}">${expandedEmailMonths.has(month) ? "−" : "+"}</button>` : "";
+      const isEmailOtherGroup = isEmailHierarchy && num(r["__email_other_group"]) > 0;
+      const emailOtherBtn = isEmailOtherGroup
+        ? `<button class="email-other-expand-btn" data-month="${escapeHtml(month)}">${expandedAssocOtherRows.has(`email-month||${month}`) ? "−" : "+"}</button>`
+        : "";
+      const mgr = String(r["Менеджер"] ?? "");
+      const code = String(r["Код курса"] ?? "");
+      const mm = `${mgr}||${month}`;
+      const mmc = `${mgr}||${month}||${code}`;
+      const managerBtn =
+        isManagerHierarchy && lvl === "Manager"
+          ? `<button class="mgr-expand-btn" data-lvl="${escapeHtml(lvl)}" data-mgr="${escapeHtml(mgr)}" data-mm="${escapeHtml(mm)}" data-mmc="${escapeHtml(mmc)}">${
+              lvl === "Manager"
+                ? expandedManagers.has(mgr) ? "−" : "+"
+                : lvl === "Месяц"
+                  ? expandedManagerMonths.has(mm) ? "−" : "+"
+                  : expandedManagerCodes.has(mmc) ? "−" : "+"
+            }</button>`
+          : "";
+      const fMonth = String(r["Месяц"] ?? "");
+      const fMedium = String(r["UTM Medium"] ?? "");
+      const fSource = String(r["UTM Source"] ?? "");
+      const fmm = `${fMonth}||${fMedium}`;
+      const fmms = `${fMonth}||${fMedium}||${fSource}`;
+      const fNode = String(r["__node"] ?? "").trim();
+      const fFunnel = String(r["__funnel"] ?? r["Воронка"] ?? "").trim();
+      const fMonth2 = String(r["__month"] ?? r["Месяц"] ?? "").trim();
+      const fm = `${fFunnel}||${fMonth2}`;
+      const funnelBtn =
+        isFunnelHierarchy && (fNode === "funnel" || fNode === "month")
+          ? `<button class="funnel-expand-btn" data-node="${escapeHtml(fNode)}" data-funnel="${escapeHtml(fFunnel)}" data-fm="${escapeHtml(fm)}">${
+              fNode === "funnel"
+                ? expandedFunnels.has(fFunnel) ? "−" : "+"
+                : expandedFunnelMonths.has(fm) ? "−" : "+"
+            }</button>`
+          : "";
+      const yMonth = String(r["Месяц"] ?? "").trim();
+      const yCamp = String(r["№ Кампании"] ?? "").trim();
+      const yMc = `${yMonth}||${yCamp}`;
+      const yLevel = String(r["Level"] ?? "").trim();
+      const yandexBtn =
+        isYandexHierarchy && (yLevel === "Month" || yLevel === "Campaign")
+          ? `<button class="yd-expand-btn" data-lvl="${escapeHtml(yLevel)}" data-month="${escapeHtml(yMonth)}" data-mc="${escapeHtml(yMc)}">${
+              yLevel === "Month"
+                ? expandedYandexMonths.has(yMonth) ? "−" : "+"
+                : expandedYandexCampaigns.has(yMc) ? "−" : "+"
+            }</button>`
+          : "";
+      const assocCtx = String(r["__assoc_email_ctx"] ?? "");
+      const assocCtxToken = assocCtx || "__root__";
+      const assocOtherBtn =
+        isAssocEmailHierarchy && num(r["__assoc_email_other_group"]) > 0 && num(r["__assoc_email_has_details"]) > 0
+          ? `<button class="assoc-email-expand-btn" data-ctx="${escapeHtml(assocCtxToken)}">${expandedAssocOtherRows.has(`assoc||${assocCtxToken}`) ? "−" : "+"}</button>`
+          : "";
+      const row = `<tr>${showCtrl ? `<td class="ctrl-col">${emailBtn || emailOtherBtn || managerBtn || funnelBtn || yandexBtn || assocOtherBtn}</td>` : ""}${cols
+        .map((c) => {
+          const editable = isEditableDataColumn(c) ? "1" : "0";
+          return `<td data-row="${idx}" data-col="${escapeHtml(c)}" data-editable="${editable}">${escapeHtml(formatCell(c, r[c]))}</td>`;
+        })
+        .join("")}</tr>`;
+      if (!isOpen || isEmailHierarchy || isManagerHierarchy) return row;
+      return `${row}<tr class="dev-row"><td colspan="${cols.length + (showCtrl ? 1 : 0)}">${renderDealsTable(dealsForRow(view, r, dealsIndex))}</td></tr>`;
+    }).join("");
+
+    const table = app.querySelector(".table-scroll table")!;
+    table.innerHTML = `<thead><tr>${th}</tr></thead><tbody>${body}</tbody>`;
+    app.querySelectorAll<HTMLTableCellElement>("th[data-col]").forEach((h) => {
+      h.style.color = h.getAttribute("data-col") === sortCol ? "var(--accent)" : "";
+      h.onclick = (ev) => {
+        const c = h.getAttribute("data-col") || "";
+        if (!c) return;
+        const me = ev as MouseEvent;
+        if (me.metaKey || me.ctrlKey) {
+          if (h.querySelector("input")) return;
+          const currentName = displayColName(view, c);
+          const input = document.createElement("input");
+          input.type = "text";
+          input.value = currentName;
+          input.className = "inline-col-editor";
+          const commitHeader = (): void => {
+            const newName = input.value.trim();
+            const aliases = columnAliasesByView.get(view) || {};
+            if (newName && newName !== prettyColName(c)) {
+              aliases[c] = newName;
+            } else {
+              delete aliases[c];
+            }
+            columnAliasesByView.set(view, aliases);
+            void saveViewJson();
+            draw();
+          };
+          const cancelHeader = (): void => draw();
+          input.onkeydown = (ke) => {
+            if (ke.key === "Enter") {
+              ke.preventDefault();
+              commitHeader();
+            } else if (ke.key === "Escape") {
+              ke.preventDefault();
+              cancelHeader();
+            }
+          };
+          input.onblur = () => commitHeader();
+          h.textContent = "";
+          h.appendChild(input);
+          input.focus();
+          input.select();
+          return;
+        }
+        if (sortCol === c) sortDir = sortDir === "asc" ? "desc" : "asc";
+        else sortCol = c;
+        draw();
+      };
+    });
+    app.querySelectorAll<HTMLTableCellElement>('td[data-editable="1"]').forEach((td) => {
+      td.onclick = () => {
+        if (td.querySelector("input")) return;
+        const rowIdx = Number(td.getAttribute("data-row") || "-1");
+        const col = td.getAttribute("data-col") || "";
+        if (rowIdx < 0 || !col || rowIdx >= visibleRows.length) return;
+        const row = visibleRows[rowIdx];
+        const current = String(row[col] ?? "");
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = current;
+        input.className = "inline-col-editor";
+        const commit = (): void => {
+          row[col] = input.value.trim();
+          void saveViewJson();
+          draw();
+        };
+        const cancel = (): void => draw();
+        input.onkeydown = (ke) => {
+          if (ke.key === "Enter") {
+            ke.preventDefault();
+            commit();
+          } else if (ke.key === "Escape") {
+            ke.preventDefault();
+            cancel();
+          }
+        };
+        input.onblur = () => commit();
+        td.textContent = "";
+        td.appendChild(input);
+        input.focus();
+        input.select();
+      };
+    });
+    app.querySelectorAll<HTMLButtonElement>(".email-expand-btn").forEach((b) => (b.onclick = () => {
+      const k = b.getAttribute("data-month") || "";
+      if (!k) return;
+      if (expandedEmailMonths.has(k)) expandedEmailMonths.delete(k); else expandedEmailMonths.add(k);
+      draw();
+    }));
+    app.querySelectorAll<HTMLButtonElement>(".email-other-expand-btn").forEach((b) => (b.onclick = () => {
+      const m = b.getAttribute("data-month") || "";
+      if (!m) return;
+      const k = `email-month||${m}`;
+      if (expandedAssocOtherRows.has(k)) expandedAssocOtherRows.delete(k); else expandedAssocOtherRows.add(k);
+      draw();
+    }));
+    app.querySelectorAll<HTMLButtonElement>(".mgr-expand-btn").forEach((b) => (b.onclick = () => {
+      const lvl = b.getAttribute("data-lvl") || "";
+      const mgr = b.getAttribute("data-mgr") || "";
+      const mm = b.getAttribute("data-mm") || "";
+      const mmc = b.getAttribute("data-mmc") || "";
+      if (lvl === "Manager" && mgr) {
+        if (expandedManagers.has(mgr)) expandedManagers.delete(mgr); else expandedManagers.add(mgr);
+      } else if (lvl === "Месяц" && mm) {
+        if (expandedManagerMonths.has(mm)) expandedManagerMonths.delete(mm); else expandedManagerMonths.add(mm);
+      } else if (lvl === "Код курса" && mmc) {
+        if (expandedManagerCodes.has(mmc)) expandedManagerCodes.delete(mmc); else expandedManagerCodes.add(mmc);
+      }
+      draw();
+    }));
+    app.querySelectorAll<HTMLButtonElement>(".funnel-expand-btn").forEach((b) => (b.onclick = () => {
+      const node = b.getAttribute("data-node") || "";
+      const funnel = b.getAttribute("data-funnel") || "";
+      const fm = b.getAttribute("data-fm") || "";
+      if (node === "funnel" && funnel) {
+        if (expandedFunnels.has(funnel)) expandedFunnels.delete(funnel); else expandedFunnels.add(funnel);
+      } else if (node === "month" && fm) {
+        if (expandedFunnelMonths.has(fm)) expandedFunnelMonths.delete(fm); else expandedFunnelMonths.add(fm);
+      }
+      draw();
+    }));
+    app.querySelectorAll<HTMLButtonElement>(".yd-expand-btn").forEach((b) => (b.onclick = () => {
+      const lvl = b.getAttribute("data-lvl") || "";
+      const month = b.getAttribute("data-month") || "";
+      const mc = b.getAttribute("data-mc") || "";
+      if (lvl === "Month" && month) {
+        if (expandedYandexMonths.has(month)) expandedYandexMonths.delete(month); else expandedYandexMonths.add(month);
+      } else if (lvl === "Campaign" && mc) {
+        if (expandedYandexCampaigns.has(mc)) expandedYandexCampaigns.delete(mc); else expandedYandexCampaigns.add(mc);
+      }
+      draw();
+    }));
+    app.querySelectorAll<HTMLButtonElement>(".assoc-email-expand-btn").forEach((b) => (b.onclick = () => {
+      const ctx = b.getAttribute("data-ctx") || "";
+      const k = `assoc||${ctx}`;
+      if (expandedAssocOtherRows.has(k)) expandedAssocOtherRows.delete(k); else expandedAssocOtherRows.add(k);
+      draw();
+    }));
+  };
+
+  const kpiRows =
+    view === "funnels_hierarchy"
+      ? viewRows.filter((r) => String(r["__node"] ?? "").trim() === "code")
+      : viewRows;
+  const totalRevenue = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Выручка", "выручка"]), 0);
+  const deals = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Сделок_с_выручкой", "Сделок с выручкой"]), 0);
+  app.innerHTML = `<div class="app-layout">
+    <aside class="side-menu">
+      <button class="side-btn" data-menu="dashboard">Главная</button>
+      <button class="side-btn active" data-menu="reports">Детальные отчеты</button>
+      <button class="side-btn" data-menu="charts">Графики</button>
+    </aside>
+    <main class="main-content">
+    <header><h1>${escapeHtml(meta.title)}</h1><p class="sub">${escapeHtml(resolvedPath)} · ${viewRows.length} строк</p></header>
+    <div class="kpi-grid"><div class="kpi"><div class="label">${escapeHtml(meta.rowsLabel)}</div><div class="value">${viewRows.length}</div></div><div class="kpi"><div class="label">Сделок с выручкой</div><div class="value">${deals.toLocaleString("ru-RU")}</div></div><div class="kpi"><div class="label">Выручка</div><div class="value">${formatRub(totalRevenue)}</div></div></div>
+    ${managerFormulaNote(view)}
+    <div class="toolbar">
+      <div class="tabs-row top-tabs">
+        <button class="tab-btn ${tab === "year" ? "active" : ""}" data-tab="year">Отчет за год</button>
+        <button class="tab-btn ${tab === "assoc_builder" ? "active" : ""}" data-tab="assoc_builder">Ассоц. конструктор</button>
+        <button class="tab-btn ${tab === "media" ? "active" : ""}" data-tab="media">Рекламные медиумы</button>
+        <button class="tab-btn ${tab === "months" ? "active" : ""}" data-tab="months">По месяцам</button>
+        <button class="tab-btn ${tab === "managers" ? "active" : ""}" data-tab="managers">По менеджерам</button>
+        <button class="tab-btn ${tab === "funnels" ? "active" : ""}" data-tab="funnels">По воронкам</button>
+        <button class="tab-btn ${tab === "contacts" ? "active" : ""}" data-tab="contacts">Уникальные контакты</button>
+        <button class="tab-btn ${tab === "qa" ? "active" : ""}" data-tab="qa">Контроль качества</button>
+      </div>
+      <div class="tabs-row sub-tabs">
+        ${tabViews
+          .map(
+            (v) =>
+              `<button class="tab-btn ${v === view ? "active" : ""}" data-view="${v}">${escapeHtml(VIEW_META[v].label)}</button>`,
+          )
+          .join("")}
+      </div>
+      ${
+        view === "assoc_dynamic"
+          ? `<div class="assoc-builder-controls">
+              <label>Dim 1
+                <select class="assoc-dim1">${ASSOC_DYNAMIC_DIM_OPTIONS.map((d) => `<option value="${d.key}" ${d.key === assocDynamicDim1 ? "selected" : ""}>${escapeHtml(d.label)}</option>`).join("")}</select>
+              </label>
+              <button class="assoc-apply-btn">Применить</button>
+            </div>`
+          : ""
+      }
+      <button class="copy-table-btn">Скопировать таблицу</button>
+      <button class="download-table-btn">Загрузить таблицу</button>
+      ${
+        view === "contacts_unique"
+          ? `<button class="contacts-full-btn">Контакты: имя + телефон + email (${contactsFullOnly ? "on" : "off"})</button>`
+          : ""
+      }
+      <input type="search" placeholder="Фильтр по строке…" class="filter-input" />
+      <span class="row-note"></span>
+    </div>
+    <div class="push-status muted"></div>
+    <div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
+    </main>
+  </div>`;
+
+  const filterInput = app.querySelector<HTMLInputElement>(".filter-input")!;
+  const contactsFullBtn = app.querySelector<HTMLButtonElement>(".contacts-full-btn");
+  const copyTableBtn = app.querySelector<HTMLButtonElement>(".copy-table-btn")!;
+  const downloadTableBtn = app.querySelector<HTMLButtonElement>(".download-table-btn")!;
+  const status = app.querySelector<HTMLDivElement>(".push-status")!;
+
+  app.querySelectorAll<HTMLButtonElement>(".top-tabs .tab-btn").forEach((btn) => {
+    btn.onclick = async () => {
+      const nextTab = (btn.getAttribute("data-tab") || "") as TabKey;
+      if (!nextTab) return;
+      const first = (Object.keys(VIEW_META) as ViewKey[]).find((k) => VIEW_META[k].tab === nextTab);
+      if (!first) return;
+      try {
+        const r = await fetchJson<Record<string, unknown>[]>(viewPath(first));
+        void renderTable(first, r, dealsIndex);
+      } catch (e) {
+        status.textContent = `Ошибка загрузки: ${String(e)}`;
+      }
+    };
+  });
+
+  app.querySelectorAll<HTMLButtonElement>(".sub-tabs .tab-btn").forEach((btn) => {
+    btn.onclick = async () => {
+      const next = (btn.getAttribute("data-view") || "") as ViewKey;
+      if (!next) return;
+      try {
+        const r = await fetchJson<Record<string, unknown>[]>(viewPath(next));
+        void renderTable(next, r, dealsIndex);
+      } catch (e) {
+        status.textContent = `Ошибка загрузки: ${String(e)}`;
+      }
+    };
+  });
+
+  const assocApplyBtn = app.querySelector<HTMLButtonElement>(".assoc-apply-btn");
+  if (assocApplyBtn) {
+    assocApplyBtn.onclick = async () => {
+      const dim1 = app.querySelector<HTMLSelectElement>(".assoc-dim1")?.value as AssocDynamicDim | undefined;
+      if (!dim1) return;
+      assocDynamicDim1 = dim1;
+      try {
+        const q = new URLSearchParams();
+        q.set("dims", assocDynamicDim1);
+        q.set("recalc", "1");
+        const r = await fetchJson<Record<string, unknown>[]>(`/api/assoc-revenue?${q.toString()}`);
+        void renderTable("assoc_dynamic", r, dealsIndex);
+      } catch (e) {
+        status.textContent = `Ошибка загрузки: ${String(e)}`;
+      }
+    };
+  }
+
+  /* tabSelect.onchange = async () => {
+    const nextTab = tabSelect.value as TabKey;
+    const first = (Object.keys(VIEW_META) as ViewKey[]).find((k) => VIEW_META[k].tab === nextTab);
+    if (!first) return;
+    const r = await fetchJson<Record<string, unknown>[]>(VIEW_META[first].path);
+    void renderTable(first, r, dealsIndex);
+  };
+  viewSelect.onchange = async () => {
+    const next = viewSelect.value as ViewKey;
+    const r = await fetchJson<Record<string, unknown>[]>(VIEW_META[next].path);
+    void renderTable(next, r, dealsIndex);
+  }; */
+  filterInput.oninput = () => { filter = filterInput.value; draw(); };
+  app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
+    btn.onclick = async () => {
+      const m = btn.getAttribute("data-menu");
+      if (m === "dashboard") await renderDashboard(dealsIndex);
+      else if (m === "charts") await renderCharts(dealsIndex);
+    };
+  });
+  if (contactsFullBtn) {
+    contactsFullBtn.onclick = () => {
+      contactsFullOnly = !contactsFullOnly;
+      contactsFullBtn.textContent = `Контакты: имя + телефон + email (${contactsFullOnly ? "on" : "off"})`;
+      draw();
+    };
+  }
+  copyTableBtn.onclick = async () => {
+    const headers = cols.map((c) => displayColName(view, c));
+    const lines = [headers.join("\t")];
+    for (const r of visibleRows) {
+      lines.push(cols.map((c) => String(r[c] ?? "")).join("\t"));
+    }
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      status.textContent = `Скопировано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
+    } catch (e) {
+      status.textContent = `Ошибка копирования: ${String(e)}`;
+    }
+  };
+  downloadTableBtn.onclick = () => {
+    const headers = cols.map((c) => displayColName(view, c));
+    const esc = (v: unknown): string => `"${String(v ?? "").replaceAll('"', '""')}"`;
+    const csv = [
+      headers.map(esc).join(","),
+      ...visibleRows.map((r) => cols.map((c) => esc(r[c])).join(",")),
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${view}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+    status.textContent = `Скачано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
+  };
+  draw();
+}
+
+function toConvPct(v: unknown): number {
+  const n = num(v);
+  return Math.abs(n) <= 1 ? Math.round(n * 1000) / 10 : Math.round(n * 10) / 10;
+}
+
+async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
+  writeUrlState("charts");
+
+  app.innerHTML = `<div class="app-layout">
+    <aside class="side-menu">
+      <button class="side-btn" data-menu="dashboard">Главная</button>
+      <button class="side-btn" data-menu="reports">Детальные отчеты</button>
+      <button class="side-btn active" data-menu="charts">Графики</button>
+    </aside>
+    <main class="main-content">
+      <header>
+        <h1>Графики</h1>
+        <p class="sub">Динамика продаж и выручки</p>
+      </header>
+      <div class="charts-page">
+        <div class="chart-wrap"><h3>Выручка и средний чек по месяцам (Bitrix)</h3><canvas id="chart-revenue-month"></canvas></div>
+        <div class="chart-wrap"><h3>Воронка лидов по месяцам (Bitrix)</h3><canvas id="chart-leads-month"></canvas></div>
+        <div class="chart-wrap"><h3>Yandex: расход и выручка по месяцам</h3><canvas id="chart-yandex-month"></canvas></div>
+        <div class="chart-wrap"><h3>Email: лиды и выручка по периодам</h3><canvas id="chart-email-period"></canvas></div>
+        <div class="chart-wrap"><h3>Конверсия из лидов в квалифицированные (Bitrix)</h3><canvas id="chart-conversion-month"></canvas></div>
+        <div class="chart-wrap"><h3>Yandex: ROI по месяцам (выручка / расход)</h3><canvas id="chart-yandex-roi"></canvas></div>
+        <div class="chart-wrap chart-wrap--full"><h3>Топ менеджеров по выручке</h3><canvas id="chart-managers-revenue"></canvas></div>
+      </div>
+    </main>
+  </div>`;
+
+  app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
+    btn.onclick = async () => {
+      const m = btn.getAttribute("data-menu");
+      if (m === "dashboard") await renderDashboard(dealsIndex);
+      else if (m === "reports") {
+        const view: ViewKey = "year_total";
+        const rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
+        await renderTable(view, rows, dealsIndex);
+      }
+    };
+  });
+
+  const CHART_COLORS = {
+    revenue: "#6ee7b7",
+    avgCheck: "#60a5fa",
+    leads: "#a78bfa",
+    qual: "#34d399",
+    deals: "#f59e0b",
+    spend: "#f87171",
+    profit: "#6ee7b7",
+    emailLeads: "#a78bfa",
+    emailRevenue: "#6ee7b7",
+    convRate: "#fbbf24",
+    refusalRate: "#f87171",
+    roi: "#34d399",
+    managerBar: "#60a5fa",
+  };
+
+  const chartDefaults = {
+    responsive: true,
+    plugins: {
+      legend: { labels: { color: "#e8eaef" } },
+      tooltip: { mode: "index" as const, intersect: false },
+    },
+    scales: {
+      x: { ticks: { color: "#8b92a8" }, grid: { color: "#2a3142" } },
+      y: { ticks: { color: "#8b92a8" }, grid: { color: "#2a3142" } },
+    },
+  };
+
+  try {
+    const bitrixMonths = await fetchJson<Record<string, unknown>[]>("data/bitrix_month_total_full.json");
+    const sorted = bitrixMonths
+      .filter((r) => !isTotalValue(r["Месяц"]))
+      .sort((a, b) => compareCell("Месяц", a["Месяц"], b["Месяц"], "asc"));
+
+    const monthLabels = sorted.map((r) => String(r["Месяц"] ?? ""));
+    const revenueData = sorted.map((r) => num(r["Выручка"]));
+    const avgCheckData = sorted.map((r) => num(r["Средний_чек"]));
+    const leadsData = sorted.map((r) => num(r["Лиды"]));
+    const qualData = sorted.map((r) => num(r["Квал"]));
+    const dealsData = sorted.map((r) => num(r["Сделок_с_выручкой"]));
+
+    const revenueCanvas = app.querySelector<HTMLCanvasElement>("#chart-revenue-month")!;
+    new Chart(revenueCanvas, {
+      type: "bar",
+      data: {
+        labels: monthLabels,
+        datasets: [
+          {
+            label: "Выручка, ₽",
+            data: revenueData,
+            backgroundColor: CHART_COLORS.revenue + "99",
+            borderColor: CHART_COLORS.revenue,
+            borderWidth: 1,
+            yAxisID: "y",
+          },
+          {
+            label: "Средний чек, ₽",
+            data: avgCheckData,
+            type: "line" as const,
+            borderColor: CHART_COLORS.avgCheck,
+            backgroundColor: "transparent",
+            pointRadius: 3,
+            tension: 0.3,
+            yAxisID: "y2",
+          },
+        ],
+      },
+      options: {
+        ...chartDefaults,
+        scales: {
+          x: chartDefaults.scales.x,
+          y: { ...chartDefaults.scales.y, position: "left" as const, title: { display: true, text: "Выручка, ₽", color: "#8b92a8" } },
+          y2: { ...chartDefaults.scales.y, position: "right" as const, title: { display: true, text: "Средний чек, ₽", color: "#8b92a8" }, grid: { drawOnChartArea: false, color: "#2a3142" } },
+        },
+      },
+    });
+
+    const leadsCanvas = app.querySelector<HTMLCanvasElement>("#chart-leads-month")!;
+    new Chart(leadsCanvas, {
+      type: "bar",
+      data: {
+        labels: monthLabels,
+        datasets: [
+          { label: "Лиды", data: leadsData, backgroundColor: CHART_COLORS.leads + "99", borderColor: CHART_COLORS.leads, borderWidth: 1 },
+          { label: "Квал", data: qualData, backgroundColor: CHART_COLORS.qual + "99", borderColor: CHART_COLORS.qual, borderWidth: 1 },
+          { label: "Сделок с выручкой", data: dealsData, backgroundColor: CHART_COLORS.deals + "99", borderColor: CHART_COLORS.deals, borderWidth: 1 },
+        ],
+      },
+      options: { ...chartDefaults },
+    });
+
+    const convQualData = sorted.map((r) => toConvPct(r["Конверсия в Квал"]));
+    const convRefusalData = sorted.map((r) => toConvPct(r["Конверсия в Отказ"]));
+    const convCanvas = app.querySelector<HTMLCanvasElement>("#chart-conversion-month")!;
+    new Chart(convCanvas, {
+      type: "line",
+      data: {
+        labels: monthLabels,
+        datasets: [
+          {
+            label: "Конверсия в Квал, %",
+            data: convQualData,
+            borderColor: CHART_COLORS.convRate,
+            backgroundColor: CHART_COLORS.convRate + "33",
+            pointRadius: 3,
+            tension: 0.3,
+            fill: true,
+          },
+          {
+            label: "Конверсия в Отказ, %",
+            data: convRefusalData,
+            borderColor: CHART_COLORS.refusalRate,
+            backgroundColor: "transparent",
+            pointRadius: 3,
+            tension: 0.3,
+          },
+        ],
+      },
+      options: {
+        ...chartDefaults,
+        scales: {
+          x: chartDefaults.scales.x,
+          y: { ...chartDefaults.scales.y, title: { display: true, text: "%", color: "#8b92a8" } },
+        },
+      },
+    });
+  } catch {
+    const wrap = app.querySelector<HTMLElement>("#chart-revenue-month")?.closest(".chart-wrap");
+    if (wrap) wrap.innerHTML += `<p class="muted">Данные недоступны</p>`;
+  }
+
+  try {
+    const yandexMonths = await fetchJson<Record<string, unknown>[]>("data/global/yandex_projects_revenue_by_month.json");
+    const ySorted = yandexMonths
+      .filter((r) => !isTotalValue(r["month"]))
+      .sort((a, b) => String(a["month"] ?? "").localeCompare(String(b["month"] ?? "")));
+
+    const yLabels = ySorted.map((r) => String(r["month"] ?? ""));
+    const spendData = ySorted.map((r) => {
+      const month = String(r["month"] ?? "").trim();
+      const m = yandexMonthLeadMetrics.get(month) || yandexEmptyMetrics();
+      return m.spend > 0 ? m.spend : num(r["spend"]);
+    });
+    const yRevenueData = ySorted.map((r) => num(r["revenue_raw"]));
+
+    const yCanvas = app.querySelector<HTMLCanvasElement>("#chart-yandex-month")!;
+    new Chart(yCanvas, {
+      type: "bar",
+      data: {
+        labels: yLabels,
+        datasets: [
+          { label: "Расход, ₽", data: spendData, backgroundColor: CHART_COLORS.spend + "99", borderColor: CHART_COLORS.spend, borderWidth: 1 },
+          { label: "Выручка, ₽", data: yRevenueData, backgroundColor: CHART_COLORS.profit + "99", borderColor: CHART_COLORS.profit, borderWidth: 1 },
+        ],
+      },
+      options: { ...chartDefaults },
+    });
+
+    const roiData = ySorted.map((r) => {
+      const month = String(r["month"] ?? "").trim();
+      const m = yandexMonthLeadMetrics.get(month) || yandexEmptyMetrics();
+      const spend = m.spend > 0 ? m.spend : num(r["spend"]);
+      const revenue = num(r["revenue_raw"]);
+      return spend > 0 ? Math.round((revenue / spend) * 100) / 100 : 0;
+    });
+    const roiCanvas = app.querySelector<HTMLCanvasElement>("#chart-yandex-roi")!;
+    new Chart(roiCanvas, {
+      type: "line",
+      data: {
+        labels: yLabels,
+        datasets: [
+          {
+            label: "ROI (выручка / расход)",
+            data: roiData,
+            borderColor: CHART_COLORS.roi,
+            backgroundColor: CHART_COLORS.roi + "33",
+            pointRadius: 4,
+            tension: 0.3,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        ...chartDefaults,
+        scales: {
+          x: chartDefaults.scales.x,
+          y: { ...chartDefaults.scales.y, title: { display: true, text: "ROI", color: "#8b92a8" } },
+        },
+      },
+    });
+  } catch {
+    const wrap = app.querySelector<HTMLElement>("#chart-yandex-month")?.closest(".chart-wrap");
+    if (wrap) wrap.innerHTML += `<p class="muted">Данные недоступны</p>`;
+  }
+
+  try {
+    const emailOps = await fetchJson<Record<string, unknown>[]>("data/email_operational_summary.json");
+    const eSorted = emailOps
+      .filter((r) => !isTotalValue(r["Период"]))
+      .sort((a, b) => compareCell("Период", a["Период"], b["Период"], "asc"));
+
+    const eLabels = eSorted.map((r) => String(r["Период"] ?? ""));
+    const eLeadsData = eSorted.map((r) => num(r["Лиды"]));
+    const eRevenueData = eSorted.map((r) => num(r["Выручка"]));
+
+    const eCanvas = app.querySelector<HTMLCanvasElement>("#chart-email-period")!;
+    new Chart(eCanvas, {
+      type: "bar",
+      data: {
+        labels: eLabels,
+        datasets: [
+          { label: "Лиды", data: eLeadsData, backgroundColor: CHART_COLORS.emailLeads + "99", borderColor: CHART_COLORS.emailLeads, borderWidth: 1, yAxisID: "y" },
+          { label: "Выручка, ₽", data: eRevenueData, backgroundColor: CHART_COLORS.emailRevenue + "99", borderColor: CHART_COLORS.emailRevenue, borderWidth: 1, yAxisID: "y2" },
+        ],
+      },
+      options: {
+        ...chartDefaults,
+        scales: {
+          x: chartDefaults.scales.x,
+          y: { ...chartDefaults.scales.y, position: "left" as const, title: { display: true, text: "Лиды", color: "#8b92a8" } },
+          y2: { ...chartDefaults.scales.y, position: "right" as const, title: { display: true, text: "Выручка, ₽", color: "#8b92a8" }, grid: { drawOnChartArea: false, color: "#2a3142" } },
+        },
+      },
+    });
+  } catch {
+    const wrap = app.querySelector<HTMLElement>("#chart-email-period")?.closest(".chart-wrap");
+    if (wrap) wrap.innerHTML += `<p class="muted">Данные недоступны</p>`;
+  }
+
+  try {
+    const managerRows = await fetchJson<Record<string, unknown>[]>("data/manager_sales_by_month.json");
+    const managerTotals = new Map<string, number>();
+    for (const r of managerRows) {
+      if (String(r["Level"] ?? "").trim() !== "Manager") continue;
+      const name = String(r["Менеджер"] ?? "").trim();
+      if (!name || name === "-") continue;
+      managerTotals.set(name, (managerTotals.get(name) || 0) + num(r["Выручка"]));
+    }
+    const sorted = [...managerTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const mLabels = sorted.map(([name]) => name);
+    const mData = sorted.map(([, revenue]) => revenue);
+    const mCanvas = app.querySelector<HTMLCanvasElement>("#chart-managers-revenue")!;
+    new Chart(mCanvas, {
+      type: "bar",
+      data: {
+        labels: mLabels,
+        datasets: [
+          {
+            label: "Выручка, ₽",
+            data: mData,
+            backgroundColor: CHART_COLORS.managerBar + "99",
+            borderColor: CHART_COLORS.managerBar,
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        ...chartDefaults,
+        indexAxis: "y" as const,
+        scales: {
+          x: { ...chartDefaults.scales.x, title: { display: true, text: "Выручка, ₽", color: "#8b92a8" } },
+          y: chartDefaults.scales.y,
+        },
+      },
+    });
+  } catch {
+    const wrap = app.querySelector<HTMLElement>("#chart-managers-revenue")?.closest(".chart-wrap");
+    if (wrap) wrap.innerHTML += `<p class="muted">Данные недоступны</p>`;
+  }
+}
+
+async function boot(): Promise<void> {
+  try {
+    dealRevenueById.clear();
+    yandexProjectLeadMetrics.clear();
+    yandexMonthLeadMetrics.clear();
+    loadEmailOverridesMap(await fetch(staticUrl("data/email_group_overrides.json")).then(r => r.json() as Promise<EmailOverridesFile>));
+    const [yandexCampaignKpis, yandexMonthKpis] = await Promise.all([
+      fetchJson<Record<string, unknown>[]>("data/global/yandex_campaign_kpis.json"),
+      fetchJson<Record<string, unknown>[]>("data/global/yandex_month_kpis.json"),
+    ]);
+    for (const r of yandexCampaignKpis) {
+      const key = String(r["Название кампании"] ?? "").trim();
+      if (!key) continue;
+      const prev = yandexProjectLeadMetrics.get(key) || yandexEmptyMetrics();
+      yandexProjectLeadMetrics.set(key, addYandexMetrics(prev, toYandexMetrics(r)));
+    }
+    for (const r of yandexMonthKpis) {
+      const key = String(r["month"] ?? "").trim();
+      if (!key) continue;
+      const prev = yandexMonthLeadMetrics.get(key) || yandexEmptyMetrics();
+      yandexMonthLeadMetrics.set(key, addYandexMetrics(prev, toYandexMetrics(r)));
+    }
+    const dealsIndex: DealsIndex = { month: new Map(), event: new Map(), course: new Map() };
+    const state = readUrlState();
+    if (state.menu === "reports") {
+      const v: ViewKey = state.view || "year_total";
+      const r = await fetchJson<Record<string, unknown>[]>(viewPath(v));
+      await renderTable(v, r, dealsIndex);
+      return;
+    }
+    if (state.menu === "charts") {
+      await renderCharts(dealsIndex);
+      return;
+    }
+    await renderDashboard(dealsIndex);
+  } catch (e) {
+    app.innerHTML = `<div class="err">Ошибка загрузки: ${escapeHtml(String(e))}</div>`;
+  }
+}
+
+async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
+  writeUrlState("dashboard");
+  const [bitrixMonths, contacts, emailOps, yandexMonths, yandexMonthKpis] = await Promise.all([
+    fetchJson<Record<string, unknown>[]>("data/bitrix_month_total_full.json"),
+    fetchJson<Record<string, unknown>[]>("data/bitrix_contacts_uid.json"),
+    fetchJson<Record<string, unknown>[]>("data/email_operational_summary.json"),
+    fetchJson<Record<string, unknown>[]>("data/global/yandex_projects_revenue_by_month.json"),
+    fetchJson<Record<string, unknown>[]>("data/global/yandex_month_kpis.json"),
+  ]);
+
+  const monthRows = bitrixMonths.filter((r) => !isTotalValue(r["Месяц"]));
+  monthRows.sort((a, b) => compareCell("Месяц", a["Месяц"], b["Месяц"], "desc"));
+  const bm = monthRows[0] || {};
+
+  const emailRows = emailOps.filter((r) => !isTotalValue(r["Период"]));
+  emailRows.sort((a, b) => compareCell("Период", a["Период"], b["Период"], "desc"));
+  const em = emailRows[0] || {};
+
+  const yRows = yandexMonths.filter((r) => !isTotalValue(r["month"]));
+  yRows.sort((a, b) => compareCell("Период", a["month"], b["month"], "desc"));
+  const ym = yRows[0] || {};
+  const ykRows = yandexMonthKpis.filter((r) => !isTotalValue(r["month"]));
+  ykRows.sort((a, b) => compareCell("Период", a["month"], b["month"], "desc"));
+  const yk = ykRows[0] || {};
+
+  const emailTableRow: Record<string, unknown> = { ...em };
+  const bitrixTableRow: Record<string, unknown> = {
+    "Период": bm["Месяц"] ?? "-",
+    "Лиды": bm["Лиды"] ?? 0,
+    "Квал": bm["Квал"] ?? 0,
+    "Конверсия в Квал": bm["Конверсия в Квал"] ?? 0,
+    "Неквал": bm["Неквал"] ?? 0,
+    "Конверсия в Неквал": bm["Конверсия в Неквал"] ?? 0,
+    "Отказы": bm["Отказы"] ?? 0,
+    "Конверсия в Отказ": bm["Конверсия в Отказ"] ?? 0,
+    "В работе": bm["В работе"] ?? 0,
+    "Конверсия в работе": bm["Конверсия в работе"] ?? 0,
+    "Невалидные лиды": bm["Невалидные_лиды"] ?? 0,
+    "Сделок с выручкой": bm["Сделок_с_выручкой"] ?? 0,
+    "Выручка": bm["Выручка"] ?? 0,
+    "Средний чек": bm["Средний_чек"] ?? 0,
+  };
+  const yandexTableRow: Record<string, unknown> = {
+    "Период": yk["month"] ?? ym["month"] ?? "-",
+    "Лиды": yk["Leads"] ?? ym["leads_raw"] ?? 0,
+    "Квал": yk["Qual"] ?? 0,
+    "Неквал": yk["Unqual"] ?? 0,
+    "Отказы": yk["Refusal"] ?? 0,
+    "Конверсия в Квал": num(yk["Leads"]) > 0 ? num(yk["Qual"]) / num(yk["Leads"]) : 0,
+    "Конверсия в Неквал": num(yk["Leads"]) > 0 ? num(yk["Unqual"]) / num(yk["Leads"]) : 0,
+    "Конверсия в Отказ": num(yk["Leads"]) > 0 ? num(yk["Refusal"]) / num(yk["Leads"]) : 0,
+    "Клики": yk["Клики"] ?? 0,
+    "Расход, ₽": yk["Расход, ₽"] ?? ym["spend"] ?? 0,
+    "Оплаты": ym["paid_deals_raw"] ?? 0,
+    "Выручка": ym["revenue_raw"] ?? 0,
+    "Прибыль": num(ym["revenue_raw"]) - num(yk["Расход, ₽"] ?? ym["spend"]),
+  };
+
+  app.innerHTML = `<div class="app-layout">
+    <aside class="side-menu">
+      <button class="side-btn active" data-menu="dashboard">Главная</button>
+      <button class="side-btn" data-menu="reports">Детальные отчеты</button>
+      <button class="side-btn" data-menu="charts">Графики</button>
+    </aside>
+    <main class="main-content">
+      <header>
+        <h1>Главный дашборд</h1>
+        <p class="sub">Итоги за текущий месяц</p>
+      </header>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="label">Уникальные клиенты Bitrix</div><div class="value">${contacts.length.toLocaleString("ru-RU")}</div></div>
+        <div class="kpi"><div class="label">Период Bitrix</div><div class="value">${escapeHtml(String(bm["Месяц"] ?? "-"))}</div></div>
+      </div>
+      ${renderSingleRowTable("Bitrix: текущий месяц (полная строка)", bitrixTableRow)}
+      ${renderSingleRowTable("Email: текущий месяц (полная строка)", emailTableRow)}
+      ${renderSingleRowTable("Yandex: текущий месяц (полная строка)", yandexTableRow)}
+    </main>
+  </div>`;
+
+  app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
+    btn.onclick = async () => {
+      const m = btn.getAttribute("data-menu");
+      if (m === "reports") {
+        const view: ViewKey = "year_total";
+        const rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
+        await renderTable(view, rows, dealsIndex);
+      } else if (m === "charts") {
+        await renderCharts(dealsIndex);
+      }
+    };
+  });
+}
+
+void boot();
+

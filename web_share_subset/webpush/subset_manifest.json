@@ -1,0 +1,30 @@
+{
+  "out_dir": "/Users/ivan/Documents/deved/web_share_subset",
+  "web_files": [
+    "index.html",
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "tsconfig.node.json",
+    "vite.config.ts",
+    "src/main.ts",
+    "src/app.ts",
+    "src/style.css",
+    "src/vite-env.d.ts"
+  ],
+  "data_files": [
+    "attacking_january_associative_revenue_by_month.json",
+    "attacking_january_associative_revenue_by_events.json",
+    "attacking_january_associative_revenue_by_course_codes.json",
+    "email_hierarchy_by_send.json",
+    "yd_hierarchy.json",
+    "bitrix_month_total_full.json",
+    "manager_sales_by_course.json",
+    "manager_sales_by_month.json",
+    "manager_firstline_by_course.json",
+    "manager_firstline_by_month.json",
+    "bitrix_funnel_month_code_full.json",
+    "bitrix_contacts_uid.json",
+    "member_list_03.26_statuses_categories.json"
+  ]
+}

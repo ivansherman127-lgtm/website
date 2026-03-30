@@ -1,0 +1,18 @@
+{
+  "description_ru": "Источник воронки для отчётов — только колонка CRM «Воронка» (склейка дублей заголовка). Пусто или подпись не из report_buckets → «Другое». Спец и УЦ исключаются из выборки (EXCLUDED_FUNNEL_NAMES). Сырые данные: объединение sheets/fl_raw_09-03.csv + sheets/bitrix_upd_27.03.csv (см. bitrix_union_io.load_bitrix_deals_union).",
+  "excluded_from_all_metrics": [
+    "Спецпроекты",
+    "Спец. проекты",
+    "Учебный центр"
+  ],
+  "report_buckets": [
+    "B2B",
+    "B2C",
+    "Горячая воронка",
+    "Карьерная консультация",
+    "Реактивация",
+    "Холодная воронка"
+  ],
+  "other_bucket": "Другое",
+  "implementation": "db/bitrix_union_io.load_bitrix_deals_union; db/bitrix_lead_quality.deal_funnel_raw_series (только Воронка); funnel_report_bucket_series; funnel_report_sort_key"
+}

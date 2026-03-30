@@ -1,0 +1,23 @@
+{
+  "name": "deved-slices-dashboard",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "prebuild": "rm -f public/data/attacking_january_associative_deals_base.json",
+    "build": "VITE_DATA_SOURCE=d1 vite build",
+    "preview": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "worker:dev": "npm run build && wrangler dev",
+    "worker:deploy": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.4"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.30.1",
+    "typescript": "~5.6.3",
+    "vite": "^8.0.3",
+    "wrangler": "^4.77.0"
+  }
+}
