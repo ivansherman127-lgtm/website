@@ -534,7 +534,7 @@ export async function onRequestGet(context: {
     let yandexSpendJoinSql = "";
     let includeYandexSpend = false;
 
-    if (yandexSpendAvailable && dims.includes("yandex_campaign")) {
+    if (hasYandexStats && dims.includes("yandex_campaign")) {
       const yandexDimIdx = dims.indexOf("yandex_campaign") + 1; // 1-based, matches d1/d2 column naming
       const spendMappingExpr = yandexCampaignPairs.length > 0
         ? `COALESCE(CASE spend_src.project_name ${yandexCampaignPairs
@@ -546,8 +546,8 @@ export async function onRequestGet(context: {
       yandex_spend_by_label AS (
         SELECT
           ${spendMappingExpr} AS campaign_label,
-          COALESCE(SUM(spend), 0) AS total_spend
-        FROM mart_yandex_revenue_projects_raw spend_src
+          COALESCE(SUM(COALESCE(spend_src."Расход, ₽", 0)), 0) AS total_spend
+        FROM stg_yandex_stats spend_src
         GROUP BY campaign_label
       )`;
 
