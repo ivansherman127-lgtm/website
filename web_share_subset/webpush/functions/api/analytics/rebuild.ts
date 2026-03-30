@@ -35,7 +35,10 @@ export async function onRequestPost(context: {
     return unauthorized();
   }
   try {
-    const result = await runAnalyticsRebuild(context.env.DB);
+    let body: Record<string, unknown> = {};
+    try { body = await context.request.json() as Record<string, unknown>; } catch { /* empty body ok */ }
+    const materializationOnly = body.materialization_only === true;
+    const result = await runAnalyticsRebuild(context.env.DB, { materializationOnly });
     return new Response(JSON.stringify({ ok: true, result }), {
       status: 200,
       headers: { "content-type": "application/json; charset=utf-8" },

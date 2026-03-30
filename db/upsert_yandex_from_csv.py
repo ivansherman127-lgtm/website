@@ -243,7 +243,10 @@ def upsert_to_sqlite(df: pd.DataFrame, engine) -> int:
             conn.execute(text("ALTER TABLE stg_yandex_stats_new RENAME TO stg_yandex_stats"))
 
         for m in months:
-            conn.execute(text('DELETE FROM stg_yandex_stats WHERE "Месяц" = :m'), {"m": m})
+            # Delete by both the normalized month col (YYYY-MM) AND the old Russian-format
+            # "Месяц" col so that rows imported before normalization (e.g. "Март, 2026")
+            # are also removed.  Using month satisfies both cases.
+            conn.execute(text('DELETE FROM stg_yandex_stats WHERE month = :m OR "Месяц" = :m'), {"m": m})
         print(f"Deleted existing rows for {len(months)} month(s)", flush=True)
 
     chunksize = max(1, 998 // max(1, df.shape[1]))

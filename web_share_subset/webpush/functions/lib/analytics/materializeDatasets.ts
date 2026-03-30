@@ -209,6 +209,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END) AS paid_deals,
            SUM(CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN COALESCE(revenue_amount, 0) ELSE 0 END) AS revenue
          FROM mart_deals_enriched
+         WHERE lower(trim(COALESCE("UTM Source", ''))) = 'sendsay'
          GROUP BY lower(trim(COALESCE("UTM Campaign", '')))
        ),
        send_rows AS (
@@ -337,6 +338,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END) AS paid_deals,
            SUM(CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN COALESCE(revenue_amount, 0) ELSE 0 END) AS revenue
          FROM mart_deals_enriched
+         WHERE lower(trim(COALESCE("UTM Source", ''))) = 'sendsay'
          GROUP BY lower(trim(COALESCE("UTM Campaign", '')))
        ),
        send_rows AS (

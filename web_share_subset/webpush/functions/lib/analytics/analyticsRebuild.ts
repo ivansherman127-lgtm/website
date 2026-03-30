@@ -2,30 +2,39 @@ import { materializeSliceDatasets } from "./materializeDatasets";
 import { rebuildMartDealsFromStaging } from "./rebuildMartDeals";
 import { rebuildYandexMarts } from "./rebuildYandex";
 
-export async function runAnalyticsRebuild(db: D1Database): Promise<Record<string, unknown>> {
-  const mart = await rebuildMartDealsFromStaging(db);
+export async function runAnalyticsRebuild(
+  db: D1Database,
+  opts: { materializationOnly?: boolean } = {},
+): Promise<Record<string, unknown>> {
+  let mart: Record<string, unknown> = { skipped: true };
+  let yx: Record<string, unknown> = { skipped: true };
 
-  await db.prepare("DELETE FROM mart_attacking_january_cohort_deals").run();
-  await db.prepare("DELETE FROM mart_attacking_january_contacts").run();
+  if (!opts.materializationOnly) {
+    mart = await rebuildMartDealsFromStaging(db);
 
-  await db
-    .prepare(
-      `INSERT INTO mart_attacking_january_contacts (contact_id)
+    await db.prepare("DELETE FROM mart_attacking_january_cohort_deals").run();
+    await db.prepare("DELETE FROM mart_attacking_january_contacts").run();
+
+    await db
+      .prepare(
+        `INSERT INTO mart_attacking_january_contacts (contact_id)
        SELECT DISTINCT "Контакт: ID" AS contact_id
        FROM mart_deals_enriched
        WHERE is_attacking_january = 1 AND COALESCE("Контакт: ID", '') <> ''`,
-    )
-    .run();
+      )
+      .run();
 
-  await db
-    .prepare(
-      `INSERT INTO mart_attacking_january_cohort_deals
+    await db
+      .prepare(
+        `INSERT INTO mart_attacking_january_cohort_deals
        SELECT d.* FROM mart_deals_enriched d
        INNER JOIN mart_attacking_january_contacts c ON d."Контакт: ID" = c.contact_id`,
-    )
-    .run();
+      )
+      .run();
 
-  const yx = await rebuildYandexMarts(db);
+    yx = await rebuildYandexMarts(db);
+  }
+
   const ds = await materializeSliceDatasets(db);
 
   const now = new Date().toISOString();
