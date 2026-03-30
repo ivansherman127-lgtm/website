@@ -55,9 +55,12 @@ export function sqlExtractYandexAdId(rawSqlExpr: string): string {
     ELSE ''
   END`;
 
+  const plainIsValid = `LENGTH(${plain}) = 11 AND SUBSTR(${plain}, 1, 2) = '17' AND ${plain} NOT GLOB '*[^0-9]*'`;
+  const aidIsValid = `LENGTH(${aidToken}) = 11 AND SUBSTR(${aidToken}, 1, 2) = '17' AND ${aidToken} NOT GLOB '*[^0-9]*'`;
+
   return `CASE
-    WHEN LENGTH(${plain}) = 11 AND ${plain} GLOB '17[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' THEN ${plain}
-    WHEN LENGTH(${aidToken}) = 11 AND ${aidToken} GLOB '17[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' THEN ${aidToken}
+    WHEN ${plainIsValid} THEN ${plain}
+    WHEN ${aidIsValid} THEN ${aidToken}
     ELSE ''
   END`;
 }

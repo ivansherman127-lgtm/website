@@ -289,6 +289,13 @@ async function tableExists(db: D1Database, tableName: string): Promise<boolean> 
   return !!row?.name;
 }
 
+async function columnExists(db: D1Database, tableName: string, columnName: string): Promise<boolean> {
+  const exists = await tableExists(db, tableName);
+  if (!exists) return false;
+  const pragma = await db.prepare(`PRAGMA table_info(${tableName})`).all<{ name: string }>();
+  return (pragma.results ?? []).some((c) => c.name === columnName);
+}
+
 async function tableWatermark(db: D1Database, tableName: string): Promise<string> {
   const exists = await tableExists(db, tableName);
   if (!exists) return `${tableName}:missing`;
@@ -584,7 +591,10 @@ export async function onRequestGet(context: {
       }
     }
 
-    const sourceYandexAdExpr = sqlExtractYandexAdId(`src."UTM Content"`);
+    const hasSourceUtmContent = await columnExists(context.env.DB, table, "UTM Content");
+    const sourceYandexAdExpr = hasSourceUtmContent
+      ? sqlExtractYandexAdId(`src."UTM Content"`)
+      : "''";
 
     const yandexMapCte = hasYandexStats
       ? `yandex_map AS (
