@@ -392,7 +392,7 @@ export async function onRequestGet(context: {
     binds.push(toMonth);
   }
 
-  if (dims.includes("yandex_campaign")) {
+  if (dims.includes("yandex_campaign") || dims.includes("yandex_ad")) {
     wheres.push("LOWER(COALESCE(\"UTM Source\", '')) LIKE 'y%'");
     wheres.push("LOWER(COALESCE(\"UTM Source\", '')) <> 'yah'");
   }
