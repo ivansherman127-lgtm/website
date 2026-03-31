@@ -1,3 +1,5 @@
+import { buildLeadLogicSql } from "./leadLogicSql";
+
 async function tableExists(db: D1Database, tableName: string): Promise<boolean> {
   const row = await db
     .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1`)
@@ -32,6 +34,11 @@ export async function buildYdHierarchyRows(db: D1Database): Promise<Record<strin
   const hasStats = await tableExists(db, "stg_yandex_stats");
   const hasLeads = await tableExists(db, "mart_yandex_leads_raw");
   if (!hasStats || !hasLeads) return [];
+  const yandexLeadLogic = buildLeadLogicSql({
+    funnelExpr: "funnel",
+    stageExpr: "stage",
+    monthExpr: "yandex_month",
+  });
 
   const yandexMonthKpis = await db
     .prepare(
@@ -47,32 +54,9 @@ export async function buildYdHierarchyRows(db: D1Database): Promise<Record<strin
        mflags AS (
          SELECT
            COALESCE(yandex_month, '') AS month,
-           CASE
-             WHEN COALESCE(funnel, '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE(stage, '') = 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE(funnel, '') IN ('B2B', 'B2C') AND COALESCE(stage, '') <> 'Сделка не заключена' THEN 1
-             ELSE 0
-           END AS qual,
-           CASE
-             WHEN COALESCE(funnel, '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE(stage, '') <> 'Некачественный лид'
-                  AND COALESCE(stage, '') <> 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE(funnel, '') = 'Реактивация' AND COALESCE(stage, '') <> 'Некачественный лид' THEN 1
-             WHEN lower(COALESCE(stage, '')) LIKE '%неквал%'
-                  OR lower(COALESCE(stage, '')) LIKE '%некачеств%'
-                  OR lower(COALESCE(stage, '')) LIKE '%дубл%'
-                  OR lower(COALESCE(stage, '')) LIKE '%спам%'
-                  OR lower(COALESCE(stage, '')) LIKE '%чс%'
-                  OR lower(COALESCE(stage, '')) LIKE '%тест%'
-                  OR lower(COALESCE(stage, '')) LIKE '%неправильн%данн%'
-             THEN 1
-             ELSE 0
-           END AS unqual,
-           CASE
-             WHEN COALESCE(funnel, '') IN ('B2B', 'B2C') AND COALESCE(stage, '') = 'Сделка не заключена' THEN 1
-             WHEN lower(COALESCE(stage, '')) LIKE '%отказ%' THEN 1
-             ELSE 0
-           END AS refusal,
+           ${yandexLeadLogic.qual} AS qual,
+           ${yandexLeadLogic.unqual} AS unqual,
+           ${yandexLeadLogic.refusal} AS refusal,
            1 AS leads
          FROM mart_yandex_leads_raw
          WHERE COALESCE(yandex_month, '') <> ''
@@ -124,32 +108,9 @@ export async function buildYdHierarchyRows(db: D1Database): Promise<Record<strin
            COALESCE(project_name, '') AS campaign_name,
            COALESCE(campaign_id, '') AS campaign_id,
            COALESCE(yandex_month, '') AS month,
-           CASE
-             WHEN COALESCE(funnel, '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE(stage, '') = 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE(funnel, '') IN ('B2B', 'B2C') AND COALESCE(stage, '') <> 'Сделка не заключена' THEN 1
-             ELSE 0
-           END AS qual,
-           CASE
-             WHEN COALESCE(funnel, '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE(stage, '') <> 'Некачественный лид'
-                  AND COALESCE(stage, '') <> 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE(funnel, '') = 'Реактивация' AND COALESCE(stage, '') <> 'Некачественный лид' THEN 1
-             WHEN lower(COALESCE(stage, '')) LIKE '%неквал%'
-                  OR lower(COALESCE(stage, '')) LIKE '%некачеств%'
-                  OR lower(COALESCE(stage, '')) LIKE '%дубл%'
-                  OR lower(COALESCE(stage, '')) LIKE '%спам%'
-                  OR lower(COALESCE(stage, '')) LIKE '%чс%'
-                  OR lower(COALESCE(stage, '')) LIKE '%тест%'
-                  OR lower(COALESCE(stage, '')) LIKE '%неправильн%данн%'
-             THEN 1
-             ELSE 0
-           END AS unqual,
-           CASE
-             WHEN COALESCE(funnel, '') IN ('B2B', 'B2C') AND COALESCE(stage, '') = 'Сделка не заключена' THEN 1
-             WHEN lower(COALESCE(stage, '')) LIKE '%отказ%' THEN 1
-             ELSE 0
-           END AS refusal,
+           ${yandexLeadLogic.qual} AS qual,
+           ${yandexLeadLogic.unqual} AS unqual,
+           ${yandexLeadLogic.refusal} AS refusal,
            1 AS leads
          FROM mart_yandex_leads_raw
          WHERE COALESCE(yandex_month, '') <> ''
@@ -197,6 +158,7 @@ export async function buildYdHierarchyRows(db: D1Database): Promise<Record<strin
     const month = String(r.month ?? "").trim();
     return {
       "Level": "Month",
+      "month": month,
       "Месяц": toMonthLabel(month),
       "№ Кампании": "-",
       "№ Объявления": "-",
@@ -232,6 +194,7 @@ export async function buildYdHierarchyRows(db: D1Database): Promise<Record<strin
     const campaignId = String(r["№ Кампании"] ?? "").trim() || "-";
     return {
       "Level": "Campaign",
+      "month": month,
       "Месяц": toMonthLabel(month),
       "№ Кампании": campaignId,
       "№ Объявления": "-",

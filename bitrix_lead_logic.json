@@ -1,0 +1,305 @@
+{
+  "schema_version": "2026-03-19",
+  "source_document": "documents/Логика квал_не квал в битриксе (19.03.26).docx",
+  "source_pdf": "bitrix_logic.pdf",
+  "refusal_tracking_from": "2026-03-01",
+  "notes": [
+    "Extracted and cross-checked against bitrix_logic.pdf (9 pages)",
+    "B2B отказ in Реактивация becomes qual from 2026-03-18",
+    "Холодная воронка / Получившие демо-доступ becomes qual from 2026-02-09"
+  ],
+  "normalization": {
+    "funnel_aliases": {
+      "B2B": "Воронка B2B",
+      "Воронка B2B": "Воронка B2B",
+      "B2C": "Воронка B2C",
+      "Воронка B2C": "Воронка B2C"
+    },
+    "stage_aliases": {
+      "Бесплатники": "Беплатники",
+      "В проработке нет ответа": "В проработке, нет ответа",
+      "Консультация назначена ": "Консультация назначена",
+      "Новая сделка ": "Новая сделка"
+    }
+  },
+  "value_legend": {
+    "qual_state": [
+      "qual",
+      "refusal",
+      "not_qual",
+      "not_yet",
+      "unassigned",
+      "qual_from_date"
+    ],
+    "working_state": [
+      "yes",
+      "no"
+    ]
+  },
+  "funnels": {
+    "Горячая воронка": {
+      "Необработанный лид": {
+        "qual_state": "not_qual",
+        "working_state": "no",
+        "qual_note": "Нет"
+      },
+      "Взято в работу": {
+        "qual_state": "not_qual",
+        "working_state": "yes",
+        "qual_note": "Нет"
+      },
+      "Нет ответа": {
+        "qual_state": "not_qual",
+        "working_state": "yes",
+        "qual_note": "Нет"
+      },
+      "Перезвонить": {
+        "qual_state": "not_qual",
+        "working_state": "yes",
+        "qual_note": "Нет"
+      },
+      "Консультация": {
+        "qual_state": "not_qual",
+        "working_state": "no",
+        "qual_note": "Нет"
+      },
+      "Некачественный лид": {
+        "qual_state": "not_qual",
+        "working_state": "no",
+        "qual_note": "Нет (точно не квал)"
+      }
+    },
+    "Холодная воронка": {
+      "Беплатники": {
+        "qual_state": "not_yet",
+        "working_state": "no",
+        "qual_note": "Ещё нет"
+      },
+      "Демо-доступ/квиз": {
+        "qual_state": "not_yet",
+        "working_state": "no",
+        "qual_note": "Ещё нет"
+      },
+      "Лидмагниты": {
+        "qual_state": "not_yet",
+        "working_state": "no",
+        "qual_note": "Ещё нет"
+      },
+      "Вебинары": {
+        "qual_state": "not_yet",
+        "working_state": "no",
+        "qual_note": "Ещё нет"
+      },
+      "Реактивация": {
+        "qual_state": "not_yet",
+        "working_state": "no",
+        "qual_note": "Ещё нет"
+      },
+      "Взято в работу": {
+        "qual_state": "not_yet",
+        "working_state": "yes",
+        "qual_note": "Ещё нет"
+      },
+      "Нет ответа": {
+        "qual_state": "not_yet",
+        "working_state": "yes",
+        "qual_note": "Ещё нет"
+      },
+      "Перезвонить": {
+        "qual_state": "not_yet",
+        "working_state": "yes",
+        "qual_note": "Ещё нет"
+      },
+      "Получившие демо-доступ": {
+        "qual_state": "qual_from_date",
+        "working_state": "yes",
+        "qual_note": "Квал с 09.02.26",
+        "qual_from_date": "2026-02-09"
+      },
+      "Некачественный лид": {
+        "qual_state": "not_qual",
+        "working_state": "no",
+        "qual_note": "Нет (точно не квал)"
+      }
+    },
+    "Воронка B2B": {
+      "Новая сделка": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да"
+      },
+      "Потенциал 01": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да, точно квал"
+      },
+      "Выбор 03": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да, точно квал"
+      },
+      "Кастомный запрос": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да, точно квал"
+      },
+      "Согласование КП": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да, точно квал"
+      },
+      "Тендер": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да, точно квал"
+      },
+      "Согласование договора": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да, точно квал"
+      },
+      "Счет выставлен": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да, точно квал"
+      },
+      "Постоплата": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да, точно квал"
+      },
+      "Завершить сделку": {
+        "qual_state": "qual",
+        "working_state": "no",
+        "qual_note": "Да, точно квал",
+        "working_note": "Нет (работа завершена)"
+      },
+      "Сделка не заключена": {
+        "qual_state": "refusal",
+        "working_state": "no",
+        "qual_note": "Отказ"
+      }
+    },
+    "Воронка B2C": {
+      "Новая заявка": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да"
+      },
+      "Взято в работу": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да"
+      },
+      "Консультация с экспертом": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да"
+      },
+      "Консультация назначена": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да (после консультации будет понятен потенциал)"
+      },
+      "Потенциал 01": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да"
+      },
+      "Выбор 03": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да"
+      },
+      "Готов к покупке": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да"
+      },
+      "Рассрочка": {
+        "qual_state": "qual",
+        "working_state": "no",
+        "qual_note": "Да, уже заключена внутренняя рассрочка (оплатил 1 платеж, ушел в УЦ)",
+        "working_note": "Нет (сделка завершена, лежит здесь для контроля рассрочки)"
+      },
+      "Завершить сделку": {
+        "qual_state": "qual",
+        "working_state": "no",
+        "qual_note": "Да"
+      },
+      "Сделка не заключена": {
+        "qual_state": "refusal",
+        "working_state": "no",
+        "qual_note": "Отказ"
+      }
+    },
+    "Реактивация": {
+      "Blue Team Stepik": {
+        "qual_state": "unassigned",
+        "working_state": "no",
+        "qual_note": "Неизвестно"
+      },
+      "ПБХ": {
+        "qual_state": "unassigned",
+        "working_state": "no",
+        "qual_note": "Неизвестно"
+      },
+      "Для теста ПБХ и Blue": {
+        "qual_state": "unassigned",
+        "working_state": "no",
+        "qual_note": "Неизвестно"
+      },
+      "В проработке, нет ответа": {
+        "qual_state": "unassigned",
+        "working_state": "yes",
+        "qual_note": "Неизвестно"
+      },
+      "Возобновить B2C": {
+        "qual_state": "unassigned",
+        "working_state": "no",
+        "qual_note": "Неизвестно"
+      },
+      "B2B отказ": {
+        "qual_state": "qual_from_date",
+        "working_state": "no",
+        "qual_from_date": "2026-03-18",
+        "qual_note": "Да, с 18.03.26"
+      },
+      "B2C отказ": {
+        "qual_state": "not_qual",
+        "working_state": "no",
+        "qual_note": "Нет"
+      },
+      "Входящие лиды (нет ответа)": {
+        "qual_state": "not_qual",
+        "working_state": "no",
+        "qual_note": "Нет"
+      },
+      "Вебинары": {
+        "qual_state": "unassigned",
+        "working_state": "no",
+        "qual_note": "Неизвестно"
+      },
+      "Колл-центр": {
+        "qual_state": "not_qual",
+        "working_state": "no",
+        "qual_note": "Нет"
+      },
+      "Старая база": {
+        "qual_state": "not_qual",
+        "working_state": "no",
+        "qual_note": "Нет"
+      },
+      "Некачественный лид": {
+        "qual_state": "not_qual",
+        "working_state": "no",
+        "qual_note": "Нет"
+      },
+      "Успешно возвращен в воронку": {
+        "qual_state": "not_qual",
+        "working_state": "no",
+        "qual_note": "Нет"
+      }
+    }
+  }
+}
