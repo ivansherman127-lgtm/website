@@ -233,7 +233,6 @@ type ViewKey =
   | "media_email"
   | "media_yandex"
   | "media_yandex_month"
-  | "media_yandex_assoc_qa"
   | "budget_monthly"
   | "months_total"
   | "managers_sales_course"
@@ -258,7 +257,7 @@ const VIEW_META: Record<ViewKey, ViewMeta> = {
   media_email: { tab: "media", label: "Имейл по месяцам", path: "data/email_hierarchy_by_send.json", rowsLabel: "Строк", title: "Рекламные медиумы" },
   media_yandex: { tab: "media", label: "Yandex по кампаниям (без месяцев)", path: "data/global/yandex_projects_revenue_no_month.json", rowsLabel: "Кампаний", title: "Рекламные медиумы" },
   media_yandex_month: { tab: "media", label: "Yandex по месяцам", path: "data/global/yandex_projects_revenue_by_month.json", rowsLabel: "Месяцев", title: "Рекламные медиумы" },
-  media_yandex_assoc_qa: { tab: "media", label: "Yandex: QA ассоц. выручки", path: "data/qa/yandex_assoc_revenue_qa.json", rowsLabel: "Проектов", title: "Рекламные медиумы" },
+
   email_ops_summary: { tab: "media", label: "Email: база, рассылки, лиды, выручка", path: "data/email_operational_summary.json", rowsLabel: "Периодов", title: "Рекламные медиумы" },
   budget_monthly: { tab: "budget", label: "Выручка / расход / прибыль по месяцам", path: "data/global/budget_monthly.json", rowsLabel: "Периодов", title: "Бюджет" },
   months_total: { tab: "months", label: "Bitrix по месяцам", path: "data/bitrix_month_total_full.json", rowsLabel: "Месяцев", title: "Отчеты по месяцам" },
@@ -843,29 +842,6 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
 
     return Array.from(rowsByProject.values());
   }
-  if (view === "media_yandex_assoc_qa") {
-    const hasHierarchyRows = clean.some((r) => String(r["Level"] ?? "").trim() === "Project" || num(r["__yandex_project_detail"]) > 0);
-    if (!hasHierarchyRows) return clean;
-    return clean.map((r) => {
-      const level = String(r["Level"] ?? "").trim();
-      if (level === "Project") {
-        return {
-          ...r,
-          "Yandex объявление": "-",
-          __yandex_project_ctx: String(r["Yandex кампания"] ?? r["Проект"] ?? "").trim(),
-          __yandex_project_has_details: num(r["__yandex_project_has_details"]) > 0 ? 1 : 0,
-        };
-      }
-      if (num(r["__yandex_project_detail"]) > 0 || level === "Ad") {
-        return {
-          ...r,
-          __yandex_project_ctx: String(r["Yandex кампания"] ?? r["Проект"] ?? "").trim(),
-          __yandex_project_detail: 1,
-        };
-      }
-      return r;
-    });
-  }
   if (view === "media_yandex_month") {
     return clean.map((r) => {
       const month = String(r["month"] ?? "").trim();
@@ -1029,7 +1005,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const isAssocEventHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_event_detail"]) > 0);
   const isAssocYandexHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_yandex_detail"]) > 0);
   const isYandexHierarchy = false;
-  const isYandexProjectHierarchy = (view === "media_yandex" || view === "media_yandex_assoc_qa") && viewRows.some((r) => num(r["__yandex_project_detail"]) > 0);
+  const isYandexProjectHierarchy = view === "media_yandex" && viewRows.some((r) => num(r["__yandex_project_detail"]) > 0);
   const isManagerHierarchy = view.startsWith("managers_");
   const isFunnelHierarchy = view === "funnels_hierarchy";
   const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
