@@ -1119,18 +1119,12 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       ? [{ __type: "column_aliases", ...aliases }, ...viewRows]
       : [...viewRows];
     const local = await postJson("/api/save-view-json", { path: resolvedPath, rows: rowsToSave });
+    const s = app.querySelector<HTMLDivElement>(".push-status");
     if (local.ok) {
-      const s = app.querySelector<HTMLDivElement>(".push-status");
       if (s) s.textContent = `JSON обновлен локально (${(local.rows ?? viewRows.length).toLocaleString("ru-RU")} строк)`;
       return;
     }
-    const cloud = await postJson("/api/save-to-github", { path: resolvedPath, rows: rowsToSave });
-    const s = app.querySelector<HTMLDivElement>(".push-status");
-    if (cloud.ok) {
-      if (s) s.textContent = `JSON закоммичен в GitHub (${(cloud.rows ?? viewRows.length).toLocaleString("ru-RU")} строк)`;
-      return;
-    }
-    if (s) s.textContent = `Ошибка сохранения JSON: ${cloud.error || local.error || "unknown"}`;
+    if (s) s.textContent = `Ошибка сохранения JSON: ${local.error || "unknown"}`;
   };
 
   const draw = (): void => {
