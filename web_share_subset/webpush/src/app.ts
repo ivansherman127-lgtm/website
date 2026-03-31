@@ -1173,14 +1173,29 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const viewRows = toViewRows(view, dataRows);
   let mediaYandexMonthlyRows: Record<string, unknown>[] = [];
   let mediaYandexCampaignMonthRows: Record<string, unknown>[] = [];
+  let managerCourseMonthRows: Record<string, unknown>[] = [];
   if (view === "media_yandex") {
     try {
-      mediaYandexMonthlyRows = await fetchJson<Record<string, unknown>[]>("data/global/yandex_projects_revenue_by_month.json");
+      mediaYandexMonthlyRows = await fetchJson<Record<string, unknown>[]>("data/global/yandex_projects_revenue_raw_vs_dedup.json");
       const yd = await fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
       mediaYandexCampaignMonthRows = yd.filter((r) => String(r["Level"] ?? "").trim() === "Campaign");
     } catch {
       mediaYandexMonthlyRows = [];
       mediaYandexCampaignMonthRows = [];
+    }
+  }
+  if (view === "managers_sales_course") {
+    try {
+      managerCourseMonthRows = await fetchJson<Record<string, unknown>[]>("data/manager_sales_by_course_month.json");
+    } catch {
+      managerCourseMonthRows = [];
+    }
+  }
+  if (view === "managers_firstline_course") {
+    try {
+      managerCourseMonthRows = await fetchJson<Record<string, unknown>[]>("data/manager_firstline_by_course_month.json");
+    } catch {
+      managerCourseMonthRows = [];
     }
   }
   const allCols = viewRows.length ? Object.keys(viewRows[0]) : [];
@@ -1224,15 +1239,20 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const isYandexHierarchy = false;
   const isYandexProjectHierarchy = view === "media_yandex" && viewRows.some((r) => num(r["__yandex_project_detail"]) > 0);
   const isManagerHierarchy = view.startsWith("managers_");
+  const isManagerCourseView = isManagerHierarchy && view.endsWith("_course");
   const isFunnelHierarchy = view === "funnels_hierarchy";
   const isBudgetHierarchy = view === "budget_monthly";
-  const dateWindowCol = ["Период", "Месяц", "month", "Год"].find((c) => allCols.includes(c)) || "";
+  const dateWindowCol = isManagerCourseView
+    ? "Месяц"
+    : (["Период", "Месяц", "month", "Год"].find((c) => allCols.includes(c)) || "");
   const dateWindowViews = new Set<ViewKey>([
     "assoc_dynamic",
     "media_yandex",
     "budget_monthly",
     "managers_sales_month",
+    "managers_sales_course",
     "managers_firstline_month",
+    "managers_firstline_course",
     "funnels_hierarchy",
   ]);
   const hasDateWindowControl = dateWindowViews.has(view);
@@ -1285,7 +1305,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     if (sortCol && !cols.includes(sortCol)) sortCol = cols[0] || "";
 
     let data = [...viewRows];
-    if (hasDateWindowControl && dateWindowCol) {
+    if (hasDateWindowControl && dateWindowCol && !isManagerCourseView) {
       data = filterRowsByMonthsBack(data, dateWindowCol, dateWindowMonths);
     }
 
@@ -1312,7 +1332,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         ymByProject.set(p, addYandexMetrics(prev, toYandexMetrics(r)));
       }
 
-      data = [...mByProject.entries()].map(([project, v]) => {
+      const allProjects = new Set<string>([...mByProject.keys(), ...ymByProject.keys()]);
+      data = [...allProjects.values()].map((project) => {
+        const v = mByProject.get(project) || { leads: 0, paid: 0, revenue: 0, spend: 0 };
         const ym = ymByProject.get(project) || yandexEmptyMetrics();
         const leads = ym.leads > 0 ? ym.leads : v.leads;
         const qual = ym.qual;
@@ -1383,6 +1405,58 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         "Средний_чек": num(r["Сделок_с_выручкой"]) > 0 ? num(r["Выручка"]) / num(r["Сделок_с_выручкой"]) : 0,
       }));
       data = [...managers, ...months];
+    }
+
+    if (isManagerCourseView && hasDateWindowControl) {
+      const monthRows = filterRowsByMonthsBack(managerCourseMonthRows, "Месяц", dateWindowMonths);
+      const byManager = new Map<string, Map<string, Record<string, unknown>[]>>();
+      for (const r of monthRows) {
+        const manager = String(r["Менеджер"] ?? "").trim() || "Unassigned";
+        const code = String(r["Код курса"] ?? "").trim() || "—";
+        if (!byManager.has(manager)) byManager.set(manager, new Map<string, Record<string, unknown>[]>());
+        const byCode = byManager.get(manager)!;
+        if (!byCode.has(code)) byCode.set(code, []);
+        byCode.get(code)!.push(r);
+      }
+      const metricKeys = ["Лиды", "Квал", "Неквал", "Отказы", "В работе", "Невалидные_лиды", "Сделок_с_выручкой", "Выручка"];
+      const rebuilt: Record<string, unknown>[] = [];
+      for (const [manager, byCode] of byManager.entries()) {
+        const managerItems = [...byCode.values()].flat();
+        const managerRow: Record<string, unknown> = {
+          "Level": "Manager",
+          "Менеджер": manager,
+          "Месяц": "-",
+          "Код курса": "-",
+          "fl_IDs": managerItems.map((x) => String(x["fl_IDs"] ?? "").trim()).filter(Boolean).join(",").slice(0, 50000),
+        };
+        for (const k of metricKeys) managerRow[k] = managerItems.reduce((a, x) => a + num(x[k]), 0);
+        managerRow["Конверсия в Квал"] = num(managerRow["Лиды"]) > 0 ? num(managerRow["Квал"]) / num(managerRow["Лиды"]) : 0;
+        managerRow["Конверсия в Неквал"] = num(managerRow["Лиды"]) > 0 ? num(managerRow["Неквал"]) / num(managerRow["Лиды"]) : 0;
+        managerRow["Конверсия в Отказ"] = num(managerRow["Лиды"]) > 0 ? num(managerRow["Отказы"]) / num(managerRow["Лиды"]) : 0;
+        managerRow["Конверсия в работе"] = num(managerRow["Лиды"]) > 0 ? num(managerRow["В работе"]) / num(managerRow["Лиды"]) : 0;
+        managerRow["Средний_чек"] = num(managerRow["Сделок_с_выручкой"]) > 0 ? num(managerRow["Выручка"]) / num(managerRow["Сделок_с_выручкой"]) : 0;
+        rebuilt.push(managerRow);
+
+        const codes = [...byCode.keys()].sort((a, b) => a.localeCompare(b));
+        for (const code of codes) {
+          const items = byCode.get(code) || [];
+          const codeRow: Record<string, unknown> = {
+            "Level": "Код курса",
+            "Менеджер": manager,
+            "Месяц": "-",
+            "Код курса": code,
+            "fl_IDs": items.map((x) => String(x["fl_IDs"] ?? "").trim()).filter(Boolean).join(",").slice(0, 50000),
+          };
+          for (const k of metricKeys) codeRow[k] = items.reduce((a, x) => a + num(x[k]), 0);
+          codeRow["Конверсия в Квал"] = num(codeRow["Лиды"]) > 0 ? num(codeRow["Квал"]) / num(codeRow["Лиды"]) : 0;
+          codeRow["Конверсия в Неквал"] = num(codeRow["Лиды"]) > 0 ? num(codeRow["Неквал"]) / num(codeRow["Лиды"]) : 0;
+          codeRow["Конверсия в Отказ"] = num(codeRow["Лиды"]) > 0 ? num(codeRow["Отказы"]) / num(codeRow["Лиды"]) : 0;
+          codeRow["Конверсия в работе"] = num(codeRow["Лиды"]) > 0 ? num(codeRow["В работе"]) / num(codeRow["Лиды"]) : 0;
+          codeRow["Средний_чек"] = num(codeRow["Сделок_с_выручкой"]) > 0 ? num(codeRow["Выручка"]) / num(codeRow["Сделок_с_выручкой"]) : 0;
+          rebuilt.push(codeRow);
+        }
+      }
+      data = rebuilt;
     }
 
     if (isFunnelHierarchy && hasDateWindowControl) {
@@ -2045,6 +2119,7 @@ function toConvPct(v: unknown): number {
 
 async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
   writeUrlState("charts");
+  let chartsMonthsBack = 12;
 
   app.innerHTML = `<div class="app-layout">
     <aside class="side-menu">
@@ -2057,15 +2132,10 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
         <h1>Графики</h1>
         <p class="sub">Динамика продаж и выручки</p>
       </header>
-      <div class="charts-page">
-        <div class="chart-wrap"><h3>Выручка и средний чек по месяцам (Bitrix)</h3><canvas id="chart-revenue-month"></canvas></div>
-        <div class="chart-wrap"><h3>Воронка лидов по месяцам (Bitrix)</h3><canvas id="chart-leads-month"></canvas></div>
-        <div class="chart-wrap"><h3>Yandex: расход и выручка по месяцам</h3><canvas id="chart-yandex-month"></canvas></div>
-        <div class="chart-wrap"><h3>Email: лиды и выручка по периодам</h3><canvas id="chart-email-period"></canvas></div>
-        <div class="chart-wrap"><h3>Конверсия из лидов в квалифицированные (Bitrix)</h3><canvas id="chart-conversion-month"></canvas></div>
-        <div class="chart-wrap"><h3>Yandex: ROI по месяцам (выручка / расход)</h3><canvas id="chart-yandex-roi"></canvas></div>
-        <div class="chart-wrap chart-wrap--full"><h3>Топ менеджеров по выручке</h3><canvas id="chart-managers-revenue"></canvas></div>
+      <div class="toolbar">
+        <label class="date-window-inline">Период: <input class="charts-date-window-slider" type="range" min="1" max="24" step="1" value="${chartsMonthsBack}" /> <span class="charts-date-window-value">${chartsMonthsBack} мес.</span></label>
       </div>
+      <div class="charts-page"></div>
     </main>
   </div>`;
 
@@ -2109,247 +2179,286 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
     },
   };
 
+  let bitrixMonths: Record<string, unknown>[] = [];
+  let yandexMonths: Record<string, unknown>[] = [];
+  let emailOps: Record<string, unknown>[] = [];
+  let managerRows: Record<string, unknown>[] = [];
   try {
-    const bitrixMonths = await fetchJson<Record<string, unknown>[]>("data/bitrix_month_total_full.json");
-    const sorted = bitrixMonths
-      .filter((r) => !isTotalValue(r["Месяц"]))
-      .sort((a, b) => compareCell("Месяц", a["Месяц"], b["Месяц"], "asc"));
-
-    const monthLabels = sorted.map((r) => String(r["Месяц"] ?? ""));
-    const revenueData = sorted.map((r) => num(r["Выручка"]));
-    const avgCheckData = sorted.map((r) => num(r["Средний_чек"]));
-    const leadsData = sorted.map((r) => num(r["Лиды"]));
-    const qualData = sorted.map((r) => num(r["Квал"]));
-    const dealsData = sorted.map((r) => num(r["Сделок_с_выручкой"]));
-
-    const revenueCanvas = app.querySelector<HTMLCanvasElement>("#chart-revenue-month")!;
-    new Chart(revenueCanvas, {
-      type: "bar",
-      data: {
-        labels: monthLabels,
-        datasets: [
-          {
-            label: "Выручка, ₽",
-            data: revenueData,
-            backgroundColor: CHART_COLORS.revenue + "99",
-            borderColor: CHART_COLORS.revenue,
-            borderWidth: 1,
-            yAxisID: "y",
-          },
-          {
-            label: "Средний чек, ₽",
-            data: avgCheckData,
-            type: "line" as const,
-            borderColor: CHART_COLORS.avgCheck,
-            backgroundColor: "transparent",
-            pointRadius: 3,
-            tension: 0.3,
-            yAxisID: "y2",
-          },
-        ],
-      },
-      options: {
-        ...chartDefaults,
-        scales: {
-          x: chartDefaults.scales.x,
-          y: { ...chartDefaults.scales.y, position: "left" as const, title: { display: true, text: "Выручка, ₽", color: "#8b92a8" } },
-          y2: { ...chartDefaults.scales.y, position: "right" as const, title: { display: true, text: "Средний чек, ₽", color: "#8b92a8" }, grid: { drawOnChartArea: false, color: "#2a3142" } },
-        },
-      },
-    });
-
-    const leadsCanvas = app.querySelector<HTMLCanvasElement>("#chart-leads-month")!;
-    new Chart(leadsCanvas, {
-      type: "bar",
-      data: {
-        labels: monthLabels,
-        datasets: [
-          { label: "Лиды", data: leadsData, backgroundColor: CHART_COLORS.leads + "99", borderColor: CHART_COLORS.leads, borderWidth: 1 },
-          { label: "Квал", data: qualData, backgroundColor: CHART_COLORS.qual + "99", borderColor: CHART_COLORS.qual, borderWidth: 1 },
-          { label: "Сделок с выручкой", data: dealsData, backgroundColor: CHART_COLORS.deals + "99", borderColor: CHART_COLORS.deals, borderWidth: 1 },
-        ],
-      },
-      options: { ...chartDefaults },
-    });
-
-    const convQualData = sorted.map((r) => toConvPct(r["Конверсия в Квал"]));
-    const convRefusalData = sorted.map((r) => toConvPct(r["Конверсия в Отказ"]));
-    const convCanvas = app.querySelector<HTMLCanvasElement>("#chart-conversion-month")!;
-    new Chart(convCanvas, {
-      type: "line",
-      data: {
-        labels: monthLabels,
-        datasets: [
-          {
-            label: "Конверсия в Квал, %",
-            data: convQualData,
-            borderColor: CHART_COLORS.convRate,
-            backgroundColor: CHART_COLORS.convRate + "33",
-            pointRadius: 3,
-            tension: 0.3,
-            fill: true,
-          },
-          {
-            label: "Конверсия в Отказ, %",
-            data: convRefusalData,
-            borderColor: CHART_COLORS.refusalRate,
-            backgroundColor: "transparent",
-            pointRadius: 3,
-            tension: 0.3,
-          },
-        ],
-      },
-      options: {
-        ...chartDefaults,
-        scales: {
-          x: chartDefaults.scales.x,
-          y: { ...chartDefaults.scales.y, title: { display: true, text: "%", color: "#8b92a8" } },
-        },
-      },
-    });
+    [bitrixMonths, yandexMonths, emailOps, managerRows] = await Promise.all([
+      fetchJson<Record<string, unknown>[]>("data/bitrix_month_total_full.json"),
+      fetchJson<Record<string, unknown>[]>("data/global/yandex_projects_revenue_by_month.json"),
+      fetchJson<Record<string, unknown>[]>("data/email_operational_summary.json"),
+      fetchJson<Record<string, unknown>[]>("data/manager_sales_by_month.json"),
+    ]);
   } catch {
-    const wrap = app.querySelector<HTMLElement>("#chart-revenue-month")?.closest(".chart-wrap");
-    if (wrap) wrap.innerHTML += `<p class="muted">Данные недоступны</p>`;
+    // Handled per-chart below.
   }
 
-  try {
-    const yandexMonths = await fetchJson<Record<string, unknown>[]>("data/global/yandex_projects_revenue_by_month.json");
-    const ySorted = yandexMonths
-      .filter((r) => !isTotalValue(r["month"]))
-      .sort((a, b) => String(a["month"] ?? "").localeCompare(String(b["month"] ?? "")));
+  const drawCharts = (): void => {
+    const chartsPage = app.querySelector<HTMLElement>(".charts-page");
+    if (!chartsPage) return;
+    chartsPage.innerHTML = `
+      <div class="chart-wrap"><h3>Выручка и средний чек по месяцам (Bitrix)</h3><canvas id="chart-revenue-month"></canvas></div>
+      <div class="chart-wrap"><h3>Воронка лидов по месяцам (Bitrix)</h3><canvas id="chart-leads-month"></canvas></div>
+      <div class="chart-wrap"><h3>Yandex: расход и выручка по месяцам</h3><canvas id="chart-yandex-month"></canvas></div>
+      <div class="chart-wrap"><h3>Email: лиды и выручка по периодам</h3><canvas id="chart-email-period"></canvas></div>
+      <div class="chart-wrap"><h3>Конверсия из лидов в квалифицированные (Bitrix)</h3><canvas id="chart-conversion-month"></canvas></div>
+      <div class="chart-wrap"><h3>Yandex: ROI по месяцам (выручка / расход)</h3><canvas id="chart-yandex-roi"></canvas></div>
+      <div class="chart-wrap chart-wrap--full"><h3>Топ менеджеров по выручке</h3><canvas id="chart-managers-revenue"></canvas></div>
+    `;
 
-    const yLabels = ySorted.map((r) => String(r["month"] ?? ""));
-    const spendData = ySorted.map((r) => {
-      const month = String(r["month"] ?? "").trim();
-      const m = yandexMonthLeadMetrics.get(month) || yandexEmptyMetrics();
-      return m.spend > 0 ? m.spend : num(r["spend"]);
-    });
-    const yRevenueData = ySorted.map((r) => num(r["revenue_raw"]));
+    try {
+      const sorted = filterRowsByMonthsBack(bitrixMonths, "Месяц", chartsMonthsBack)
+        .filter((r) => !isTotalValue(r["Месяц"]))
+        .sort((a, b) => compareCell("Месяц", a["Месяц"], b["Месяц"], "asc"));
+      const monthLabels = sorted.map((r) => String(r["Месяц"] ?? ""));
+      const revenueData = sorted.map((r) => num(r["Выручка"]));
+      const avgCheckData = sorted.map((r) => num(r["Средний_чек"]));
+      const leadsData = sorted.map((r) => num(r["Лиды"]));
+      const qualData = sorted.map((r) => num(r["Квал"]));
+      const dealsData = sorted.map((r) => num(r["Сделок_с_выручкой"]));
 
-    const yCanvas = app.querySelector<HTMLCanvasElement>("#chart-yandex-month")!;
-    new Chart(yCanvas, {
-      type: "bar",
-      data: {
-        labels: yLabels,
-        datasets: [
-          { label: "Расход, ₽", data: spendData, backgroundColor: CHART_COLORS.spend + "99", borderColor: CHART_COLORS.spend, borderWidth: 1 },
-          { label: "Выручка, ₽", data: yRevenueData, backgroundColor: CHART_COLORS.profit + "99", borderColor: CHART_COLORS.profit, borderWidth: 1 },
-        ],
-      },
-      options: { ...chartDefaults },
-    });
-
-    const roiData = ySorted.map((r) => {
-      const month = String(r["month"] ?? "").trim();
-      const m = yandexMonthLeadMetrics.get(month) || yandexEmptyMetrics();
-      const spend = m.spend > 0 ? m.spend : num(r["spend"]);
-      const revenue = num(r["revenue_raw"]);
-      return spend > 0 ? Math.round((revenue / spend) * 100) / 100 : 0;
-    });
-    const roiCanvas = app.querySelector<HTMLCanvasElement>("#chart-yandex-roi")!;
-    new Chart(roiCanvas, {
-      type: "line",
-      data: {
-        labels: yLabels,
-        datasets: [
-          {
-            label: "ROI (выручка / расход)",
-            data: roiData,
-            borderColor: CHART_COLORS.roi,
-            backgroundColor: CHART_COLORS.roi + "33",
-            pointRadius: 4,
-            tension: 0.3,
-            fill: true,
+      const revenueCanvas = app.querySelector<HTMLCanvasElement>("#chart-revenue-month")!;
+      new Chart(revenueCanvas, {
+        type: "bar",
+        data: {
+          labels: monthLabels,
+          datasets: [
+            {
+              label: "Выручка, ₽",
+              data: revenueData,
+              backgroundColor: CHART_COLORS.revenue + "99",
+              borderColor: CHART_COLORS.revenue,
+              borderWidth: 1,
+              yAxisID: "y",
+            },
+            {
+              label: "Средний чек, ₽",
+              data: avgCheckData,
+              type: "line" as const,
+              borderColor: CHART_COLORS.avgCheck,
+              backgroundColor: "transparent",
+              pointRadius: 3,
+              tension: 0.3,
+              yAxisID: "y2",
+            },
+          ],
+        },
+        options: {
+          ...chartDefaults,
+          scales: {
+            x: chartDefaults.scales.x,
+            y: { ...chartDefaults.scales.y, position: "left" as const, title: { display: true, text: "Выручка, ₽", color: "#8b92a8" } },
+            y2: { ...chartDefaults.scales.y, position: "right" as const, title: { display: true, text: "Средний чек, ₽", color: "#8b92a8" }, grid: { drawOnChartArea: false, color: "#2a3142" } },
           },
-        ],
-      },
-      options: {
-        ...chartDefaults,
-        scales: {
-          x: chartDefaults.scales.x,
-          y: { ...chartDefaults.scales.y, title: { display: true, text: "ROI", color: "#8b92a8" } },
         },
-      },
-    });
-  } catch {
-    const wrap = app.querySelector<HTMLElement>("#chart-yandex-month")?.closest(".chart-wrap");
-    if (wrap) wrap.innerHTML += `<p class="muted">Данные недоступны</p>`;
-  }
+      });
 
-  try {
-    const emailOps = await fetchJson<Record<string, unknown>[]>("data/email_operational_summary.json");
-    const eSorted = emailOps
-      .filter((r) => !isTotalValue(r["Период"]))
-      .sort((a, b) => compareCell("Период", a["Период"], b["Период"], "asc"));
-
-    const eLabels = eSorted.map((r) => String(r["Период"] ?? ""));
-    const eLeadsData = eSorted.map((r) => num(r["Лиды"]));
-    const eRevenueData = eSorted.map((r) => num(r["Выручка"]));
-
-    const eCanvas = app.querySelector<HTMLCanvasElement>("#chart-email-period")!;
-    new Chart(eCanvas, {
-      type: "bar",
-      data: {
-        labels: eLabels,
-        datasets: [
-          { label: "Лиды", data: eLeadsData, backgroundColor: CHART_COLORS.emailLeads + "99", borderColor: CHART_COLORS.emailLeads, borderWidth: 1, yAxisID: "y" },
-          { label: "Выручка, ₽", data: eRevenueData, backgroundColor: CHART_COLORS.emailRevenue + "99", borderColor: CHART_COLORS.emailRevenue, borderWidth: 1, yAxisID: "y2" },
-        ],
-      },
-      options: {
-        ...chartDefaults,
-        scales: {
-          x: chartDefaults.scales.x,
-          y: { ...chartDefaults.scales.y, position: "left" as const, title: { display: true, text: "Лиды", color: "#8b92a8" } },
-          y2: { ...chartDefaults.scales.y, position: "right" as const, title: { display: true, text: "Выручка, ₽", color: "#8b92a8" }, grid: { drawOnChartArea: false, color: "#2a3142" } },
+      const leadsCanvas = app.querySelector<HTMLCanvasElement>("#chart-leads-month")!;
+      new Chart(leadsCanvas, {
+        type: "bar",
+        data: {
+          labels: monthLabels,
+          datasets: [
+            { label: "Лиды", data: leadsData, backgroundColor: CHART_COLORS.leads + "99", borderColor: CHART_COLORS.leads, borderWidth: 1 },
+            { label: "Квал", data: qualData, backgroundColor: CHART_COLORS.qual + "99", borderColor: CHART_COLORS.qual, borderWidth: 1 },
+            { label: "Сделок с выручкой", data: dealsData, backgroundColor: CHART_COLORS.deals + "99", borderColor: CHART_COLORS.deals, borderWidth: 1 },
+          ],
         },
-      },
-    });
-  } catch {
-    const wrap = app.querySelector<HTMLElement>("#chart-email-period")?.closest(".chart-wrap");
-    if (wrap) wrap.innerHTML += `<p class="muted">Данные недоступны</p>`;
-  }
+        options: { ...chartDefaults },
+      });
 
-  try {
-    const managerRows = await fetchJson<Record<string, unknown>[]>("data/manager_sales_by_month.json");
-    const managerTotals = new Map<string, number>();
-    for (const r of managerRows) {
-      if (String(r["Level"] ?? "").trim() !== "Manager") continue;
-      const name = String(r["Менеджер"] ?? "").trim();
-      if (!name || name === "-") continue;
-      managerTotals.set(name, (managerTotals.get(name) || 0) + num(r["Выручка"]));
+      const convQualData = sorted.map((r) => toConvPct(r["Конверсия в Квал"]));
+      const convRefusalData = sorted.map((r) => toConvPct(r["Конверсия в Отказ"]));
+      const convCanvas = app.querySelector<HTMLCanvasElement>("#chart-conversion-month")!;
+      new Chart(convCanvas, {
+        type: "line",
+        data: {
+          labels: monthLabels,
+          datasets: [
+            {
+              label: "Конверсия в Квал, %",
+              data: convQualData,
+              borderColor: CHART_COLORS.convRate,
+              backgroundColor: CHART_COLORS.convRate + "33",
+              pointRadius: 3,
+              tension: 0.3,
+              fill: true,
+            },
+            {
+              label: "Конверсия в Отказ, %",
+              data: convRefusalData,
+              borderColor: CHART_COLORS.refusalRate,
+              backgroundColor: "transparent",
+              pointRadius: 3,
+              tension: 0.3,
+            },
+          ],
+        },
+        options: {
+          ...chartDefaults,
+          scales: {
+            x: chartDefaults.scales.x,
+            y: { ...chartDefaults.scales.y, title: { display: true, text: "%", color: "#8b92a8" } },
+          },
+        },
+      });
+    } catch {
+      const wrap = app.querySelector<HTMLElement>("#chart-revenue-month")?.closest(".chart-wrap");
+      if (wrap) wrap.innerHTML += `<p class="muted">Данные недоступны</p>`;
     }
-    const sorted = [...managerTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
-    const mLabels = sorted.map(([name]) => name);
-    const mData = sorted.map(([, revenue]) => revenue);
-    const mCanvas = app.querySelector<HTMLCanvasElement>("#chart-managers-revenue")!;
-    new Chart(mCanvas, {
-      type: "bar",
-      data: {
-        labels: mLabels,
-        datasets: [
-          {
-            label: "Выручка, ₽",
-            data: mData,
-            backgroundColor: CHART_COLORS.managerBar + "99",
-            borderColor: CHART_COLORS.managerBar,
-            borderWidth: 1,
-          },
-        ],
-      },
-      options: {
-        ...chartDefaults,
-        indexAxis: "y" as const,
-        scales: {
-          x: { ...chartDefaults.scales.x, title: { display: true, text: "Выручка, ₽", color: "#8b92a8" } },
-          y: chartDefaults.scales.y,
+
+    try {
+      const ySorted = filterRowsByMonthsBack(yandexMonths, "month", chartsMonthsBack)
+        .filter((r) => !isTotalValue(r["month"]))
+        .sort((a, b) => String(a["month"] ?? "").localeCompare(String(b["month"] ?? "")));
+      const yLabels = ySorted.map((r) => String(r["month"] ?? ""));
+      const spendData = ySorted.map((r) => {
+        const month = String(r["month"] ?? "").trim();
+        const m = yandexMonthLeadMetrics.get(month) || yandexEmptyMetrics();
+        return m.spend > 0 ? m.spend : num(r["spend"]);
+      });
+      const yRevenueData = ySorted.map((r) => num(r["revenue_raw"]));
+
+      const yCanvas = app.querySelector<HTMLCanvasElement>("#chart-yandex-month")!;
+      new Chart(yCanvas, {
+        type: "bar",
+        data: {
+          labels: yLabels,
+          datasets: [
+            { label: "Расход, ₽", data: spendData, backgroundColor: CHART_COLORS.spend + "99", borderColor: CHART_COLORS.spend, borderWidth: 1 },
+            { label: "Выручка, ₽", data: yRevenueData, backgroundColor: CHART_COLORS.profit + "99", borderColor: CHART_COLORS.profit, borderWidth: 1 },
+          ],
         },
-      },
-    });
-  } catch {
-    const wrap = app.querySelector<HTMLElement>("#chart-managers-revenue")?.closest(".chart-wrap");
-    if (wrap) wrap.innerHTML += `<p class="muted">Данные недоступны</p>`;
+        options: { ...chartDefaults },
+      });
+
+      const roiData = ySorted.map((r) => {
+        const month = String(r["month"] ?? "").trim();
+        const m = yandexMonthLeadMetrics.get(month) || yandexEmptyMetrics();
+        const spend = m.spend > 0 ? m.spend : num(r["spend"]);
+        const revenue = num(r["revenue_raw"]);
+        return spend > 0 ? Math.round((revenue / spend) * 100) / 100 : 0;
+      });
+      const roiCanvas = app.querySelector<HTMLCanvasElement>("#chart-yandex-roi")!;
+      new Chart(roiCanvas, {
+        type: "line",
+        data: {
+          labels: yLabels,
+          datasets: [
+            {
+              label: "ROI (выручка / расход)",
+              data: roiData,
+              borderColor: CHART_COLORS.roi,
+              backgroundColor: CHART_COLORS.roi + "33",
+              pointRadius: 4,
+              tension: 0.3,
+              fill: true,
+            },
+          ],
+        },
+        options: {
+          ...chartDefaults,
+          scales: {
+            x: chartDefaults.scales.x,
+            y: { ...chartDefaults.scales.y, title: { display: true, text: "ROI", color: "#8b92a8" } },
+          },
+        },
+      });
+    } catch {
+      const wrap = app.querySelector<HTMLElement>("#chart-yandex-month")?.closest(".chart-wrap");
+      if (wrap) wrap.innerHTML += `<p class="muted">Данные недоступны</p>`;
+    }
+
+    try {
+      const eSorted = filterRowsByMonthsBack(emailOps, "Период", chartsMonthsBack)
+        .filter((r) => !isTotalValue(r["Период"]))
+        .sort((a, b) => compareCell("Период", a["Период"], b["Период"], "asc"));
+      const eLabels = eSorted.map((r) => String(r["Период"] ?? ""));
+      const eLeadsData = eSorted.map((r) => num(r["Лиды"]));
+      const eRevenueData = eSorted.map((r) => num(r["Выручка"]));
+
+      const eCanvas = app.querySelector<HTMLCanvasElement>("#chart-email-period")!;
+      new Chart(eCanvas, {
+        type: "bar",
+        data: {
+          labels: eLabels,
+          datasets: [
+            { label: "Лиды", data: eLeadsData, backgroundColor: CHART_COLORS.emailLeads + "99", borderColor: CHART_COLORS.emailLeads, borderWidth: 1, yAxisID: "y" },
+            { label: "Выручка, ₽", data: eRevenueData, backgroundColor: CHART_COLORS.emailRevenue + "99", borderColor: CHART_COLORS.emailRevenue, borderWidth: 1, yAxisID: "y2" },
+          ],
+        },
+        options: {
+          ...chartDefaults,
+          scales: {
+            x: chartDefaults.scales.x,
+            y: { ...chartDefaults.scales.y, position: "left" as const, title: { display: true, text: "Лиды", color: "#8b92a8" } },
+            y2: { ...chartDefaults.scales.y, position: "right" as const, title: { display: true, text: "Выручка, ₽", color: "#8b92a8" }, grid: { drawOnChartArea: false, color: "#2a3142" } },
+          },
+        },
+      });
+    } catch {
+      const wrap = app.querySelector<HTMLElement>("#chart-email-period")?.closest(".chart-wrap");
+      if (wrap) wrap.innerHTML += `<p class="muted">Данные недоступны</p>`;
+    }
+
+    try {
+      const monthRows = filterRowsByMonthsBack(
+        managerRows.filter((r) => String(r["Level"] ?? "").trim() === "Месяц"),
+        "Месяц",
+        chartsMonthsBack,
+      );
+      const managerTotals = new Map<string, number>();
+      for (const r of monthRows) {
+        const name = String(r["Менеджер"] ?? "").trim();
+        if (!name || name === "-") continue;
+        managerTotals.set(name, (managerTotals.get(name) || 0) + num(r["Выручка"]));
+      }
+      const sorted = [...managerTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+      const mLabels = sorted.map(([name]) => name);
+      const mData = sorted.map(([, revenue]) => revenue);
+      const mCanvas = app.querySelector<HTMLCanvasElement>("#chart-managers-revenue")!;
+      new Chart(mCanvas, {
+        type: "bar",
+        data: {
+          labels: mLabels,
+          datasets: [
+            {
+              label: "Выручка, ₽",
+              data: mData,
+              backgroundColor: CHART_COLORS.managerBar + "99",
+              borderColor: CHART_COLORS.managerBar,
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          ...chartDefaults,
+          indexAxis: "y" as const,
+          scales: {
+            x: { ...chartDefaults.scales.x, title: { display: true, text: "Выручка, ₽", color: "#8b92a8" } },
+            y: chartDefaults.scales.y,
+          },
+        },
+      });
+    } catch {
+      const wrap = app.querySelector<HTMLElement>("#chart-managers-revenue")?.closest(".chart-wrap");
+      if (wrap) wrap.innerHTML += `<p class="muted">Данные недоступны</p>`;
+    }
+  };
+
+  const slider = app.querySelector<HTMLInputElement>(".charts-date-window-slider");
+  const sliderValue = app.querySelector<HTMLElement>(".charts-date-window-value");
+  if (slider && sliderValue) {
+    slider.oninput = () => {
+      const next = Number(slider.value);
+      chartsMonthsBack = Number.isFinite(next) && next > 0 ? Math.round(next) : 12;
+      sliderValue.textContent = `${chartsMonthsBack} мес.`;
+      drawCharts();
+    };
   }
+
+  drawCharts();
 }
 
 async function boot(): Promise<void> {
@@ -2408,18 +2517,29 @@ async function boot(): Promise<void> {
 
 async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
   writeUrlState("dashboard");
-  const [contacts, bitrixWeekFunnel, yandexWeekCampaign] = await Promise.all([
+  const [contacts, bitrixWeekFunnel, yandexWeekCampaign, contactsTotals] = await Promise.all([
     fetchJson<Record<string, unknown>[]>("data/bitrix_contacts_uid.json"),
     fetchJson<Record<string, unknown>[]>("data/bitrix_week_funnel_total.json"),
     fetchJson<Record<string, unknown>[]>("data/yandex_week_campaign_total.json"),
+    fetchJson<Record<string, unknown>[]>("data/dashboard_contacts_total.json").catch(() => []),
   ]);
 
   const expandedWeeks = new Set<string>();
   const expandedYandexWeeks = new Set<string>();
+  const totalsRow = contactsTotals[0] || {};
+  const bitrixContactsActual = Math.round(num(totalsRow["bitrix_contacts_actual"])) || contacts.length;
+  const emailContactsActual = Math.round(num(totalsRow["email_contacts_actual"]));
+  const totalContactsActual = bitrixContactsActual + emailContactsActual;
+  const yandexWeekFiltered = yandexWeekCampaign.filter((r) => {
+    const campaignId = String(r["ID кампании"] ?? "").trim();
+    const hasAd = campaignId !== "" && campaignId !== "(пусто)" && campaignId !== "-";
+    const hasSpend = num(r["Расход, ₽"]) > 0;
+    return hasAd || hasSpend;
+  });
 
   const drawDashboard = (): void => {
     const latestBitrixRecordDate = String(bitrixWeekFunnel[0]?.["Дата_последней_записи_Bitrix"] ?? "-").trim() || "-";
-    const latestYandexRecordDate = String(yandexWeekCampaign[0]?.["Дата_последней_записи_Yandex"] ?? "-").trim() || "-";
+    const latestYandexRecordDate = String((yandexWeekFiltered[0] ?? yandexWeekCampaign[0])?.["Дата_последней_записи_Yandex"] ?? "-").trim() || "-";
 
     app.innerHTML = `<div class="app-layout">
       <aside class="side-menu">
@@ -2433,12 +2553,12 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
           <p class="sub">Срез: последние 7 дней от последней доступной записи</p>
         </header>
         <div class="kpi-grid">
-          <div class="kpi"><div class="label">Уникальные клиенты Bitrix</div><div class="value">${contacts.length.toLocaleString("ru-RU")}</div></div>
+          <div class="kpi"><div class="label">Факт контактов Bitrix + Email</div><div class="value">${totalContactsActual.toLocaleString("ru-RU")}</div></div>
           <div class="kpi"><div class="label">Последняя запись Bitrix</div><div class="value">${escapeHtml(latestBitrixRecordDate)}</div></div>
           <div class="kpi"><div class="label">Последняя запись Yandex</div><div class="value">${escapeHtml(latestYandexRecordDate)}</div></div>
         </div>
         ${renderWeeklyBitrixExpandableTable(bitrixWeekFunnel, expandedWeeks)}
-        ${renderWeeklyYandexExpandableTable(yandexWeekCampaign, expandedYandexWeeks)}
+        ${renderWeeklyYandexExpandableTable(yandexWeekFiltered, expandedYandexWeeks)}
       </main>
     </div>`;
 

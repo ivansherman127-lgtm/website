@@ -961,6 +961,20 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   await upsertDataset(db, "bitrix_contacts_uid.json", rowsToJson(bitrixContactsUid as Record<string, unknown>[]));
   paths.push("bitrix_contacts_uid.json");
 
+  const dashboardContactsTotalRows: Record<string, unknown>[] = [{
+    bitrix_contacts_actual: bitrixContactsUid.length,
+    email_contacts_actual: 0,
+    contacts_actual_total: bitrixContactsUid.length,
+  }];
+  const dashboardContactsTotal = await db
+    .prepare(`SELECT ${goodEmailContactsExpr} AS email_contacts_actual`)
+    .first<{ email_contacts_actual: number }>();
+  const emailContactsActual = Number(dashboardContactsTotal?.email_contacts_actual ?? 0) || 0;
+  dashboardContactsTotalRows[0].email_contacts_actual = emailContactsActual;
+  dashboardContactsTotalRows[0].contacts_actual_total = dashboardContactsTotalRows[0].bitrix_contacts_actual + emailContactsActual;
+  await upsertDataset(db, "dashboard_contacts_total.json", rowsToJson(dashboardContactsTotalRows));
+  paths.push("dashboard_contacts_total.json");
+
   const bitrixFunnelMonthCode = await db
     .prepare(
       `WITH flags AS (
@@ -1239,6 +1253,39 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   await upsertDataset(db, "manager_firstline_by_course.json", rowsToJson((managerFirstlineByCourse.results ?? []) as Record<string, unknown>[]));
   paths.push("manager_firstline_by_course.json");
 
+  const managerFirstlineByCourseMonth = await db
+    .prepare(
+      `${managerBaseSql},
+       filtered AS (
+         SELECT * FROM base WHERE ${firstlineFilter}
+       )
+       SELECT
+         'Код курса' AS "Level",
+         manager AS "Менеджер",
+         month_label AS "Месяц",
+         course_code AS "Код курса",
+         COUNT(*) AS "Лиды",
+         SUM(is_qual) AS "Квал",
+         SUM(is_unqual) AS "Неквал",
+         SUM(is_refusal) AS "Отказы",
+         SUM(is_in_work) AS "В работе",
+         SUM(is_invalid) AS "Невалидные_лиды",
+         SUM(is_revenue) AS "Сделок_с_выручкой",
+         SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
+         SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS "fl_IDs",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
+         CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
+       FROM filtered
+       GROUP BY manager, month_label, course_code
+       ORDER BY manager, month_label DESC, course_code`,
+    )
+    .all<Record<string, unknown>>();
+  await upsertDataset(db, "manager_firstline_by_course_month.json", rowsToJson((managerFirstlineByCourseMonth.results ?? []) as Record<string, unknown>[]));
+  paths.push("manager_firstline_by_course_month.json");
+
   const managerSalesByMonth = await db
     .prepare(
       `${managerBaseSql},
@@ -1404,6 +1451,39 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     .all<Record<string, unknown>>();
   await upsertDataset(db, "manager_sales_by_course.json", rowsToJson((managerSalesByCourse.results ?? []) as Record<string, unknown>[]));
   paths.push("manager_sales_by_course.json");
+
+  const managerSalesByCourseMonth = await db
+    .prepare(
+      `${managerBaseSql},
+       filtered AS (
+         SELECT * FROM base WHERE ${salesFilter}
+       )
+       SELECT
+         'Код курса' AS "Level",
+         manager AS "Менеджер",
+         month_label AS "Месяц",
+         course_code AS "Код курса",
+         COUNT(*) AS "Лиды",
+         SUM(is_qual) AS "Квал",
+         SUM(is_unqual) AS "Неквал",
+         SUM(is_refusal) AS "Отказы",
+         SUM(is_in_work) AS "В работе",
+         SUM(is_invalid) AS "Невалидные_лиды",
+         SUM(is_revenue) AS "Сделок_с_выручкой",
+         SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
+         SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS "fl_IDs",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
+         CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
+       FROM filtered
+       GROUP BY manager, month_label, course_code
+       ORDER BY manager, month_label DESC, course_code`,
+    )
+    .all<Record<string, unknown>>();
+  await upsertDataset(db, "manager_sales_by_course_month.json", rowsToJson((managerSalesByCourseMonth.results ?? []) as Record<string, unknown>[]));
+  paths.push("manager_sales_by_course_month.json");
 
   const yandexMonthKpis = await db
     .prepare(
