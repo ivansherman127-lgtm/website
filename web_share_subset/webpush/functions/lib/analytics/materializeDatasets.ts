@@ -351,9 +351,18 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE("Воронка", '') AS funnel,
            COALESCE(revenue_amount, 0) AS revenue_amount,
            CASE
-             WHEN COALESCE("Воронка", '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE("Стадия сделки", '') = 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE("Воронка", '') IN ('B2B', 'B2C') AND COALESCE("Стадия сделки", '') <> 'Сделка не заключена' THEN 1
+             -- Холодная воронка: Получившие демо-доступ квал с 09.02.26 (month proxy >= 2026-02)
+             WHEN COALESCE("Воронка", '') = 'Холодная воронка'
+                  AND COALESCE("Стадия сделки", '') = 'Получившие демо-доступ'
+                  AND COALESCE(month, '') >= '2026-02' THEN 1
+             -- B2B/B2C: всё кроме Сделка не заключена — квал
+             WHEN COALESCE("Воронка", '') IN ('B2B', 'B2C')
+                  AND COALESCE("Стадия сделки", '') <> 'Сделка не заключена'
+                  AND COALESCE("Стадия сделки", '') <> '' THEN 1
+             -- Реактивация: B2B отказ квал с 18.03.26 (month proxy >= 2026-03)
+             WHEN COALESCE("Воронка", '') = 'Реактивация'
+                  AND COALESCE("Стадия сделки", '') = 'B2B отказ'
+                  AND COALESCE(month, '') >= '2026-03' THEN 1
              ELSE 0
            END AS is_qual,
            CASE
@@ -388,15 +397,21 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
              ELSE 0
            END AS is_invalid,
            CASE
-             WHEN COALESCE("Стадия сделки", '') <> ''
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%сделка заключена%'
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%сделка закрыта%'
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%отказ%'
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%неквал%'
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%спам%'
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%дубл%'
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%чс%'
-             THEN 1
+             -- Горячая воронка: в работе = Взято в работу / Нет ответа / Перезвонить
+             WHEN COALESCE("Воронка", '') = 'Горячая воронка'
+                  AND COALESCE("Стадия сделки", '') IN ('Взято в работу', 'Нет ответа', 'Перезвонить') THEN 1
+             -- Холодная воронка: в работе = Взято в работу / Нет ответа / Перезвонить / Получившие демо-доступ
+             WHEN COALESCE("Воронка", '') = 'Холодная воронка'
+                  AND COALESCE("Стадия сделки", '') IN ('Взято в работу', 'Нет ответа', 'Перезвонить', 'Получившие демо-доступ') THEN 1
+             -- B2B: активные стадии сделки
+             WHEN COALESCE("Воронка", '') = 'B2B'
+                  AND COALESCE("Стадия сделки", '') IN ('Новая сделка', 'Потенциал 01', 'Выбор 03', 'Кастомный запрос', 'Согласование КП', 'Тендер', 'Согласование договора', 'Счет выставлен', 'Постоплата') THEN 1
+             -- B2C: активные стадии сделки
+             WHEN COALESCE("Воронка", '') = 'B2C'
+                  AND COALESCE("Стадия сделки", '') IN ('Новая заявка', 'Взято в работу', 'Консультация с экспертом', 'Консультация назначена', 'Потенциал 01', 'Выбор 03', 'Готов к покупке') THEN 1
+             -- Реактивация: только В проработке, нет ответа
+             WHEN COALESCE("Воронка", '') = 'Реактивация'
+                  AND COALESCE("Стадия сделки", '') = 'В проработке, нет ответа' THEN 1
              ELSE 0
            END AS is_in_work,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
@@ -847,9 +862,18 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE(NULLIF(trim(course_code_norm), ''), '—') AS course_code,
            COALESCE(revenue_amount, 0) AS revenue_amount,
            CASE
-             WHEN COALESCE("Воронка", '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE("Стадия сделки", '') = 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE("Воронка", '') IN ('B2B', 'B2C') AND COALESCE("Стадия сделки", '') <> 'Сделка не заключена' THEN 1
+             -- Холодная воронка: Получившие демо-доступ квал с 09.02.26 (month proxy >= 2026-02)
+             WHEN COALESCE("Воронка", '') = 'Холодная воронка'
+                  AND COALESCE("Стадия сделки", '') = 'Получившие демо-доступ'
+                  AND COALESCE(month, '') >= '2026-02' THEN 1
+             -- B2B/B2C: всё кроме Сделка не заключена — квал
+             WHEN COALESCE("Воронка", '') IN ('B2B', 'B2C')
+                  AND COALESCE("Стадия сделки", '') <> 'Сделка не заключена'
+                  AND COALESCE("Стадия сделки", '') <> '' THEN 1
+             -- Реактивация: B2B отказ квал с 18.03.26 (month proxy >= 2026-03)
+             WHEN COALESCE("Воронка", '') = 'Реактивация'
+                  AND COALESCE("Стадия сделки", '') = 'B2B отказ'
+                  AND COALESCE(month, '') >= '2026-03' THEN 1
              ELSE 0
            END AS is_qual,
            CASE
@@ -884,15 +908,21 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
              ELSE 0
            END AS is_invalid,
            CASE
-             WHEN COALESCE("Стадия сделки", '') <> ''
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%сделка заключена%'
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%сделка закрыта%'
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%отказ%'
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%неквал%'
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%спам%'
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%дубл%'
-              AND lower(COALESCE("Стадия сделки", '')) NOT LIKE '%чс%'
-             THEN 1
+             -- Горячая воронка: в работе = Взято в работу / Нет ответа / Перезвонить
+             WHEN COALESCE("Воронка", '') = 'Горячая воронка'
+                  AND COALESCE("Стадия сделки", '') IN ('Взято в работу', 'Нет ответа', 'Перезвонить') THEN 1
+             -- Холодная воронка: в работе = Взято в работу / Нет ответа / Перезвонить / Получившие демо-доступ
+             WHEN COALESCE("Воронка", '') = 'Холодная воронка'
+                  AND COALESCE("Стадия сделки", '') IN ('Взято в работу', 'Нет ответа', 'Перезвонить', 'Получившие демо-доступ') THEN 1
+             -- B2B: активные стадии сделки
+             WHEN COALESCE("Воронка", '') = 'B2B'
+                  AND COALESCE("Стадия сделки", '') IN ('Новая сделка', 'Потенциал 01', 'Выбор 03', 'Кастомный запрос', 'Согласование КП', 'Тендер', 'Согласование договора', 'Счет выставлен', 'Постоплата') THEN 1
+             -- B2C: активные стадии сделки
+             WHEN COALESCE("Воронка", '') = 'B2C'
+                  AND COALESCE("Стадия сделки", '') IN ('Новая заявка', 'Взято в работу', 'Консультация с экспертом', 'Консультация назначена', 'Потенциал 01', 'Выбор 03', 'Готов к покупке') THEN 1
+             -- Реактивация: только В проработке, нет ответа
+             WHEN COALESCE("Воронка", '') = 'Реактивация'
+                  AND COALESCE("Стадия сделки", '') = 'В проработке, нет ответа' THEN 1
              ELSE 0
            END AS is_in_work,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
