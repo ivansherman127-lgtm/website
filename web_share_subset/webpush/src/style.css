@@ -221,6 +221,16 @@ header .sub {
   margin-right: 0.4rem;
 }
 
+.yweek-expand-btn {
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #cbd5e1;
+  cursor: pointer;
+  margin-right: 0.4rem;
+}
+
 .week-row td {
   font-weight: 600;
   background: #141b29;

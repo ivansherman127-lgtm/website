@@ -349,6 +349,82 @@ function renderWeeklyBitrixExpandableTable(rows: Record<string, unknown>[], expa
   `;
 }
 
+function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expandedWeeks: Set<string>): string {
+  if (!rows.length) {
+    return `
+      <section class="chart-wrap">
+        <h3>Yandex: последние 7 дней (раскрытие по кампаниям)</h3>
+        <p class="muted">Нет данных в выбранном диапазоне</p>
+      </section>
+    `;
+  }
+
+  const byWeek = new Map<string, Record<string, unknown>[]>();
+  for (const r of rows) {
+    const week = String(r["Неделя"] ?? "").trim();
+    if (!week) continue;
+    if (!byWeek.has(week)) byWeek.set(week, []);
+    byWeek.get(week)!.push(r);
+  }
+  const weeks = [...byWeek.keys()].sort((a, b) => b.localeCompare(a));
+  const cols = [
+    "Неделя",
+    "Кампания",
+    "ID кампании",
+    "Лиды",
+    "Квал",
+    "Неквал",
+    "Отказы",
+    "Сделок_с_выручкой",
+    "Ассоц_выручка",
+    "Расход, ₽",
+    "Прибыль",
+  ];
+
+  const bodyRows: string[] = [];
+  for (const week of weeks) {
+    const items = byWeek.get(week) || [];
+    const totals: Record<string, unknown> = {
+      "Неделя": week,
+      "Кампания": "Итого",
+      "ID кампании": "-",
+      "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
+      "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
+      "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
+      "Отказы": items.reduce((a, x) => a + num(x["Отказы"]), 0),
+      "Сделок_с_выручкой": items.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
+      "Ассоц_выручка": items.reduce((a, x) => a + num(x["Ассоц_выручка"]), 0),
+      "Расход, ₽": items.reduce((a, x) => a + num(x["Расход, ₽"]), 0),
+      "Прибыль": items.reduce((a, x) => a + num(x["Прибыль"]), 0),
+    };
+    const open = expandedWeeks.has(week);
+    bodyRows.push(
+      `<tr class="week-row"><td><button class="yweek-expand-btn" data-week="${escapeHtml(week)}">${open ? "−" : "+"}</button> ${escapeHtml(week)}</td>${cols
+        .slice(1)
+        .map((c) => `<td>${escapeHtml(formatCell(c, totals[c]))}</td>`)
+        .join("")}</tr>`,
+    );
+    if (open) {
+      const sorted = [...items].sort((a, b) => String(a["Кампания"] ?? "").localeCompare(String(b["Кампания"] ?? "")));
+      for (const item of sorted) {
+        bodyRows.push(
+          `<tr class="week-child-row"><td>${escapeHtml(String(item["Неделя"] ?? ""))}</td>${cols
+            .slice(1)
+            .map((c) => `<td>${escapeHtml(formatCell(c, item[c]))}</td>`)
+            .join("")}</tr>`,
+        );
+      }
+    }
+  }
+
+  return `
+    <section class="chart-wrap">
+      <h3>Yandex: последние 7 дней (раскрытие по кампаниям)</h3>
+      <div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody>${bodyRows.join("")}</tbody></table></div>
+    </section>
+  `;
+}
+
 type TabKey = "assoc_builder" | "media" | "budget" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa";
 type ViewKey =
   | "assoc_dynamic"
@@ -1139,7 +1215,17 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const isFunnelHierarchy = view === "funnels_hierarchy";
   const isBudgetHierarchy = view === "budget_monthly";
   const dateWindowCol = ["Период", "Месяц", "month", "Год"].find((c) => allCols.includes(c)) || "";
-  const hasDateWindowControl = Boolean(dateWindowCol) && !isManagerHierarchy && !isFunnelHierarchy && !isBudgetHierarchy && !isYandexProjectHierarchy;
+  const dateWindowViews = new Set<ViewKey>([
+    "assoc_dynamic",
+    "media_yandex",
+    "budget_monthly",
+    "managers_sales_course",
+    "managers_sales_month",
+    "managers_firstline_course",
+    "managers_firstline_month",
+    "funnels_hierarchy",
+  ]);
+  const hasDateWindowControl = dateWindowViews.has(view);
   const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let visibleRows: Record<string, unknown>[] = [];
   const postJson = async (url: string, body: unknown): Promise<{ ok: boolean; rows?: number; error?: string }> => {
@@ -2133,78 +2219,18 @@ async function boot(): Promise<void> {
 
 async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
   writeUrlState("dashboard");
-  const [bitrixMonths, contacts, emailOps, yandexMonths, yandexHierarchy, bitrixWeekFunnel] = await Promise.all([
-    fetchJson<Record<string, unknown>[]>("data/bitrix_month_total_full.json"),
+  const [contacts, bitrixWeekFunnel, yandexWeekCampaign] = await Promise.all([
     fetchJson<Record<string, unknown>[]>("data/bitrix_contacts_uid.json"),
-    fetchJson<Record<string, unknown>[]>("data/email_operational_summary.json"),
-    fetchJson<Record<string, unknown>[]>("data/global/yandex_projects_revenue_by_month.json"),
-    fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json"),
     fetchJson<Record<string, unknown>[]>("data/bitrix_week_funnel_total.json"),
+    fetchJson<Record<string, unknown>[]>("data/yandex_week_campaign_total.json"),
   ]);
 
-  const monthRows = bitrixMonths.filter((r) => !isTotalValue(r["Месяц"]));
-  monthRows.sort((a, b) => compareCell("Месяц", a["Месяц"], b["Месяц"], "desc"));
-
-  const emailRows = emailOps.filter((r) => !isTotalValue(r["Период"]));
-  emailRows.sort((a, b) => compareCell("Период", a["Период"], b["Период"], "desc"));
-
-  const yRows = yandexMonths.filter((r) => !isTotalValue(r["month"]));
-  yRows.sort((a, b) => compareCell("Период", a["month"], b["month"], "desc"));
-  const yhMonthRows = yandexHierarchy.filter((r) => String(r["Level"] ?? "").trim() === "Month");
-  yhMonthRows.sort((a, b) => compareCell("Период", a["Месяц"], b["Месяц"], "desc"));
-  const yandexMonthByMonth = new Map<string, Record<string, unknown>>();
-  for (const r of yhMonthRows) {
-    const month = String(r["month"] ?? r["Месяц"] ?? "").trim();
-    if (month) yandexMonthByMonth.set(month, r);
-  }
-
-  let monthsBack = 6;
   const expandedWeeks = new Set<string>();
+  const expandedYandexWeeks = new Set<string>();
 
   const drawDashboard = (): void => {
-    const bitrixFiltered = filterRowsByMonthsBack(monthRows, "Месяц", monthsBack);
-    const emailFiltered = filterRowsByMonthsBack(emailRows, "Период", monthsBack);
-    const yandexFiltered = filterRowsByMonthsBack(yRows, "month", monthsBack);
-    const weeklyFiltered = filterRowsByMonthsBack(bitrixWeekFunnel, "Неделя", monthsBack);
-
-    const latestBitrix = bitrixFiltered[0] || {};
-
-    const bitrixTableRows = bitrixFiltered.map((bm) => ({
-      "Период": bm["Месяц"] ?? "-",
-      "Лиды": bm["Лиды"] ?? 0,
-      "Квал": bm["Квал"] ?? 0,
-      "Конверсия в Квал": bm["Конверсия в Квал"] ?? 0,
-      "Неквал": bm["Неквал"] ?? 0,
-      "Конверсия в Неквал": bm["Конверсия в Неквал"] ?? 0,
-      "Отказы": bm["Отказы"] ?? 0,
-      "Конверсия в Отказ": bm["Конверсия в Отказ"] ?? 0,
-      "В работе": bm["В работе"] ?? 0,
-      "Конверсия в работе": bm["Конверсия в работе"] ?? 0,
-      "Невалидные лиды": bm["Невалидные_лиды"] ?? 0,
-      "Сделок с выручкой": bm["Сделок_с_выручкой"] ?? 0,
-      "Выручка": bm["Выручка"] ?? 0,
-      "Средний чек": bm["Средний_чек"] ?? 0,
-    }));
-
-    const yandexTableRows = yandexFiltered.map((ym) => {
-      const month = String(ym["month"] ?? "").trim();
-      const yh = yandexMonthByMonth.get(month) || {};
-      return {
-        "Период": month || "-",
-        "Лиды": yh["Leads"] ?? ym["leads_raw"] ?? 0,
-        "Квал": yh["Qual"] ?? 0,
-        "Неквал": yh["Unqual"] ?? 0,
-        "Отказы": yh["Refusal"] ?? 0,
-        "Конверсия в Квал": yh["%Qual"] ?? 0,
-        "Конверсия в Неквал": yh["%Unqual"] ?? 0,
-        "Конверсия в Отказ": yh["%Refusal"] ?? 0,
-        "Клики": yh["Клики"] ?? 0,
-        "Расход, ₽": yh["Расход, ₽"] ?? ym["spend"] ?? 0,
-        "Оплаты": ym["paid_deals_raw"] ?? 0,
-        "Выручка": ym["revenue_raw"] ?? 0,
-        "Прибыль": num(ym["revenue_raw"]) - num(yh["Расход, ₽"] ?? ym["spend"]),
-      };
-    });
+    const latestBitrixRecordDate = String(bitrixWeekFunnel[0]?.["Дата_последней_записи_Bitrix"] ?? "-").trim() || "-";
+    const latestYandexRecordDate = String(yandexWeekCampaign[0]?.["Дата_последней_записи_Yandex"] ?? "-").trim() || "-";
 
     app.innerHTML = `<div class="app-layout">
       <aside class="side-menu">
@@ -2215,37 +2241,17 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
       <main class="main-content">
         <header>
           <h1>Главный дашборд</h1>
-          <p class="sub">Окно данных: последние ${monthsBack} мес.</p>
+          <p class="sub">Срез: последние 7 дней от последней доступной записи</p>
         </header>
         <div class="kpi-grid">
           <div class="kpi"><div class="label">Уникальные клиенты Bitrix</div><div class="value">${contacts.length.toLocaleString("ru-RU")}</div></div>
-          <div class="kpi"><div class="label">Последний период Bitrix</div><div class="value">${escapeHtml(String(latestBitrix["Месяц"] ?? "-"))}</div></div>
+          <div class="kpi"><div class="label">Последняя запись Bitrix</div><div class="value">${escapeHtml(latestBitrixRecordDate)}</div></div>
+          <div class="kpi"><div class="label">Последняя запись Yandex</div><div class="value">${escapeHtml(latestYandexRecordDate)}</div></div>
         </div>
-        <section class="chart-wrap">
-          <h3>Фильтр периода главной вкладки</h3>
-          <div class="date-window-control">
-            <label for="dashboard-window-slider">Сколько месяцев назад загружать</label>
-            <input id="dashboard-window-slider" type="range" min="1" max="24" step="1" value="${monthsBack}" />
-            <span class="date-window-value">${monthsBack} мес.</span>
-          </div>
-        </section>
-        ${renderRowsTable("Bitrix: по месяцам", bitrixTableRows)}
-        ${renderRowsTable("Email: по месяцам", emailFiltered)}
-        ${renderRowsTable("Yandex: по месяцам", yandexTableRows)}
-        ${renderWeeklyBitrixExpandableTable(weeklyFiltered, expandedWeeks)}
+        ${renderWeeklyBitrixExpandableTable(bitrixWeekFunnel, expandedWeeks)}
+        ${renderWeeklyYandexExpandableTable(yandexWeekCampaign, expandedYandexWeeks)}
       </main>
     </div>`;
-
-    const slider = app.querySelector<HTMLInputElement>("#dashboard-window-slider");
-    const sliderValue = app.querySelector<HTMLElement>(".date-window-value");
-    if (slider && sliderValue) {
-      slider.oninput = () => {
-        const next = Number(slider.value);
-        monthsBack = Number.isFinite(next) && next > 0 ? Math.round(next) : 6;
-        sliderValue.textContent = `${monthsBack} мес.`;
-        drawDashboard();
-      };
-    }
 
     app.querySelectorAll<HTMLButtonElement>(".week-expand-btn").forEach((btn) => {
       btn.onclick = () => {
@@ -2253,6 +2259,16 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
         if (!week) return;
         if (expandedWeeks.has(week)) expandedWeeks.delete(week);
         else expandedWeeks.add(week);
+        drawDashboard();
+      };
+    });
+
+    app.querySelectorAll<HTMLButtonElement>(".yweek-expand-btn").forEach((btn) => {
+      btn.onclick = () => {
+        const week = btn.getAttribute("data-week") || "";
+        if (!week) return;
+        if (expandedYandexWeeks.has(week)) expandedYandexWeeks.delete(week);
+        else expandedYandexWeeks.add(week);
         drawDashboard();
       };
     });

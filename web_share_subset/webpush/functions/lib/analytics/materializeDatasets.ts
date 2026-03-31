@@ -441,6 +441,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            is_revenue
          FROM src
          WHERE created_date <> ''
+       ),
+       latest AS (
+         SELECT MAX(created_dt) AS latest_created_dt FROM base WHERE created_dt IS NOT NULL
        )
        SELECT
          week_start AS "Неделя",
@@ -454,18 +457,143 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          SUM(is_revenue) AS "Сделок_с_выручкой",
          SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка_сделки_недели",
          SUM(CASE WHEN is_revenue = 1 AND paid_week_start = week_start THEN revenue_amount ELSE 0 END) AS "Выручка_получена_на_неделе",
+         MAX(created_dt) AS "Макс_дата_в_строке",
+         (SELECT latest_created_dt FROM latest) AS "Дата_последней_записи_Bitrix",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе"
        FROM base
-       WHERE created_dt IS NOT NULL AND week_start IS NOT NULL
+       WHERE created_dt IS NOT NULL
+         AND week_start IS NOT NULL
+         AND created_dt >= date((SELECT latest_created_dt FROM latest), '-6 day')
        GROUP BY week_start, funnel_group
        ORDER BY week_start, funnel_group`,
     )
     .all<Record<string, unknown>>();
   await upsertDataset(db, "bitrix_week_funnel_total.json", rowsToJson((bitrixWeekFunnelTotal.results ?? []) as Record<string, unknown>[]));
   paths.push("bitrix_week_funnel_total.json");
+
+  const yandexWeekCampaignTotal = await db
+    .prepare(
+      `WITH ysrc AS (
+         SELECT
+           COALESCE(NULLIF(TRIM(l.project_name), ''), '(пусто)') AS campaign_name,
+           COALESCE(NULLIF(TRIM(l.campaign_id), ''), '(пусто)') AS campaign_id,
+           COALESCE(NULLIF(TRIM(l.yandex_month), ''), '') AS month,
+           CASE
+             WHEN COALESCE(m."Дата создания", '') LIKE '____-__-__%' THEN SUBSTR(m."Дата создания", 1, 10)
+             WHEN COALESCE(m."Дата создания", '') LIKE '__.__.____%' THEN SUBSTR(m."Дата создания", 7, 4) || '-' || SUBSTR(m."Дата создания", 4, 2) || '-' || SUBSTR(m."Дата создания", 1, 2)
+             ELSE ''
+           END AS created_date,
+           COALESCE(l.revenue_amount, 0) AS revenue_amount,
+           ${yandexLeadLogic.qual} AS is_qual,
+           ${yandexLeadLogic.unqual} AS is_unqual,
+           ${yandexLeadLogic.refusal} AS is_refusal,
+           CASE WHEN COALESCE(l.is_paid_deal, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
+         FROM mart_yandex_leads_raw l
+         LEFT JOIN mart_deals_enriched m ON m."ID" = l."ID"
+         WHERE COALESCE(NULLIF(TRIM(l.yandex_month), ''), '') <> ''
+       ),
+       base AS (
+         SELECT
+           campaign_name,
+           campaign_id,
+           month,
+           date(created_date) AS created_dt,
+           date(created_date, printf('-%d days', (CAST(strftime('%w', date(created_date)) AS INTEGER) + 6) % 7)) AS week_start,
+           revenue_amount,
+           is_qual,
+           is_unqual,
+           is_refusal,
+           is_revenue
+         FROM ysrc
+         WHERE created_date <> ''
+       ),
+       latest AS (
+         SELECT MAX(created_dt) AS latest_created_dt FROM base WHERE created_dt IS NOT NULL
+       ),
+       campaign_month_spend AS (
+         SELECT
+           COALESCE(NULLIF(TRIM("Название кампании"), ''), '(пусто)') AS campaign_name,
+           COALESCE(NULLIF(TRIM(CAST("№ Кампании" AS TEXT)), ''), '(пусто)') AS campaign_id,
+           COALESCE(NULLIF(TRIM(month), ''), '') AS month,
+           SUM(COALESCE("Расход, ₽", 0)) AS spend
+         FROM stg_yandex_stats
+         WHERE COALESCE(NULLIF(TRIM(month), ''), '') <> ''
+         GROUP BY campaign_name, campaign_id, month
+       ),
+       campaign_month_leads AS (
+         SELECT
+           campaign_name,
+           campaign_id,
+           month,
+           COUNT(*) AS month_leads
+         FROM base
+         WHERE created_dt IS NOT NULL
+         GROUP BY campaign_name, campaign_id, month
+       ),
+       campaign_week_leads AS (
+         SELECT
+           week_start,
+           campaign_name,
+           campaign_id,
+           month,
+           COUNT(*) AS week_leads
+         FROM base
+         WHERE created_dt IS NOT NULL
+         GROUP BY week_start, campaign_name, campaign_id, month
+       ),
+       spend_alloc AS (
+         SELECT
+           wl.week_start,
+           wl.campaign_name,
+           wl.campaign_id,
+           SUM(
+             CASE
+               WHEN COALESCE(ml.month_leads, 0) = 0 THEN 0
+               ELSE COALESCE(ms.spend, 0) * wl.week_leads * 1.0 / ml.month_leads
+             END
+           ) AS spend_alloc
+         FROM campaign_week_leads wl
+         LEFT JOIN campaign_month_leads ml
+           ON ml.campaign_name = wl.campaign_name
+          AND ml.campaign_id = wl.campaign_id
+          AND ml.month = wl.month
+         LEFT JOIN campaign_month_spend ms
+           ON ms.campaign_name = wl.campaign_name
+          AND ms.campaign_id = wl.campaign_id
+          AND ms.month = wl.month
+         GROUP BY wl.week_start, wl.campaign_name, wl.campaign_id
+       )
+       SELECT
+         b.week_start AS "Неделя",
+         b.campaign_name AS "Кампания",
+         b.campaign_id AS "ID кампании",
+         COUNT(*) AS "Лиды",
+         SUM(b.is_qual) AS "Квал",
+         SUM(b.is_unqual) AS "Неквал",
+         SUM(b.is_refusal) AS "Отказы",
+         SUM(b.is_revenue) AS "Сделок_с_выручкой",
+         SUM(CASE WHEN b.is_revenue = 1 THEN b.revenue_amount ELSE 0 END) AS "Ассоц_выручка",
+         COALESCE(sa.spend_alloc, 0) AS "Расход, ₽",
+         SUM(CASE WHEN b.is_revenue = 1 THEN b.revenue_amount ELSE 0 END) - COALESCE(sa.spend_alloc, 0) AS "Прибыль",
+         MAX(b.created_dt) AS "Макс_дата_в_строке",
+         (SELECT latest_created_dt FROM latest) AS "Дата_последней_записи_Yandex"
+       FROM base b
+       LEFT JOIN spend_alloc sa
+         ON sa.week_start = b.week_start
+        AND sa.campaign_name = b.campaign_name
+        AND sa.campaign_id = b.campaign_id
+       WHERE b.created_dt IS NOT NULL
+         AND b.week_start IS NOT NULL
+         AND b.created_dt >= date((SELECT latest_created_dt FROM latest), '-6 day')
+       GROUP BY b.week_start, b.campaign_name, b.campaign_id, sa.spend_alloc
+       ORDER BY b.week_start, b.campaign_name, b.campaign_id`,
+    )
+    .all<Record<string, unknown>>();
+  await upsertDataset(db, "yandex_week_campaign_total.json", rowsToJson((yandexWeekCampaignTotal.results ?? []) as Record<string, unknown>[]));
+  paths.push("yandex_week_campaign_total.json");
 
   const emailOperationalSummary = await db
     .prepare(
