@@ -255,7 +255,7 @@ type ViewMeta = { tab: TabKey; label: string; path: string; rowsLabel: string; t
 const VIEW_META: Record<ViewKey, ViewMeta> = {
   assoc_dynamic: { tab: "assoc_builder", label: "Конструктор", path: "/api/assoc-revenue", rowsLabel: "Групп", title: "Ассоциативная выручка (конструктор)" },
   media_email: { tab: "media", label: "Имейл по месяцам", path: "data/email_hierarchy_by_send.json", rowsLabel: "Строк", title: "Рекламные медиумы" },
-  media_yandex: { tab: "media", label: "Yandex по проектам (без месяцев)", path: "data/global/yandex_projects_revenue_no_month.json", rowsLabel: "Проектов", title: "Рекламные медиумы" },
+  media_yandex: { tab: "media", label: "Yandex по кампаниям (без месяцев)", path: "data/global/yandex_projects_revenue_no_month.json", rowsLabel: "Кампаний", title: "Рекламные медиумы" },
   media_yandex_month: { tab: "media", label: "Yandex по месяцам", path: "data/global/yandex_projects_revenue_by_month.json", rowsLabel: "Месяцев", title: "Рекламные медиумы" },
   media_yandex_assoc_qa: { tab: "media", label: "Yandex: QA ассоц. выручки", path: "data/qa/yandex_assoc_revenue_qa.json", rowsLabel: "Проектов", title: "Рекламные медиумы" },
   email_ops_summary: { tab: "media", label: "Email: база, рассылки, лиды, выручка", path: "data/email_operational_summary.json", rowsLabel: "Периодов", title: "Рекламные медиумы" },
@@ -626,7 +626,7 @@ function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown
   const spend = m.spend > 0 ? m.spend : num(raw["spend"]);
   const assocRevenue = num(raw["assoc_revenue"]);
   return {
-    "Проект": project,
+    "Yandex кампания": project,
     "Yandex объявление": "-",
     "Лиды": leads,
     "Квал": qual,
@@ -657,7 +657,7 @@ function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): R
   const spend = num(raw["spend"]);
   const assocRevenue = num(raw["assoc_revenue"]);
   return {
-    "Проект": project,
+    "Yandex кампания": project,
     "Yandex объявление": adId,
     "Лиды": leads,
     "Квал": qual,
@@ -803,7 +803,7 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
       const parentProjects = new Set<string>();
       for (const r of clean) {
         const level = String(r["Level"] ?? "").trim();
-        const project = String(r["project_name"] ?? r["Проект"] ?? "").trim();
+        const project = String(r["project_name"] ?? r["Yandex кампания"] ?? r["Проект"] ?? "").trim();
         if (!project) continue;
         if (level === "Project") {
           parentProjects.add(project);
@@ -857,14 +857,14 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
         return {
           ...r,
           "Yandex объявление": "-",
-          __yandex_project_ctx: String(r["Проект"] ?? "").trim(),
+          __yandex_project_ctx: String(r["Yandex кампания"] ?? r["Проект"] ?? "").trim(),
           __yandex_project_has_details: num(r["__yandex_project_has_details"]) > 0 ? 1 : 0,
         };
       }
       if (num(r["__yandex_project_detail"]) > 0 || level === "Ad") {
         return {
           ...r,
-          __yandex_project_ctx: String(r["Проект"] ?? "").trim(),
+          __yandex_project_ctx: String(r["Yandex кампания"] ?? r["Проект"] ?? "").trim(),
           __yandex_project_detail: 1,
         };
       }
@@ -1135,7 +1135,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       const ordered: Record<string, unknown>[] = [];
       for (const r of data) {
         const isDetail = num(r["__yandex_project_detail"]) > 0;
-        const ctxKey = String(r["__yandex_project_ctx"] ?? r["Проект"] ?? "").trim();
+        const ctxKey = String(r["__yandex_project_ctx"] ?? r["Yandex кампания"] ?? r["Проект"] ?? "").trim();
         if (!isDetail) ordered.push(r);
         else if (expandedYandexProjectRows.has(`${view}||${ctxKey}`)) ordered.push(r);
       }
@@ -1256,7 +1256,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         isAssocYandexHierarchy && num(r["__assoc_yandex_detail"]) === 0 && num(r["__assoc_yandex_has_details"]) > 0
           ? `<button class="assoc-yandex-expand-btn" data-ctx="${escapeHtml(assocYandexCtx)}">${expandedAssocYandexRows.has(assocYandexCtx) ? "−" : "+"}</button>`
           : "";
-      const yProjectCtx = String(r["__yandex_project_ctx"] ?? r["Проект"] ?? "").trim();
+      const yProjectCtx = String(r["__yandex_project_ctx"] ?? r["Yandex кампания"] ?? r["Проект"] ?? "").trim();
       const yProjectBtn =
         isYandexProjectHierarchy && num(r["__yandex_project_detail"]) === 0 && num(r["__yandex_project_has_details"]) > 0
           ? `<button class="yd-project-expand-btn" data-ctx="${escapeHtml(yProjectCtx)}">${expandedYandexProjectRows.has(`${view}||${yProjectCtx}`) ? "−" : "+"}</button>`
