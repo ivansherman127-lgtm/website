@@ -2,7 +2,6 @@ import { onRequestGet as assocRevenueGet } from "./functions/api/assoc-revenue";
 import { onRequestGet as dataGet } from "./functions/api/data";
 import { onRequestGet as cohortDealsGet } from "./functions/api/cohort-deals";
 import { onRequestGet as protectedTableGet } from "./functions/api/protected-table";
-import { onRequestPost as saveToGithubPost } from "./functions/api/save-to-github";
 import { onRequestPost as analyticsRebuildPost } from "./functions/api/analytics/rebuild";
 
 interface Env {
@@ -45,11 +44,6 @@ export default {
     if (pathname === "/api/protected-table") {
       if (request.method !== "GET") return methodNotAllowed();
       return protectedTableGet({ request, env } as never);
-    }
-
-    if (pathname === "/api/save-to-github") {
-      if (request.method !== "POST") return methodNotAllowed();
-      return saveToGithubPost({ request, env } as never);
     }
 
     if (pathname === "/api/analytics/rebuild") {
