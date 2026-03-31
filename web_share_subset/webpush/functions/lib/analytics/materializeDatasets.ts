@@ -1640,7 +1640,10 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   const sourceYandexAdExpr = sqlExtractYandexAdId(`src."UTM Content"`);
   const validSourceYandexAdExpr = `LENGTH(${sourceYandexAdExpr}) = 11 AND SUBSTR(${sourceYandexAdExpr}, 1, 2) = '17' AND ${sourceYandexAdExpr} NOT GLOB '*[^0-9]*'`;
   const groupedStatsProjectExpr = buildYandexProjectGroupSqlExpr(`"Название кампании"`);
-  const groupedMappedProjectExpr = buildYandexProjectGroupSqlExpr("ym.project_name");
+  // ym.project_name is already a mapped group name (produced by groupedStatsProjectExpr in yandex_map).
+  // Re-applying the alias CASE would fail to match group names and return UNMAPPED everywhere.
+  // Just pass through the already-mapped value, falling back to UNMAPPED for NULL/empty only.
+  const groupedMappedProjectExpr = `COALESCE(NULLIF(TRIM(COALESCE(ym.project_name, '')), ''), 'UNMAPPED')`;
 
   const assocQaSql = hasContactsUid
     ? `WITH
