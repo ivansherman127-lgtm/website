@@ -583,10 +583,13 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE(dbc.refusal, 0) AS refusal,
            COALESCE(dbc.fl_ids, '') AS fl_ids,
            COALESCE(dbc.paid_deals, 0) AS paid_deals,
-           COALESCE(dbc.revenue, 0) AS revenue
+           COALESCE(dbc.revenue, 0) AS revenue,
+           COALESCE(ar.assoc_revenue, 0) AS assoc_revenue
          FROM stg_email_sends e
          LEFT JOIN deals_by_campaign dbc
            ON dbc.utm_campaign_key = lower(trim(COALESCE(e.utm_campaign, '')))
+         LEFT JOIN assoc_rev ar
+           ON ar.utm_key = lower(trim(COALESCE(e.utm_campaign, '')))
          WHERE COALESCE(e.month, '') <> ''
        ),
        month_rows AS (
@@ -621,7 +624,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(refusal) AS refusal,
            SUBSTR(GROUP_CONCAT(fl_ids), 1, 50000) AS fl_ids,
            SUM(paid_deals) AS paid_deals,
-           SUM(revenue) AS revenue
+           SUM(revenue) AS revenue,
+           SUM(assoc_revenue) AS assoc_revenue
          FROM send_rows
          GROUP BY month
        ),
@@ -672,6 +676,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            CASE WHEN delivered_total = 0 THEN 0 ELSE ROUND(unqual * 100.0 / delivered_total, 2) END AS "Конверсия в Неквал",
            CASE WHEN delivered_total = 0 THEN 0 ELSE ROUND(refusal * 100.0 / delivered_total, 2) END AS "Конверсия в Отказ",
            revenue AS "Выручка",
+           assoc_revenue AS "Ассоц. Выручка",
            paid_deals AS "Сделок с выручкой",
            CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средняя выручка на сделку",
            0 AS "Средний остаток по сделке",
@@ -713,6 +718,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          CASE WHEN delivered_total = 0 THEN 0 ELSE ROUND(unqual * 100.0 / delivered_total, 2) END AS "Конверсия в Неквал",
          CASE WHEN delivered_total = 0 THEN 0 ELSE ROUND(refusal * 100.0 / delivered_total, 2) END AS "Конверсия в Отказ",
          revenue AS "Выручка",
+         assoc_revenue AS "Ассоц. Выручка",
          paid_deals AS "Сделок с выручкой",
          CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средняя выручка на сделку",
          0 AS "Средний остаток по сделке",
@@ -754,6 +760,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          "Конверсия в Неквал",
          "Конверсия в Отказ",
          "Выручка",
+         "Ассоц. Выручка",
          "Сделок с выручкой",
          "Средняя выручка на сделку",
          "Средний остаток по сделке",
