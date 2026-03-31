@@ -607,7 +607,7 @@ function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown
   const paid = num(raw["payments_count"] ?? raw["paid_deals_raw"]);
   const revenue = num(raw["revenue_raw"]);
   const spend = m.spend > 0 ? m.spend : num(raw["spend"]);
-  const assocRevenue = num(raw["assoc_revenue"]);
+  const assocRevenue = Math.max(num(raw["assoc_revenue"]), revenue);
   return {
     "Yandex кампания": project,
     "Yandex объявление": "-",
@@ -639,7 +639,7 @@ function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): R
   const paid = num(raw["payments_count"] ?? raw["paid_deals_raw"]);
   const revenue = num(raw["revenue_raw"]);
   const spend = num(raw["spend"]);
-  const assocRevenue = num(raw["assoc_revenue"]);
+  const assocRevenue = Math.max(num(raw["assoc_revenue"]), revenue);
   return {
     "Yandex кампания": project,
     "Yandex объявление": adId,

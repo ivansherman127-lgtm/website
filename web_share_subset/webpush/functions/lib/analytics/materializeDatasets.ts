@@ -110,6 +110,7 @@ function buildYandexNoMonthHierarchyRows(
       Level: "Ad",
       project_name: project,
       ad_id: adId,
+      ad_title: String(raw.ad_title ?? "").trim(),
       leads_raw: Number(raw.leads_raw ?? 0) || 0,
       payments_count: Number(raw.payments_count ?? raw.paid_deals_raw ?? 0) || 0,
       paid_deals_raw: Number(raw.paid_deals_raw ?? raw.payments_count ?? 0) || 0,
@@ -605,7 +606,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE(dbc.paid_deals, 0) AS paid_deals,
            COALESCE(dbc.revenue, 0) AS revenue,
            COALESCE(ar.assoc_revenue, 0) AS assoc_revenue,
-           COALESCE(ar.assoc_deals, 0) AS assoc_deals
+           COALESCE(ar.assoc_deals, 0) AS assoc_deals,
+           CASE WHEN COALESCE(ar.assoc_revenue, 0) < COALESCE(dbc.revenue, 0) THEN COALESCE(dbc.revenue, 0) ELSE COALESCE(ar.assoc_revenue, 0) END AS assoc_rev_eff,
+           CASE WHEN COALESCE(ar.assoc_deals, 0) < COALESCE(dbc.paid_deals, 0) THEN COALESCE(dbc.paid_deals, 0) ELSE COALESCE(ar.assoc_deals, 0) END AS assoc_deals_eff
          FROM stg_email_sends e
          LEFT JOIN deals_by_campaign dbc
            ON dbc.utm_campaign_key = lower(trim(COALESCE(e.utm_campaign, '')))
@@ -647,7 +650,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(paid_deals) AS paid_deals,
            SUM(revenue) AS revenue,
            SUM(assoc_revenue) AS assoc_revenue,
-           SUM(assoc_deals) AS assoc_deals
+           SUM(assoc_deals) AS assoc_deals,
+           SUM(assoc_rev_eff) AS assoc_rev_eff,
+           SUM(assoc_deals_eff) AS assoc_deals_eff
          FROM send_rows
          GROUP BY month
        ),
@@ -699,9 +704,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            revenue AS "Выручка",
            paid_deals AS "Сделок с выручкой",
            CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средняя за сделку",
-           assoc_revenue AS "Ассоц. Выручка",
-           assoc_deals AS "Ассоц. Сделок",
-           CASE WHEN assoc_deals = 0 THEN 0 ELSE assoc_revenue * 1.0 / assoc_deals END AS "Средняя ассоц. за сделку",
+           assoc_rev_eff AS "Ассоц. Выручка",
+           assoc_deals_eff AS "Ассоц. Сделок",
+           CASE WHEN assoc_deals_eff = 0 THEN 0 ELSE assoc_rev_eff * 1.0 / assoc_deals_eff END AS "Средняя ассоц. за сделку",
            0 AS "Средний остаток по сделке",
            NULL AS "Рассылок за месяц",
            NULL AS "Лидов с некорр. email",
@@ -742,9 +747,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          revenue AS "Выручка",
          paid_deals AS "Сделок с выручкой",
          CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средняя за сделку",
-         assoc_revenue AS "Ассоц. Выручка",
-         assoc_deals AS "Ассоц. Сделок",
-         CASE WHEN assoc_deals = 0 THEN 0 ELSE assoc_revenue * 1.0 / assoc_deals END AS "Средняя ассоц. за сделку",
+         assoc_rev_eff AS "Ассоц. Выручка",
+         assoc_deals_eff AS "Ассоц. Сделок",
+         CASE WHEN assoc_deals_eff = 0 THEN 0 ELSE assoc_rev_eff * 1.0 / assoc_deals_eff END AS "Средняя ассоц. за сделку",
          0 AS "Средний остаток по сделке",
          sends AS "Рассылок за месяц",
          CASE WHEN leads > 0 THEN sends ELSE 0 END AS "Лидов с некорр. email",
@@ -2064,9 +2069,23 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
 
   const grouped = groupYandexProjectsNoMonth(q11rows).map((r) => ({
     ...r,
-    assoc_revenue: assocRevenueByProject.get(r.project_name) ?? 0,
+    assoc_revenue: Math.max(assocRevenueByProject.get(r.project_name) ?? 0, r.revenue_raw),
   }));
-  const groupedWithDetails = buildYandexNoMonthHierarchyRows(grouped as Record<string, unknown>[], q11adPerf.results ?? []);
+
+  // Enrich ad-perf rows with assoc_revenue from QA data; enforce assoc >= direct.
+  const assocByAd = new Map<string, number>();
+  for (const r of q11assocQaByAd.results ?? []) {
+    const key = `${toKnownGroup(r.project_name)}||${String(r.ad_id ?? "").trim()}`;
+    assocByAd.set(key, Number(r.assoc_revenue ?? 0) || 0);
+  }
+  const adPerfEnriched = (q11adPerf.results ?? []).map((r) => {
+    const proj = toKnownGroup(r.project_name);
+    const adId = String(r.ad_id ?? "").trim();
+    const assocRev = assocByAd.get(`${proj}||${adId}`) ?? 0;
+    const directRev = Number(r.revenue_raw ?? 0) || 0;
+    return { ...r, assoc_revenue: Math.max(assocRev, directRev) };
+  });
+  const groupedWithDetails = buildYandexNoMonthHierarchyRows(grouped as Record<string, unknown>[], adPerfEnriched);
   await upsertDataset(db, "global/yandex_projects_revenue_no_month.json", rowsToJson(groupedWithDetails));
   paths.push("global/yandex_projects_revenue_no_month.json");
 
