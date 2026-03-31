@@ -630,6 +630,7 @@ function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown
 
 function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): Record<string, unknown> {
   const adId = String(raw["ad_id"] ?? "").trim();
+  const adTitle = String(raw["ad_title"] ?? "").trim();
   const leads = num(raw["leads_raw"]);
   const qual = num(raw["qual"]);
   const unqual = num(raw["unqual"]);
@@ -641,6 +642,7 @@ function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): R
   return {
     "Yandex кампания": project,
     "Yandex объявление": adId,
+    "Заголовок": adTitle,
     "Лиды": leads,
     "Квал": qual,
     "Конверсия в Квал": leads > 0 ? qual / leads : 0,
