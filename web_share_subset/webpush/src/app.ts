@@ -2595,8 +2595,8 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
   const drawDashboard = (): void => {
     const latestBitrixRecordDate = String(bitrixWeekFunnel[0]?.["Дата_последней_записи_Bitrix"] ?? "-").trim() || "-";
     const latestYandexRecordDate =
-      maxIsoDate(yandexWeekCampaign, "Макс_дата_в_строке") ||
       maxIsoDate(yandexWeekCampaign, "Дата_последней_записи_Yandex") ||
+      maxIsoDate(yandexWeekCampaign, "Макс_дата_в_строке") ||
       "-";
 
     app.innerHTML = `<div class="app-layout">
