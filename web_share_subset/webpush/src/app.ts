@@ -176,6 +176,9 @@ function parseDateRank(v: unknown): number | null {
   if (!s) return null;
   if (isTotalValue(s)) return Number.POSITIVE_INFINITY;
 
+  const ymd = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (ymd) return Number(ymd[1]) * 100 + Number(ymd[2]);
+
   const ym = s.match(/^(\d{4})-(\d{2})$/);
   if (ym) return Number(ym[1]) * 100 + Number(ym[2]);
   const y = s.match(/^(\d{4})$/);
@@ -223,6 +226,125 @@ function renderSingleRowTable(title: string, row: Record<string, unknown>): stri
     <section class="chart-wrap">
       <h3>${escapeHtml(title)}</h3>
       <div class="table-scroll"><table><thead><tr>${head}</tr></thead><tbody><tr>${body}</tr></tbody></table></div>
+    </section>
+  `;
+}
+
+function rankToMonthSerial(rank: number): number {
+  const y = Math.floor(rank / 100);
+  let m = rank % 100;
+  if (m < 1 || m > 12) m = 1;
+  return y * 12 + (m - 1);
+}
+
+function filterRowsByMonthsBack(rows: Record<string, unknown>[], dateCol: string, monthsBack: number): Record<string, unknown>[] {
+  if (!Number.isFinite(monthsBack) || monthsBack <= 0) return rows;
+  const serials = rows
+    .map((r) => parseDateRank(r[dateCol]))
+    .filter((v): v is number => v !== null && Number.isFinite(v))
+    .map((v) => rankToMonthSerial(v));
+  if (!serials.length) return rows;
+  const latest = Math.max(...serials);
+  const cutoff = latest - (Math.max(1, Math.floor(monthsBack)) - 1);
+  return rows.filter((r) => {
+    const rk = parseDateRank(r[dateCol]);
+    if (rk === null || !Number.isFinite(rk)) return true;
+    return rankToMonthSerial(rk) >= cutoff;
+  });
+}
+
+function renderRowsTable(title: string, rows: Record<string, unknown>[]): string {
+  if (!rows.length) {
+    return `
+      <section class="chart-wrap">
+        <h3>${escapeHtml(title)}</h3>
+        <p class="muted">Нет данных в выбранном диапазоне</p>
+      </section>
+    `;
+  }
+  const cols = Object.keys(rows[0]).filter((k) => k.trim() !== "");
+  const head = cols.map((k) => `<th>${escapeHtml(prettyColName(k))}</th>`).join("");
+  const body = rows
+    .map((row) => `<tr>${cols.map((k) => `<td>${escapeHtml(formatCell(k, row[k]))}</td>`).join("")}</tr>`)
+    .join("");
+  return `
+    <section class="chart-wrap">
+      <h3>${escapeHtml(title)}</h3>
+      <div class="table-scroll"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+    </section>
+  `;
+}
+
+function renderWeeklyBitrixExpandableTable(rows: Record<string, unknown>[], expandedWeeks: Set<string>): string {
+  if (!rows.length) {
+    return `
+      <section class="chart-wrap">
+        <h3>Bitrix: недели (раскрытие по воронкам)</h3>
+        <p class="muted">Нет данных в выбранном диапазоне</p>
+      </section>
+    `;
+  }
+
+  const byWeek = new Map<string, Record<string, unknown>[]>();
+  for (const r of rows) {
+    const week = String(r["Неделя"] ?? "").trim();
+    if (!week) continue;
+    if (!byWeek.has(week)) byWeek.set(week, []);
+    byWeek.get(week)!.push(r);
+  }
+  const weeks = [...byWeek.keys()].sort((a, b) => b.localeCompare(a));
+  const cols = [
+    "Неделя",
+    "Воронка",
+    "Лиды",
+    "Квал",
+    "Неквал",
+    "Отказы",
+    "В работе",
+    "Сделок_с_выручкой",
+    "Выручка_сделки_недели",
+    "Выручка_получена_на_неделе",
+  ];
+
+  const bodyRows: string[] = [];
+  for (const week of weeks) {
+    const items = byWeek.get(week) || [];
+    const totals: Record<string, unknown> = {
+      "Неделя": week,
+      "Воронка": "Итого",
+      "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
+      "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
+      "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
+      "Отказы": items.reduce((a, x) => a + num(x["Отказы"]), 0),
+      "В работе": items.reduce((a, x) => a + num(x["В работе"]), 0),
+      "Сделок_с_выручкой": items.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
+      "Выручка_сделки_недели": items.reduce((a, x) => a + num(x["Выручка_сделки_недели"]), 0),
+      "Выручка_получена_на_неделе": items.reduce((a, x) => a + num(x["Выручка_получена_на_неделе"]), 0),
+    };
+    const open = expandedWeeks.has(week);
+    bodyRows.push(
+      `<tr class="week-row"><td><button class="week-expand-btn" data-week="${escapeHtml(week)}">${open ? "−" : "+"}</button> ${escapeHtml(week)}</td>${cols
+        .slice(1)
+        .map((c) => `<td>${escapeHtml(formatCell(c, totals[c]))}</td>`)
+        .join("")}</tr>`,
+    );
+    if (open) {
+      const sorted = [...items].sort((a, b) => String(a["Воронка"] ?? "").localeCompare(String(b["Воронка"] ?? "")));
+      for (const item of sorted) {
+        bodyRows.push(
+          `<tr class="week-child-row"><td>${escapeHtml(String(item["Неделя"] ?? ""))}</td>${cols
+            .slice(1)
+            .map((c) => `<td>${escapeHtml(formatCell(c, item[c]))}</td>`)
+            .join("")}</tr>`,
+        );
+      }
+    }
+  }
+
+  return `
+    <section class="chart-wrap">
+      <h3>Bitrix: недели (раскрытие по воронкам)</h3>
+      <div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody>${bodyRows.join("")}</tbody></table></div>
     </section>
   `;
 }
@@ -979,6 +1101,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   let sortCol = initialDateCol || cols[0] || "";
   let sortDir: "asc" | "desc" = initialDateCol ? "desc" : "asc";
   let filter = "";
+  let dateWindowMonths = 12;
   let contactsFullOnly = false;
   const expanded = new Set<string>();
   const expandedEmailMonths = new Set<string>();
@@ -1015,6 +1138,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const isManagerHierarchy = view.startsWith("managers_");
   const isFunnelHierarchy = view === "funnels_hierarchy";
   const isBudgetHierarchy = view === "budget_monthly";
+  const dateWindowCol = ["Период", "Месяц", "month", "Год"].find((c) => allCols.includes(c)) || "";
+  const hasDateWindowControl = Boolean(dateWindowCol) && !isManagerHierarchy && !isFunnelHierarchy && !isBudgetHierarchy && !isYandexProjectHierarchy;
   const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let visibleRows: Record<string, unknown>[] = [];
   const postJson = async (url: string, body: unknown): Promise<{ ok: boolean; rows?: number; error?: string }> => {
@@ -1064,6 +1189,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     if (sortCol && !cols.includes(sortCol)) sortCol = cols[0] || "";
 
     let data = [...viewRows];
+    if (hasDateWindowControl && dateWindowCol) {
+      data = filterRowsByMonthsBack(data, dateWindowCol, dateWindowMonths);
+    }
     if (view === "contacts_unique" && contactsFullOnly) {
       data = data.filter((r) => {
         const hasName = String(r["all_names"] ?? "").trim() !== "";
@@ -1507,6 +1635,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           ? `<button class="contacts-full-btn">Контакты: имя + телефон + email (${contactsFullOnly ? "on" : "off"})</button>`
           : ""
       }
+      ${
+        hasDateWindowControl
+          ? `<label class="date-window-inline">Период: <input class="date-window-slider" type="range" min="1" max="24" step="1" value="${dateWindowMonths}" /> <span class="date-window-value">${dateWindowMonths} мес.</span></label>`
+          : ""
+      }
       <input type="search" placeholder="Фильтр по строке…" class="filter-input" />
       <span class="row-note"></span>
     </div>
@@ -1516,6 +1649,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   </div>`;
 
   const filterInput = app.querySelector<HTMLInputElement>(".filter-input")!;
+  const dateWindowSlider = app.querySelector<HTMLInputElement>(".date-window-slider");
+  const dateWindowValue = app.querySelector<HTMLElement>(".date-window-value");
   const contactsFullBtn = app.querySelector<HTMLButtonElement>(".contacts-full-btn");
   const copyTableBtn = app.querySelector<HTMLButtonElement>(".copy-table-btn")!;
   const downloadTableBtn = app.querySelector<HTMLButtonElement>(".download-table-btn")!;
@@ -1573,6 +1708,14 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     void renderTable(next, r, dealsIndex);
   }; */
   filterInput.oninput = () => { filter = filterInput.value; draw(); };
+  if (dateWindowSlider && dateWindowValue) {
+    dateWindowSlider.oninput = () => {
+      const next = Number(dateWindowSlider.value);
+      dateWindowMonths = Number.isFinite(next) && next > 0 ? Math.round(next) : 12;
+      dateWindowValue.textContent = `${dateWindowMonths} мес.`;
+      draw();
+    };
+  }
   app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
     btn.onclick = async () => {
       const m = btn.getAttribute("data-menu");
@@ -1990,95 +2133,145 @@ async function boot(): Promise<void> {
 
 async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
   writeUrlState("dashboard");
-  const [bitrixMonths, contacts, emailOps, yandexMonths, yandexHierarchy] = await Promise.all([
+  const [bitrixMonths, contacts, emailOps, yandexMonths, yandexHierarchy, bitrixWeekFunnel] = await Promise.all([
     fetchJson<Record<string, unknown>[]>("data/bitrix_month_total_full.json"),
     fetchJson<Record<string, unknown>[]>("data/bitrix_contacts_uid.json"),
     fetchJson<Record<string, unknown>[]>("data/email_operational_summary.json"),
     fetchJson<Record<string, unknown>[]>("data/global/yandex_projects_revenue_by_month.json"),
     fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json"),
+    fetchJson<Record<string, unknown>[]>("data/bitrix_week_funnel_total.json"),
   ]);
 
   const monthRows = bitrixMonths.filter((r) => !isTotalValue(r["Месяц"]));
   monthRows.sort((a, b) => compareCell("Месяц", a["Месяц"], b["Месяц"], "desc"));
-  const bm = monthRows[0] || {};
 
   const emailRows = emailOps.filter((r) => !isTotalValue(r["Период"]));
   emailRows.sort((a, b) => compareCell("Период", a["Период"], b["Период"], "desc"));
-  const em = emailRows[0] || {};
 
   const yRows = yandexMonths.filter((r) => !isTotalValue(r["month"]));
   yRows.sort((a, b) => compareCell("Период", a["month"], b["month"], "desc"));
-  const ym = yRows[0] || {};
   const yhMonthRows = yandexHierarchy.filter((r) => String(r["Level"] ?? "").trim() === "Month");
   yhMonthRows.sort((a, b) => compareCell("Период", a["Месяц"], b["Месяц"], "desc"));
-  const yh = yhMonthRows[0] || {};
+  const yandexMonthByMonth = new Map<string, Record<string, unknown>>();
+  for (const r of yhMonthRows) {
+    const month = String(r["month"] ?? r["Месяц"] ?? "").trim();
+    if (month) yandexMonthByMonth.set(month, r);
+  }
 
-  const emailTableRow: Record<string, unknown> = { ...em };
-  const bitrixTableRow: Record<string, unknown> = {
-    "Период": bm["Месяц"] ?? "-",
-    "Лиды": bm["Лиды"] ?? 0,
-    "Квал": bm["Квал"] ?? 0,
-    "Конверсия в Квал": bm["Конверсия в Квал"] ?? 0,
-    "Неквал": bm["Неквал"] ?? 0,
-    "Конверсия в Неквал": bm["Конверсия в Неквал"] ?? 0,
-    "Отказы": bm["Отказы"] ?? 0,
-    "Конверсия в Отказ": bm["Конверсия в Отказ"] ?? 0,
-    "В работе": bm["В работе"] ?? 0,
-    "Конверсия в работе": bm["Конверсия в работе"] ?? 0,
-    "Невалидные лиды": bm["Невалидные_лиды"] ?? 0,
-    "Сделок с выручкой": bm["Сделок_с_выручкой"] ?? 0,
-    "Выручка": bm["Выручка"] ?? 0,
-    "Средний чек": bm["Средний_чек"] ?? 0,
+  let monthsBack = 6;
+  const expandedWeeks = new Set<string>();
+
+  const drawDashboard = (): void => {
+    const bitrixFiltered = filterRowsByMonthsBack(monthRows, "Месяц", monthsBack);
+    const emailFiltered = filterRowsByMonthsBack(emailRows, "Период", monthsBack);
+    const yandexFiltered = filterRowsByMonthsBack(yRows, "month", monthsBack);
+    const weeklyFiltered = filterRowsByMonthsBack(bitrixWeekFunnel, "Неделя", monthsBack);
+
+    const latestBitrix = bitrixFiltered[0] || {};
+
+    const bitrixTableRows = bitrixFiltered.map((bm) => ({
+      "Период": bm["Месяц"] ?? "-",
+      "Лиды": bm["Лиды"] ?? 0,
+      "Квал": bm["Квал"] ?? 0,
+      "Конверсия в Квал": bm["Конверсия в Квал"] ?? 0,
+      "Неквал": bm["Неквал"] ?? 0,
+      "Конверсия в Неквал": bm["Конверсия в Неквал"] ?? 0,
+      "Отказы": bm["Отказы"] ?? 0,
+      "Конверсия в Отказ": bm["Конверсия в Отказ"] ?? 0,
+      "В работе": bm["В работе"] ?? 0,
+      "Конверсия в работе": bm["Конверсия в работе"] ?? 0,
+      "Невалидные лиды": bm["Невалидные_лиды"] ?? 0,
+      "Сделок с выручкой": bm["Сделок_с_выручкой"] ?? 0,
+      "Выручка": bm["Выручка"] ?? 0,
+      "Средний чек": bm["Средний_чек"] ?? 0,
+    }));
+
+    const yandexTableRows = yandexFiltered.map((ym) => {
+      const month = String(ym["month"] ?? "").trim();
+      const yh = yandexMonthByMonth.get(month) || {};
+      return {
+        "Период": month || "-",
+        "Лиды": yh["Leads"] ?? ym["leads_raw"] ?? 0,
+        "Квал": yh["Qual"] ?? 0,
+        "Неквал": yh["Unqual"] ?? 0,
+        "Отказы": yh["Refusal"] ?? 0,
+        "Конверсия в Квал": yh["%Qual"] ?? 0,
+        "Конверсия в Неквал": yh["%Unqual"] ?? 0,
+        "Конверсия в Отказ": yh["%Refusal"] ?? 0,
+        "Клики": yh["Клики"] ?? 0,
+        "Расход, ₽": yh["Расход, ₽"] ?? ym["spend"] ?? 0,
+        "Оплаты": ym["paid_deals_raw"] ?? 0,
+        "Выручка": ym["revenue_raw"] ?? 0,
+        "Прибыль": num(ym["revenue_raw"]) - num(yh["Расход, ₽"] ?? ym["spend"]),
+      };
+    });
+
+    app.innerHTML = `<div class="app-layout">
+      <aside class="side-menu">
+        <button class="side-btn active" data-menu="dashboard">Главная</button>
+        <button class="side-btn" data-menu="reports">Детальные отчеты</button>
+        <button class="side-btn" data-menu="charts">Графики</button>
+      </aside>
+      <main class="main-content">
+        <header>
+          <h1>Главный дашборд</h1>
+          <p class="sub">Окно данных: последние ${monthsBack} мес.</p>
+        </header>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="label">Уникальные клиенты Bitrix</div><div class="value">${contacts.length.toLocaleString("ru-RU")}</div></div>
+          <div class="kpi"><div class="label">Последний период Bitrix</div><div class="value">${escapeHtml(String(latestBitrix["Месяц"] ?? "-"))}</div></div>
+        </div>
+        <section class="chart-wrap">
+          <h3>Фильтр периода главной вкладки</h3>
+          <div class="date-window-control">
+            <label for="dashboard-window-slider">Сколько месяцев назад загружать</label>
+            <input id="dashboard-window-slider" type="range" min="1" max="24" step="1" value="${monthsBack}" />
+            <span class="date-window-value">${monthsBack} мес.</span>
+          </div>
+        </section>
+        ${renderRowsTable("Bitrix: по месяцам", bitrixTableRows)}
+        ${renderRowsTable("Email: по месяцам", emailFiltered)}
+        ${renderRowsTable("Yandex: по месяцам", yandexTableRows)}
+        ${renderWeeklyBitrixExpandableTable(weeklyFiltered, expandedWeeks)}
+      </main>
+    </div>`;
+
+    const slider = app.querySelector<HTMLInputElement>("#dashboard-window-slider");
+    const sliderValue = app.querySelector<HTMLElement>(".date-window-value");
+    if (slider && sliderValue) {
+      slider.oninput = () => {
+        const next = Number(slider.value);
+        monthsBack = Number.isFinite(next) && next > 0 ? Math.round(next) : 6;
+        sliderValue.textContent = `${monthsBack} мес.`;
+        drawDashboard();
+      };
+    }
+
+    app.querySelectorAll<HTMLButtonElement>(".week-expand-btn").forEach((btn) => {
+      btn.onclick = () => {
+        const week = btn.getAttribute("data-week") || "";
+        if (!week) return;
+        if (expandedWeeks.has(week)) expandedWeeks.delete(week);
+        else expandedWeeks.add(week);
+        drawDashboard();
+      };
+    });
+
+    app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
+      btn.onclick = async () => {
+        const m = btn.getAttribute("data-menu");
+        if (m === "reports") {
+          const view: ViewKey = "year_total";
+          const rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
+          await renderTable(view, rows, dealsIndex);
+        } else if (m === "charts") {
+          await renderCharts(dealsIndex);
+        }
+      };
+    });
   };
-  const yandexTableRow: Record<string, unknown> = {
-    "Период": yh["Месяц"] ?? ym["month"] ?? "-",
-    "Лиды": yh["Leads"] ?? ym["leads_raw"] ?? 0,
-    "Квал": yh["Qual"] ?? 0,
-    "Неквал": yh["Unqual"] ?? 0,
-    "Отказы": yh["Refusal"] ?? 0,
-    "Конверсия в Квал": yh["%Qual"] ?? 0,
-    "Конверсия в Неквал": yh["%Unqual"] ?? 0,
-    "Конверсия в Отказ": yh["%Refusal"] ?? 0,
-    "Клики": yh["Клики"] ?? 0,
-    "Расход, ₽": yh["Расход, ₽"] ?? ym["spend"] ?? 0,
-    "Оплаты": ym["paid_deals_raw"] ?? 0,
-    "Выручка": ym["revenue_raw"] ?? 0,
-    "Прибыль": num(ym["revenue_raw"]) - num(yh["Расход, ₽"] ?? ym["spend"]),
-  };
 
-  app.innerHTML = `<div class="app-layout">
-    <aside class="side-menu">
-      <button class="side-btn active" data-menu="dashboard">Главная</button>
-      <button class="side-btn" data-menu="reports">Детальные отчеты</button>
-      <button class="side-btn" data-menu="charts">Графики</button>
-    </aside>
-    <main class="main-content">
-      <header>
-        <h1>Главный дашборд</h1>
-        <p class="sub">Итоги за текущий месяц</p>
-      </header>
-      <div class="kpi-grid">
-        <div class="kpi"><div class="label">Уникальные клиенты Bitrix</div><div class="value">${contacts.length.toLocaleString("ru-RU")}</div></div>
-        <div class="kpi"><div class="label">Период Bitrix</div><div class="value">${escapeHtml(String(bm["Месяц"] ?? "-"))}</div></div>
-      </div>
-      ${renderSingleRowTable("Bitrix: текущий месяц (полная строка)", bitrixTableRow)}
-      ${renderSingleRowTable("Email: текущий месяц (полная строка)", emailTableRow)}
-      ${renderSingleRowTable("Yandex: текущий месяц (полная строка)", yandexTableRow)}
-    </main>
-  </div>`;
-
-  app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
-    btn.onclick = async () => {
-      const m = btn.getAttribute("data-menu");
-      if (m === "reports") {
-        const view: ViewKey = "year_total";
-        const rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
-        await renderTable(view, rows, dealsIndex);
-      } else if (m === "charts") {
-        await renderCharts(dealsIndex);
-      }
-    };
-  });
+  drawDashboard();
 }
 
 void boot();

@@ -398,6 +398,75 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   await upsertDataset(db, "bitrix_month_total_full.json", rowsToJson((bitrixMonthTotal.results ?? []) as Record<string, unknown>[]));
   paths.push("bitrix_month_total_full.json");
 
+  const bitrixWeekFunnelTotal = await db
+    .prepare(
+      `WITH src AS (
+         SELECT
+           CASE
+             WHEN COALESCE("Дата создания", '') LIKE '____-__-__%' THEN SUBSTR("Дата создания", 1, 10)
+             WHEN COALESCE("Дата создания", '') LIKE '__.__.____%' THEN SUBSTR("Дата создания", 7, 4) || '-' || SUBSTR("Дата создания", 4, 2) || '-' || SUBSTR("Дата создания", 1, 2)
+             ELSE ''
+           END AS created_date,
+           CASE
+             WHEN COALESCE("Дата оплаты", '') LIKE '____-__-__%' THEN SUBSTR("Дата оплаты", 1, 10)
+             WHEN COALESCE("Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR("Дата оплаты", 7, 4) || '-' || SUBSTR("Дата оплаты", 4, 2) || '-' || SUBSTR("Дата оплаты", 1, 2)
+             ELSE ''
+           END AS paid_date,
+           COALESCE(NULLIF(trim(funnel_group), ''), 'Другое') AS funnel_group,
+           COALESCE(revenue_amount, 0) AS revenue_amount,
+           ${bitrixLeadLogic.qual} AS is_qual,
+           ${bitrixLeadLogic.unqual} AS is_unqual,
+           ${bitrixLeadLogic.refusal} AS is_refusal,
+           ${bitrixLeadLogic.invalid} AS is_invalid,
+           ${bitrixLeadLogic.inWork} AS is_in_work,
+           CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
+         FROM mart_deals_enriched
+       ),
+       base AS (
+         SELECT
+           date(created_date) AS created_dt,
+           CASE WHEN paid_date <> '' THEN date(paid_date) ELSE NULL END AS paid_dt,
+           date(created_date, printf('-%d days', (CAST(strftime('%w', date(created_date)) AS INTEGER) + 6) % 7)) AS week_start,
+           CASE
+             WHEN paid_date <> '' THEN date(paid_date, printf('-%d days', (CAST(strftime('%w', date(paid_date)) AS INTEGER) + 6) % 7))
+             ELSE NULL
+           END AS paid_week_start,
+           funnel_group,
+           revenue_amount,
+           is_qual,
+           is_unqual,
+           is_refusal,
+           is_invalid,
+           is_in_work,
+           is_revenue
+         FROM src
+         WHERE created_date <> ''
+       )
+       SELECT
+         week_start AS "Неделя",
+         funnel_group AS "Воронка",
+         COUNT(*) AS "Лиды",
+         SUM(is_qual) AS "Квал",
+         SUM(is_unqual) AS "Неквал",
+         SUM(is_refusal) AS "Отказы",
+         SUM(is_in_work) AS "В работе",
+         SUM(is_invalid) AS "Невалидные_лиды",
+         SUM(is_revenue) AS "Сделок_с_выручкой",
+         SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка_сделки_недели",
+         SUM(CASE WHEN is_revenue = 1 AND paid_week_start = week_start THEN revenue_amount ELSE 0 END) AS "Выручка_получена_на_неделе",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе"
+       FROM base
+       WHERE created_dt IS NOT NULL AND week_start IS NOT NULL
+       GROUP BY week_start, funnel_group
+       ORDER BY week_start, funnel_group`,
+    )
+    .all<Record<string, unknown>>();
+  await upsertDataset(db, "bitrix_week_funnel_total.json", rowsToJson((bitrixWeekFunnelTotal.results ?? []) as Record<string, unknown>[]));
+  paths.push("bitrix_week_funnel_total.json");
+
   const emailOperationalSummary = await db
     .prepare(
       `WITH deals_by_campaign AS (
