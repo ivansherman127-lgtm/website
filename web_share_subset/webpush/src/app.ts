@@ -611,6 +611,7 @@ function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown
   return {
     "Yandex кампания": project,
     "Yandex объявление": "-",
+    "Заголовок": "-",
     "Лиды": leads,
     "Квал": qual,
     "Конверсия в Квал": leads > 0 ? qual / leads : 0,
