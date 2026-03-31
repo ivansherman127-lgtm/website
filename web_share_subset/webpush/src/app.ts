@@ -499,7 +499,7 @@ function writeUrlState(menu: MenuMode, view?: ViewKey): void {
 
 function viewPath(view: ViewKey): string {
   if (view === "assoc_dynamic") {
-    return "/api/assoc-revenue?dims=event";
+    return "/api/assoc-revenue?dims=event,month";
   }
   return VIEW_META[view].path;
 }
@@ -1171,6 +1171,18 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   }
   const dataRows = aliasMetaRow ? rows.slice(1) : rows;
   const viewRows = toViewRows(view, dataRows);
+  let mediaYandexMonthlyRows: Record<string, unknown>[] = [];
+  let mediaYandexCampaignMonthRows: Record<string, unknown>[] = [];
+  if (view === "media_yandex") {
+    try {
+      mediaYandexMonthlyRows = await fetchJson<Record<string, unknown>[]>("data/global/yandex_projects_revenue_by_month.json");
+      const yd = await fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
+      mediaYandexCampaignMonthRows = yd.filter((r) => String(r["Level"] ?? "").trim() === "Campaign");
+    } catch {
+      mediaYandexMonthlyRows = [];
+      mediaYandexCampaignMonthRows = [];
+    }
+  }
   const allCols = viewRows.length ? Object.keys(viewRows[0]) : [];
   let cols = allCols;
   const initialDateCol = ["Период", "Месяц", "Год"].find((c) => cols.includes(c));
@@ -1219,9 +1231,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     "assoc_dynamic",
     "media_yandex",
     "budget_monthly",
-    "managers_sales_course",
     "managers_sales_month",
-    "managers_firstline_course",
     "managers_firstline_month",
     "funnels_hierarchy",
   ]);
@@ -1277,6 +1287,185 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     let data = [...viewRows];
     if (hasDateWindowControl && dateWindowCol) {
       data = filterRowsByMonthsBack(data, dateWindowCol, dateWindowMonths);
+    }
+
+    if (view === "media_yandex" && hasDateWindowControl) {
+      const monthly = filterRowsByMonthsBack(mediaYandexMonthlyRows, "month", dateWindowMonths);
+      const mByProject = new Map<string, { leads: number; paid: number; revenue: number; spend: number }>();
+      for (const r of monthly) {
+        const p = mapYandexProjectGroup(r["project_name"]);
+        if (!p) continue;
+        const prev = mByProject.get(p) || { leads: 0, paid: 0, revenue: 0, spend: 0 };
+        prev.leads += num(r["leads_raw"]);
+        prev.paid += num(r["paid_deals_raw"]);
+        prev.revenue += num(r["revenue_raw"]);
+        prev.spend += num(r["spend"]);
+        mByProject.set(p, prev);
+      }
+
+      const ymByProject = new Map<string, YandexLeadMetrics>();
+      const campaignFiltered = filterRowsByMonthsBack(mediaYandexCampaignMonthRows, "month", dateWindowMonths);
+      for (const r of campaignFiltered) {
+        const p = mapYandexProjectGroup(r["Название кампании"]);
+        if (!p) continue;
+        const prev = ymByProject.get(p) || yandexEmptyMetrics();
+        ymByProject.set(p, addYandexMetrics(prev, toYandexMetrics(r)));
+      }
+
+      data = [...mByProject.entries()].map(([project, v]) => {
+        const ym = ymByProject.get(project) || yandexEmptyMetrics();
+        const leads = ym.leads > 0 ? ym.leads : v.leads;
+        const qual = ym.qual;
+        const unqual = ym.unqual;
+        const refusal = ym.refusal;
+        const clicks = ym.clicks;
+        const assocRevenue = v.revenue;
+        return {
+          "Yandex кампания": project,
+          "Yandex объявление": "-",
+          "Заголовок": "-",
+          "Лиды": leads,
+          "Квал": qual,
+          "Конверсия в Квал": leads > 0 ? qual / leads : 0,
+          "Неквал": unqual,
+          "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+          "Отказы": refusal,
+          "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
+          "Клики": clicks,
+          "Расход, ₽": v.spend,
+          "Оплаты": v.paid,
+          "Конверсия в Оплаты": leads > 0 ? v.paid / leads : 0,
+          "Выручка": v.revenue,
+          "Прибыль": v.revenue - v.spend,
+          "Ассоц. Выручка": assocRevenue,
+          "Ассоц. Прибыль": assocRevenue - v.spend,
+        };
+      });
+    }
+
+    if (isManagerHierarchy && hasDateWindowControl && view.endsWith("_month")) {
+      const months = filterRowsByMonthsBack(
+        viewRows.filter((r) => String(r["Level"] ?? "") === "Месяц"),
+        "Месяц",
+        dateWindowMonths,
+      );
+      const mgr = new Map<string, Record<string, unknown>>();
+      for (const r of months) {
+        const m = String(r["Менеджер"] ?? "").trim() || "Unassigned";
+        if (!mgr.has(m)) {
+          mgr.set(m, {
+            "Level": "Manager",
+            "Менеджер": m,
+            "Месяц": "-",
+            "Лиды": 0,
+            "Квал": 0,
+            "Неквал": 0,
+            "Отказы": 0,
+            "В работе": 0,
+            "Невалидные_лиды": 0,
+            "Сделок_с_выручкой": 0,
+            "Выручка": 0,
+            "fl_IDs": "",
+            "_sort_month": "-",
+          });
+        }
+        const acc = mgr.get(m)!;
+        for (const k of ["Лиды", "Квал", "Неквал", "Отказы", "В работе", "Невалидные_лиды", "Сделок_с_выручкой", "Выручка"]) {
+          acc[k] = num(acc[k]) + num(r[k]);
+        }
+      }
+      const managers = [...mgr.values()].map((r) => ({
+        ...r,
+        "Конверсия в Квал": num(r["Лиды"]) > 0 ? num(r["Квал"]) / num(r["Лиды"]) : 0,
+        "Конверсия в Неквал": num(r["Лиды"]) > 0 ? num(r["Неквал"]) / num(r["Лиды"]) : 0,
+        "Конверсия в Отказ": num(r["Лиды"]) > 0 ? num(r["Отказы"]) / num(r["Лиды"]) : 0,
+        "Конверсия в работе": num(r["Лиды"]) > 0 ? num(r["В работе"]) / num(r["Лиды"]) : 0,
+        "Средний_чек": num(r["Сделок_с_выручкой"]) > 0 ? num(r["Выручка"]) / num(r["Сделок_с_выручкой"]) : 0,
+      }));
+      data = [...managers, ...months];
+    }
+
+    if (isFunnelHierarchy && hasDateWindowControl) {
+      const codeRows = filterRowsByMonthsBack(
+        viewRows.filter((r) => String(r["__node"] ?? "").trim() === "code"),
+        "Месяц",
+        dateWindowMonths,
+      );
+      const groupedByFunnel = new Map<string, Record<string, unknown>[]>();
+      for (const r of codeRows) {
+        const f = String(r["Воронка"] ?? "").trim();
+        if (!groupedByFunnel.has(f)) groupedByFunnel.set(f, []);
+        groupedByFunnel.get(f)!.push(r);
+      }
+      const rebuilt: Record<string, unknown>[] = [];
+      for (const [funnel, items] of groupedByFunnel.entries()) {
+        const fRow = addKpi({
+          "Level": "Воронка",
+          "Воронка": funnel,
+          "Месяц": "-",
+          "Код_курса_норм": "-",
+          "__node": "funnel",
+          "__funnel": funnel,
+          "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
+          "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
+          "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
+          "Отказы": items.reduce((a, x) => a + num(x["Отказы"]), 0),
+          "В работе": items.reduce((a, x) => a + num(x["В работе"]), 0),
+          "Невалидные_лиды": items.reduce((a, x) => a + num(x["Невалидные_лиды"]), 0),
+          "Сделок_с_выручкой": items.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
+          "Выручка": items.reduce((a, x) => a + num(x["Выручка"]), 0),
+        });
+        rebuilt.push(fRow);
+        const byMonth = new Map<string, Record<string, unknown>[]>();
+        for (const r of items) {
+          const m = String(r["Месяц"] ?? "").trim();
+          if (!byMonth.has(m)) byMonth.set(m, []);
+          byMonth.get(m)!.push(r);
+        }
+        for (const [month, mItems] of byMonth.entries()) {
+          const mRow = addKpi({
+            "Level": "Месяц",
+            "Воронка": funnel,
+            "Месяц": month,
+            "Код_курса_норм": "-",
+            "__node": "month",
+            "__funnel": funnel,
+            "__month": month,
+            "Лиды": mItems.reduce((a, x) => a + num(x["Лиды"]), 0),
+            "Квал": mItems.reduce((a, x) => a + num(x["Квал"]), 0),
+            "Неквал": mItems.reduce((a, x) => a + num(x["Неквал"]), 0),
+            "Отказы": mItems.reduce((a, x) => a + num(x["Отказы"]), 0),
+            "В работе": mItems.reduce((a, x) => a + num(x["В работе"]), 0),
+            "Невалидные_лиды": mItems.reduce((a, x) => a + num(x["Невалидные_лиды"]), 0),
+            "Сделок_с_выручкой": mItems.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
+            "Выручка": mItems.reduce((a, x) => a + num(x["Выручка"]), 0),
+          });
+          rebuilt.push(mRow);
+          rebuilt.push(...mItems);
+        }
+      }
+      data = rebuilt;
+    }
+
+    if (isBudgetHierarchy && hasDateWindowControl) {
+      const months = filterRowsByMonthsBack(
+        viewRows.filter((r) => String(r["Level"] ?? "") === "Month"),
+        "Период",
+        dateWindowMonths,
+      );
+      const allowed = new Set(months.map((r) => String(r["month"] ?? r["Период"] ?? "").trim()).filter(Boolean));
+      const details = viewRows.filter((r) => String(r["Level"] ?? "") === "Detail" && allowed.has(String(r["month"] ?? "").trim()));
+      const total = {
+        "Level": "Total",
+        "Период": "Итого",
+        "Сделок_с_выручкой": months.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
+        "Выручка": months.reduce((a, x) => a + num(x["Выручка"]), 0),
+        "Расход, ₽": months.reduce((a, x) => a + num(x["Расход, ₽"]), 0),
+        "Прибыль": months.reduce((a, x) => a + num(x["Прибыль"]), 0),
+        "month": "",
+        "__pay_month": "",
+      };
+      data = [...months, ...details, total];
     }
     if (view === "contacts_unique" && contactsFullOnly) {
       data = data.filter((r) => {

@@ -478,7 +478,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     .prepare(
       `WITH ysrc AS (
          SELECT
-           COALESCE(NULLIF(TRIM(l.project_name), ''), '(пусто)') AS campaign_name,
+           ${buildYandexProjectGroupSqlExpr("l.project_name")} AS campaign_name,
            COALESCE(NULLIF(TRIM(l.campaign_id), ''), '(пусто)') AS campaign_id,
            COALESCE(NULLIF(TRIM(l.yandex_month), ''), '') AS month,
            CASE
