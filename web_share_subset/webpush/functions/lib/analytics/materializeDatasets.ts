@@ -526,7 +526,26 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
 
   const emailHierarchyBySend = await db
     .prepare(
-      `WITH deals_by_campaign AS (
+      `WITH email_pools AS (
+         SELECT DISTINCT
+           lower(trim(COALESCE("UTM Campaign", ''))) AS utm_key,
+           REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id
+         FROM mart_deals_enriched
+         WHERE LOWER(TRIM(COALESCE("UTM Source", ''))) = 'sendsay'
+           AND lower(trim(COALESCE("UTM Campaign", ''))) <> ''
+           AND REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') <> ''
+       ),
+       assoc_rev AS (
+         SELECT
+           ep.utm_key,
+           COALESCE(SUM(COALESCE(rev.revenue_amount, 0)), 0) AS assoc_revenue
+         FROM email_pools ep
+         JOIN mart_deals_enriched rev
+           ON REPLACE(TRIM(COALESCE(rev."Контакт: ID", '')), '.0', '') = ep.contact_id
+         WHERE rev.is_revenue_variant3 = 1
+         GROUP BY ep.utm_key
+       ),
+       deals_by_campaign AS (
          SELECT
            lower(trim(COALESCE("UTM Campaign", ''))) AS utm_campaign_key,
            COUNT(*) AS leads,
