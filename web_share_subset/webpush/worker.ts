@@ -21,6 +21,13 @@ function methodNotAllowed(): Response {
   });
 }
 
+function json(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -44,6 +51,15 @@ export default {
     if (pathname === "/api/protected-table") {
       if (request.method !== "GET") return methodNotAllowed();
       return protectedTableGet({ request, env } as never);
+    }
+
+    if (pathname === "/api/save-view-json") {
+      if (request.method !== "POST") return methodNotAllowed();
+      return json(501, {
+        ok: false,
+        error: "save_view_json_unavailable",
+        message: "Local JSON save is only available in the Vite dev server.",
+      });
     }
 
     if (pathname === "/api/analytics/rebuild") {

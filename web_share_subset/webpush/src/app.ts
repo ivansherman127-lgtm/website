@@ -299,10 +299,9 @@ function writeUrlState(menu: MenuMode, view?: ViewKey): void {
   window.history.replaceState({}, "", url.toString());
 }
 
-type AssocDynamicDim = "yandex_campaign" | "yandex_ad" | "email_campaign" | "event";
+type AssocDynamicDim = "yandex_campaign" | "email_campaign" | "event";
 const ASSOC_DYNAMIC_DIM_OPTIONS: Array<{ key: AssocDynamicDim; label: string }> = [
   { key: "yandex_campaign", label: "Yandex кампания" },
-  { key: "yandex_ad", label: "Yandex объявление" },
   { key: "email_campaign", label: "Email кампания" },
   { key: "event", label: "Мероприятие" },
 ];
@@ -1016,10 +1015,12 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const expandedFunnelMonths = new Set<string>();
   const expandedAssocOtherRows = new Set<string>();
   const expandedAssocEventRows = new Set<string>();
+  const expandedAssocYandexRows = new Set<string>();
   const expandedYandexProjectRows = new Set<string>();
   const isEmailHierarchy = view === "media_email";
   const isAssocEmailHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_email_detail"]) > 0);
   const isAssocEventHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_event_detail"]) > 0);
+  const isAssocYandexHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_yandex_detail"]) > 0);
   const isYandexHierarchy = false;
   const isYandexProjectHierarchy = (view === "media_yandex" || view === "media_yandex_assoc_qa") && viewRows.some((r) => num(r["__yandex_project_detail"]) > 0);
   const isManagerHierarchy = view.startsWith("managers_");
@@ -1032,7 +1033,19 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
-      const payload = (await resp.json()) as { ok?: boolean; rows?: number; error?: string };
+      const text = await resp.text();
+      let payload: { ok?: boolean; rows?: number; error?: string };
+      try {
+        payload = JSON.parse(text) as { ok?: boolean; rows?: number; error?: string };
+      } catch {
+        const compact = text.replace(/\s+/g, " ").trim();
+        return {
+          ok: false,
+          error: compact.startsWith("<!DOCTYPE")
+            ? "Локальное сохранение недоступно в этом окружении"
+            : compact.slice(0, 200) || `${url} failed`,
+        };
+      }
       if (!resp.ok || !payload.ok) return { ok: false, error: payload.error || `${url} failed` };
       return { ok: true, rows: payload.rows };
     } catch (e) {
@@ -1071,7 +1084,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       data = data.filter((r) => cols.some((c) => String(r[c] ?? "").toLowerCase().includes(q)));
     }
     // Иерархии строят порядок строк сами; глобальная сортировка ломает вложенные таблицы.
-    if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isYandexProjectHierarchy && !isAssocEmailHierarchy && !isAssocEventHierarchy) {
+    if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isYandexProjectHierarchy && !isAssocEmailHierarchy && !isAssocEventHierarchy && !isAssocYandexHierarchy) {
       data.sort((a, b) => compareCell(sortCol, a[sortCol], b[sortCol], sortDir));
     }
     if (isEmailHierarchy) {
@@ -1103,6 +1116,16 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         const ctxKey = String(r["__assoc_event_ctx"] ?? "");
         if (!isDetail) ordered.push(r);
         else if (expandedAssocEventRows.has(ctxKey)) ordered.push(r);
+      }
+      data = ordered;
+    }
+    if (isAssocYandexHierarchy) {
+      const ordered: Record<string, unknown>[] = [];
+      for (const r of data) {
+        const isDetail = num(r["__assoc_yandex_detail"]) > 0;
+        const ctxKey = String(r["__assoc_yandex_ctx"] ?? r["Yandex кампания"] ?? "").trim();
+        if (!isDetail) ordered.push(r);
+        else if (expandedAssocYandexRows.has(ctxKey)) ordered.push(r);
       }
       data = ordered;
     }
@@ -1162,7 +1185,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     const topCountEl = app.querySelector<HTMLElement>(".kpi-grid .kpi:first-child .value");
     if (topCountEl) topCountEl.textContent = data.length.toLocaleString("ru-RU");
 
-    const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isYandexProjectHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy;
+    const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isYandexProjectHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy || isAssocYandexHierarchy;
     visibleRows = data;
     const th = `${showCtrl ? '<th class="ctrl-col">#</th>' : ""}${cols.map((c) => `<th data-col="${escapeHtml(c)}" title="клик: сортировка · Ctrl+клик: переименовать">${escapeHtml(displayColName(view, c))}</th>`).join("")}`;
     const rendered = data.slice(0, 5000);
@@ -1226,12 +1249,17 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         isAssocEventHierarchy && num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0
           ? `<button class="assoc-event-expand-btn" data-ctx="${escapeHtml(assocEventCtx)}">${expandedAssocEventRows.has(assocEventCtx) ? "−" : "+"}</button>`
           : "";
+      const assocYandexCtx = String(r["__assoc_yandex_ctx"] ?? r["Yandex кампания"] ?? "").trim();
+      const assocYandexBtn =
+        isAssocYandexHierarchy && num(r["__assoc_yandex_detail"]) === 0 && num(r["__assoc_yandex_has_details"]) > 0
+          ? `<button class="assoc-yandex-expand-btn" data-ctx="${escapeHtml(assocYandexCtx)}">${expandedAssocYandexRows.has(assocYandexCtx) ? "−" : "+"}</button>`
+          : "";
       const yProjectCtx = String(r["__yandex_project_ctx"] ?? r["Проект"] ?? "").trim();
       const yProjectBtn =
         isYandexProjectHierarchy && num(r["__yandex_project_detail"]) === 0 && num(r["__yandex_project_has_details"]) > 0
           ? `<button class="yd-project-expand-btn" data-ctx="${escapeHtml(yProjectCtx)}">${expandedYandexProjectRows.has(`${view}||${yProjectCtx}`) ? "−" : "+"}</button>`
           : "";
-      const row = `<tr>${showCtrl ? `<td class="ctrl-col">${emailBtn || emailOtherBtn || managerBtn || funnelBtn || yandexBtn || assocOtherBtn || assocEventBtn || yProjectBtn}</td>` : ""}${cols
+      const row = `<tr>${showCtrl ? `<td class="ctrl-col">${emailBtn || emailOtherBtn || managerBtn || funnelBtn || yandexBtn || assocOtherBtn || assocEventBtn || assocYandexBtn || yProjectBtn}</td>` : ""}${cols
         .map((c) => {
           const editable = isEditableDataColumn(c) ? "1" : "0";
           return `<td data-row="${idx}" data-col="${escapeHtml(c)}" data-editable="${editable}">${escapeHtml(formatCell(c, r[c]))}</td>`;
@@ -1385,6 +1413,12 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       if (expandedAssocEventRows.has(ctx)) expandedAssocEventRows.delete(ctx); else expandedAssocEventRows.add(ctx);
       draw();
     }));
+    app.querySelectorAll<HTMLButtonElement>(".assoc-yandex-expand-btn").forEach((b) => (b.onclick = () => {
+      const ctx = b.getAttribute("data-ctx") || "";
+      if (!ctx) return;
+      if (expandedAssocYandexRows.has(ctx)) expandedAssocYandexRows.delete(ctx); else expandedAssocYandexRows.add(ctx);
+      draw();
+    }));
     app.querySelectorAll<HTMLButtonElement>(".yd-project-expand-btn").forEach((b) => (b.onclick = () => {
       const ctx = b.getAttribute("data-ctx") || "";
       if (!ctx) return;
@@ -1401,6 +1435,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         ? viewRows.filter((r) => num(r["__assoc_email_detail"]) === 0)
         : isAssocEventHierarchy
           ? viewRows.filter((r) => num(r["__assoc_event_detail"]) === 0)
+          : isAssocYandexHierarchy
+            ? viewRows.filter((r) => num(r["__assoc_yandex_detail"]) === 0)
           : isYandexProjectHierarchy
             ? viewRows.filter((r) => num(r["__yandex_project_detail"]) === 0)
             : viewRows;

@@ -133,6 +133,10 @@ function buildYandexProjectGroupSqlExpr(rawExpr: string): string {
     .join(" ")} ELSE ${trimmed} END, '(без маппинга в Yandex raw)')`;
 }
 
+function isValidYandexAdId(value: unknown): boolean {
+  return /^17\d{9}$/.test(String(value ?? "").trim());
+}
+
 function sqlNormalizeLookupExpr(expr: string): string {
   const replacements: Array<[string, string]> = [
     ["ё", "е"],
@@ -447,16 +451,18 @@ export async function onRequestGet(context: {
     const hasYandexStats = await tableExists(context.env.DB, "stg_yandex_stats");
     const hasEmailSends = await tableExists(context.env.DB, "stg_email_sends");
     const hasContactsUid = await tableExists(context.env.DB, "stg_contacts_uid");
-    let yandexCampaignExpr = "'(без маппинга в Yandex raw)'";
+    const hasSourceUtmCampaign = await columnExists(context.env.DB, table, "UTM Campaign");
+    let yandexCampaignExpr = hasSourceUtmCampaign
+      ? buildYandexProjectGroupSqlExpr(`src."UTM Campaign"`)
+      : "'(без маппинга в Yandex raw)'";
     let emailCampaignExpr = "'(без маппинга в email raw)'";
 
     if (hasYandexStats && (dims.includes("yandex_campaign") || dims.includes("yandex_ad"))) {
-      const hasSourceUtmCampaign = await columnExists(context.env.DB, table, "UTM Campaign");
-      if (hasSourceUtmCampaign) {
-        yandexCampaignExpr = buildYandexProjectGroupSqlExpr(`src."UTM Campaign"`);
-      } else {
-        yandexCampaignExpr = buildYandexProjectGroupSqlExpr("ym.project_name");
-      }
+      yandexCampaignExpr = `CASE
+        WHEN NULLIF(TRIM(COALESCE(ym.project_name, '')), '') IS NOT NULL THEN ${buildYandexProjectGroupSqlExpr("ym.project_name")}
+        WHEN NULLIF(TRIM(COALESCE(ycm.campaign_name, '')), '') IS NOT NULL THEN ${buildYandexProjectGroupSqlExpr("ycm.campaign_name")}
+        ELSE ${hasSourceUtmCampaign ? buildYandexProjectGroupSqlExpr(`src."UTM Campaign"`) : "'(без маппинга в Yandex raw)'"}
+      END`;
     }
 
     if (hasEmailSends && dims.includes("email_campaign")) {
@@ -563,6 +569,14 @@ export async function onRequestGet(context: {
           WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
           GROUP BY 1
         ),
+        yandex_campaign_map AS (
+          SELECT
+            REPLACE(TRIM(COALESCE("№ Кампании", '')), '.0', '') AS campaign_id,
+            MIN(NULLIF(TRIM(COALESCE("Название кампании", '')), '')) AS campaign_name
+          FROM stg_yandex_stats
+          WHERE REPLACE(TRIM(COALESCE("№ Кампании", '')), '.0', '') <> ''
+          GROUP BY 1
+        ),
       `
       : "";
 
@@ -580,6 +594,8 @@ export async function onRequestGet(context: {
         FROM ${table} src
         ${hasYandexStats ? `LEFT JOIN yandex_map ym
           ON ym.ad_id = ${sourceYandexAdExpr}
+        LEFT JOIN yandex_campaign_map ycm
+          ON ycm.campaign_id = REPLACE(TRIM(COALESCE(src."UTM Campaign", '')), '.0', '')
         ` : ""}
       )`;
 
@@ -792,6 +808,119 @@ export async function onRequestGet(context: {
         const parentEvent = String(row[specs[0].label] ?? "").trim();
         const details = breakdownByParent.get(parentEvent) ?? [];
         if (details.length > 0) row["__assoc_event_has_details"] = 1;
+        return [row, ...details];
+      });
+    }
+
+    if (dims.length === 1 && dims[0] === "yandex_campaign") {
+      const adBreakdownWhereSql = whereSql
+        ? `${whereSql} AND yandex_ad_group GLOB '17?????????'`
+        : `WHERE yandex_ad_group GLOB '17?????????'`;
+      const breakdownSql = `
+        WITH ${yandexMapCte}${sourceDealsCte},
+        source_scoped AS (
+          SELECT
+            yandex_campaign_group AS parent_campaign,
+            yandex_ad_group AS ad_label,
+            ${sourceContactExpr} AS contact_id
+          FROM source_deals
+          ${adBreakdownWhereSql}
+        ),
+        source_group_stats AS (
+          SELECT
+            parent_campaign,
+            ad_label,
+            COUNT(*) AS deals_total,
+            COUNT(DISTINCT CASE WHEN contact_id <> '' THEN contact_id ELSE NULL END) AS contacts_in_pool
+          FROM source_scoped
+          GROUP BY parent_campaign, ad_label
+        ),
+        contact_pool AS (
+          SELECT DISTINCT
+            sc.parent_campaign,
+            sc.ad_label,
+            ${hasContactsUid ? `COALESCE(cu.contact_uid, sc.contact_id)` : `sc.contact_id`} AS contact_key
+          FROM source_scoped sc
+          ${hasContactsUid ? `LEFT JOIN stg_contacts_uid cu ON cu.contact_id = sc.contact_id` : ``}
+          WHERE sc.contact_id <> ''
+        ),
+        paid_by_contact AS (
+          SELECT
+            ${hasContactsUid ? `COALESCE(cu.contact_uid, pd.contact_id)` : `pd.contact_id`} AS contact_key,
+            COUNT(*) AS paid_deals,
+            COALESCE(SUM(pd.revenue_amount), 0) AS revenue
+          FROM (
+            SELECT
+              REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id,
+              COALESCE(revenue_amount, 0) AS revenue_amount
+            FROM mart_deals_enriched
+            WHERE is_revenue_variant3 = 1
+          ) pd
+          ${hasContactsUid ? `LEFT JOIN stg_contacts_uid cu ON cu.contact_id = pd.contact_id` : ``}
+          WHERE pd.contact_id <> ''
+          GROUP BY ${hasContactsUid ? `COALESCE(cu.contact_uid, pd.contact_id)` : `pd.contact_id`}
+        )${hasYandexStats ? `,
+        yandex_spend_by_ad AS (
+          SELECT
+            REPLACE(TRIM(COALESCE(spend_src."№ Объявления", '')), '.0', '') AS ad_label,
+            COALESCE(SUM(COALESCE(spend_src."Расход, ₽", 0)), 0) AS total_spend
+          FROM stg_yandex_stats spend_src
+          WHERE REPLACE(TRIM(COALESCE(spend_src."№ Объявления", '')), '.0', '') GLOB '17?????????'
+          GROUP BY ad_label
+        )` : ``}
+        SELECT
+          s.parent_campaign,
+          s.ad_label,
+          s.deals_total,
+          s.contacts_in_pool,
+          COALESCE(SUM(p.paid_deals), 0) AS paid_deals,
+          COUNT(DISTINCT CASE WHEN p.paid_deals > 0 THEN cp.contact_key ELSE NULL END) AS contacts_with_revenue,
+          COALESCE(SUM(p.revenue), 0) AS revenue${hasYandexStats ? `,
+          COALESCE(MAX(ysa.total_spend), 0) AS yandex_spend` : ``}
+        FROM source_group_stats s
+        LEFT JOIN contact_pool cp
+          ON cp.parent_campaign = s.parent_campaign
+         AND cp.ad_label = s.ad_label
+        LEFT JOIN paid_by_contact p
+          ON p.contact_key = cp.contact_key
+        ${hasYandexStats ? `LEFT JOIN yandex_spend_by_ad ysa ON ysa.ad_label = s.ad_label` : ``}
+        GROUP BY s.parent_campaign, s.ad_label, s.deals_total, s.contacts_in_pool
+        ORDER BY s.parent_campaign, revenue DESC, s.ad_label
+      `;
+
+      const breakdownResult = await context.env.DB.prepare(breakdownSql).bind(...binds).all<Record<string, unknown>>();
+      const breakdownByParent = new Map<string, Record<string, unknown>[]>();
+      for (const r of breakdownResult.results ?? []) {
+        const parentCampaign = String(r.parent_campaign ?? "").trim();
+        const adLabel = String(r.ad_label ?? "").trim();
+        if (!parentCampaign || !isValidYandexAdId(adLabel)) continue;
+        const paidDeals = Number(r.paid_deals ?? 0);
+        const revenue = Number(r.revenue ?? 0);
+        const spend = Number(r.yandex_spend ?? 0);
+        const child: Record<string, unknown> = {
+          [specs[0].label]: parentCampaign,
+          "Yandex объявление": adLabel,
+          "Сделок_всего": Number(r.deals_total ?? 0),
+          "Контактов_в_пуле": Number(r.contacts_in_pool ?? 0),
+          "Сделок_с_выручкой": paidDeals,
+          "Контактов_с_выручкой": Number(r.contacts_with_revenue ?? 0),
+          "Выручка": revenue,
+          "Средний_чек": paidDeals > 0 ? revenue / paidDeals : 0,
+          "Расход": spend,
+          "Прибыль": revenue - spend,
+          "__assoc_yandex_detail": 1,
+          "__assoc_yandex_ctx": parentCampaign,
+        };
+        const bucket = breakdownByParent.get(parentCampaign);
+        if (bucket) bucket.push(child);
+        else breakdownByParent.set(parentCampaign, [child]);
+      }
+
+      rows = rows.flatMap((row) => {
+        const parentCampaign = String(row[specs[0].label] ?? "").trim();
+        const details = breakdownByParent.get(parentCampaign) ?? [];
+        row["Yandex объявление"] = "-";
+        if (details.length > 0) row["__assoc_yandex_has_details"] = 1;
         return [row, ...details];
       });
     }
