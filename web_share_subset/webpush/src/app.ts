@@ -1,6 +1,7 @@
 import "./style.css";
 import Chart from "chart.js/auto";
 import { dataUrl, staticUrl } from "./data-source";
+import { mapYandexProjectGroup } from "./yandexProjectGroups";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const columnAliasesByView = new Map<string, Record<string, string>>();
@@ -638,6 +639,70 @@ function addYandexMetrics(a: YandexLeadMetrics, b: YandexLeadMetrics): YandexLea
   };
 }
 
+function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown>): Record<string, unknown> {
+  const m = yandexProjectLeadMetrics.get(project) || yandexEmptyMetrics();
+  const leads = m.leads > 0 ? m.leads : num(raw["leads_raw"]);
+  const qual = m.qual;
+  const unqual = m.unqual;
+  const refusal = m.refusal;
+  const paid = num(raw["payments_count"] ?? raw["paid_deals_raw"]);
+  const revenue = num(raw["revenue_raw"]);
+  const spend = m.spend > 0 ? m.spend : num(raw["spend"]);
+  const assocRevenue = num(raw["assoc_revenue"]);
+  return {
+    "Проект": project,
+    "Yandex объявление": "-",
+    "Лиды": leads,
+    "Квал": qual,
+    "Конверсия в Квал": leads > 0 ? qual / leads : 0,
+    "Неквал": unqual,
+    "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+    "Отказы": refusal,
+    "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
+    "Клики": m.clicks,
+    "Расход, ₽": spend,
+    "Оплаты": paid,
+    "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
+    "Выручка": revenue,
+    "Прибыль": revenue - spend,
+    "Ассоц. Выручка": assocRevenue,
+    "Ассоц. Прибыль": assocRevenue - spend,
+  };
+}
+
+function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): Record<string, unknown> {
+  const adId = String(raw["ad_id"] ?? "").trim();
+  const leads = num(raw["leads_raw"]);
+  const qual = num(raw["qual"]);
+  const unqual = num(raw["unqual"]);
+  const refusal = num(raw["refusal"]);
+  const paid = num(raw["payments_count"] ?? raw["paid_deals_raw"]);
+  const revenue = num(raw["revenue_raw"]);
+  const spend = num(raw["spend"]);
+  const assocRevenue = num(raw["assoc_revenue"]);
+  return {
+    "Проект": project,
+    "Yandex объявление": adId,
+    "Лиды": leads,
+    "Квал": qual,
+    "Конверсия в Квал": leads > 0 ? qual / leads : 0,
+    "Неквал": unqual,
+    "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+    "Отказы": refusal,
+    "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
+    "Клики": num(raw["clicks"]),
+    "Расход, ₽": spend,
+    "Оплаты": paid,
+    "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
+    "Выручка": revenue,
+    "Прибыль": revenue - spend,
+    "Ассоц. Выручка": assocRevenue,
+    "Ассоц. Прибыль": assocRevenue - spend,
+    "__yandex_project_ctx": project,
+    "__yandex_project_detail": 1,
+  };
+}
+
 function toYandexMetrics(row: Record<string, unknown>): YandexLeadMetrics {
   return {
     leads: num(row["Leads"]),
@@ -805,67 +870,79 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
     return regroupAssocEmailRows(clean);
   }
   if (view === "media_yandex") {
-    const rowsByProject = new Map<string, Record<string, unknown>>();
-    for (const r of clean) {
-      const project = String(r["project_name"] ?? "").trim();
-      if (!project) continue;
-      const m = yandexProjectLeadMetrics.get(project) || yandexEmptyMetrics();
-      const leads = m.leads > 0 ? m.leads : num(r["leads_raw"]);
-      const qual = m.qual;
-      const unqual = m.unqual;
-      const refusal = m.refusal;
-      const paid = num(r["payments_count"] ?? r["paid_deals_raw"]);
-      const revenue = num(r["revenue_raw"]);
-      const spend = m.spend > 0 ? m.spend : num(r["spend"]);
-      const profit = revenue - spend;
-      const assocRevenue = num(r["assoc_revenue"]);
-      const assocProfit = assocRevenue - spend;
-      rowsByProject.set(project, {
-        "Проект": project,
-        "Лиды": leads,
-        "Квал": qual,
-        "Конверсия в Квал": leads > 0 ? qual / leads : 0,
-        "Неквал": unqual,
-        "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
-        "Отказы": refusal,
-        "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
-        "Клики": m.clicks,
-        "Расход, ₽": spend,
-        "Оплаты": paid,
-        "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
-        "Выручка": revenue,
-        "Прибыль": profit,
-        "Ассоц. Выручка": assocRevenue,
-        "Ассоц. Прибыль": assocProfit,
-      });
+    const hasHierarchyRows = clean.some((r) => String(r["Level"] ?? "").trim() === "Project" || num(r["__yandex_project_detail"]) > 0);
+    if (hasHierarchyRows) {
+      const out: Record<string, unknown>[] = [];
+      const parentProjects = new Set<string>();
+      for (const r of clean) {
+        const level = String(r["Level"] ?? "").trim();
+        const project = String(r["project_name"] ?? r["Проект"] ?? "").trim();
+        if (!project) continue;
+        if (level === "Project") {
+          parentProjects.add(project);
+          out.push({
+            ...buildMediaYandexProjectRow(project, r),
+            Level: "Project",
+            __yandex_project_ctx: project,
+            __yandex_project_has_details: num(r["__yandex_project_has_details"]) > 0 ? 1 : 0,
+          });
+          continue;
+        }
+        if (num(r["__yandex_project_detail"]) > 0 || level === "Ad") {
+          out.push(buildMediaYandexAdRow(project, r));
+        }
+      }
+
+      for (const [project, m] of yandexProjectLeadMetrics.entries()) {
+        if (!project || parentProjects.has(project)) continue;
+        if (m.spend <= 0 && m.clicks <= 0 && m.leads <= 0) continue;
+        out.push({
+          ...buildMediaYandexProjectRow(project, { spend: m.spend }),
+          Level: "Project",
+          __yandex_project_ctx: project,
+          __yandex_project_has_details: 0,
+        });
+      }
+      return out;
     }
 
-    // Keep spend totals consistent with monthly Yandex totals by adding projects
-    // that have ad spend but no matched Bitrix deal rows.
+    const rowsByProject = new Map<string, Record<string, unknown>>();
+    for (const r of clean) {
+      const project = mapYandexProjectGroup(r["project_name"]);
+      if (!project) continue;
+      rowsByProject.set(project, buildMediaYandexProjectRow(project, r));
+    }
+
     for (const [project, m] of yandexProjectLeadMetrics.entries()) {
       if (!project || rowsByProject.has(project)) continue;
       if (m.spend <= 0 && m.clicks <= 0 && m.leads <= 0) continue;
-      rowsByProject.set(project, {
-        "Проект": project,
-        "Лиды": m.leads,
-        "Квал": m.qual,
-        "Конверсия в Квал": m.leads > 0 ? m.qual / m.leads : 0,
-        "Неквал": m.unqual,
-        "Конверсия в Неквал": m.leads > 0 ? m.unqual / m.leads : 0,
-        "Отказы": m.refusal,
-        "Конверсия в Отказ": m.leads > 0 ? m.refusal / m.leads : 0,
-        "Клики": m.clicks,
-        "Расход, ₽": m.spend,
-        "Оплаты": 0,
-        "Конверсия в Оплаты": 0,
-        "Выручка": 0,
-        "Прибыль": -m.spend,
-        "Ассоц. Выручка": 0,
-        "Ассоц. Прибыль": -m.spend,
-      });
+      rowsByProject.set(project, buildMediaYandexProjectRow(project, { spend: m.spend }));
     }
 
     return Array.from(rowsByProject.values());
+  }
+  if (view === "media_yandex_assoc_qa") {
+    const hasHierarchyRows = clean.some((r) => String(r["Level"] ?? "").trim() === "Project" || num(r["__yandex_project_detail"]) > 0);
+    if (!hasHierarchyRows) return clean;
+    return clean.map((r) => {
+      const level = String(r["Level"] ?? "").trim();
+      if (level === "Project") {
+        return {
+          ...r,
+          "Yandex объявление": "-",
+          __yandex_project_ctx: String(r["Проект"] ?? "").trim(),
+          __yandex_project_has_details: num(r["__yandex_project_has_details"]) > 0 ? 1 : 0,
+        };
+      }
+      if (num(r["__yandex_project_detail"]) > 0 || level === "Ad") {
+        return {
+          ...r,
+          __yandex_project_ctx: String(r["Проект"] ?? "").trim(),
+          __yandex_project_detail: 1,
+        };
+      }
+      return r;
+    });
   }
   if (view === "media_yandex_month") {
     return clean.map((r) => {
@@ -1011,10 +1088,12 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const expandedFunnelMonths = new Set<string>();
   const expandedAssocOtherRows = new Set<string>();
   const expandedAssocEventRows = new Set<string>();
+  const expandedYandexProjectRows = new Set<string>();
   const isEmailHierarchy = view === "media_email";
   const isAssocEmailHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_email_detail"]) > 0);
   const isAssocEventHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_event_detail"]) > 0);
   const isYandexHierarchy = false;
+  const isYandexProjectHierarchy = (view === "media_yandex" || view === "media_yandex_assoc_qa") && viewRows.some((r) => num(r["__yandex_project_detail"]) > 0);
   const isManagerHierarchy = view.startsWith("managers_");
   const isFunnelSourceHierarchy = false;
   const isFunnelMediumHierarchy = false;
@@ -1072,7 +1151,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       data = data.filter((r) => cols.some((c) => String(r[c] ?? "").toLowerCase().includes(q)));
     }
     // Иерархии строят порядок строк сами; глобальная сортировка ломает вложенные таблицы.
-    if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isAssocEmailHierarchy && !isAssocEventHierarchy) {
+    if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isYandexProjectHierarchy && !isAssocEmailHierarchy && !isAssocEventHierarchy) {
       data.sort((a, b) => compareCell(sortCol, a[sortCol], b[sortCol], sortDir));
     }
     if (isEmailHierarchy) {
@@ -1104,6 +1183,16 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         const ctxKey = String(r["__assoc_event_ctx"] ?? "");
         if (!isDetail) ordered.push(r);
         else if (expandedAssocEventRows.has(ctxKey)) ordered.push(r);
+      }
+      data = ordered;
+    }
+    if (isYandexProjectHierarchy) {
+      const ordered: Record<string, unknown>[] = [];
+      for (const r of data) {
+        const isDetail = num(r["__yandex_project_detail"]) > 0;
+        const ctxKey = String(r["__yandex_project_ctx"] ?? r["Проект"] ?? "").trim();
+        if (!isDetail) ordered.push(r);
+        else if (expandedYandexProjectRows.has(`${view}||${ctxKey}`)) ordered.push(r);
       }
       data = ordered;
     }
@@ -1153,7 +1242,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     const topCountEl = app.querySelector<HTMLElement>(".kpi-grid .kpi:first-child .value");
     if (topCountEl) topCountEl.textContent = data.length.toLocaleString("ru-RU");
 
-    const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy;
+    const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isYandexProjectHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy;
     visibleRows = data;
     const th = `${showCtrl ? '<th class="ctrl-col">#</th>' : ""}${cols.map((c) => `<th data-col="${escapeHtml(c)}" title="клик: сортировка · Ctrl+клик: переименовать">${escapeHtml(displayColName(view, c))}</th>`).join("")}`;
     const rendered = data.slice(0, 5000);
@@ -1222,7 +1311,12 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         isAssocEventHierarchy && num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0
           ? `<button class="assoc-event-expand-btn" data-ctx="${escapeHtml(assocEventCtx)}">${expandedAssocEventRows.has(assocEventCtx) ? "−" : "+"}</button>`
           : "";
-      const row = `<tr>${showCtrl ? `<td class="ctrl-col">${emailBtn || emailOtherBtn || managerBtn || funnelBtn || yandexBtn || assocOtherBtn || assocEventBtn}</td>` : ""}${cols
+      const yProjectCtx = String(r["__yandex_project_ctx"] ?? r["Проект"] ?? "").trim();
+      const yProjectBtn =
+        isYandexProjectHierarchy && num(r["__yandex_project_detail"]) === 0 && num(r["__yandex_project_has_details"]) > 0
+          ? `<button class="yd-project-expand-btn" data-ctx="${escapeHtml(yProjectCtx)}">${expandedYandexProjectRows.has(`${view}||${yProjectCtx}`) ? "−" : "+"}</button>`
+          : "";
+      const row = `<tr>${showCtrl ? `<td class="ctrl-col">${emailBtn || emailOtherBtn || managerBtn || funnelBtn || yandexBtn || assocOtherBtn || assocEventBtn || yProjectBtn}</td>` : ""}${cols
         .map((c) => {
           const editable = isEditableDataColumn(c) ? "1" : "0";
           return `<td data-row="${idx}" data-col="${escapeHtml(c)}" data-editable="${editable}">${escapeHtml(formatCell(c, r[c]))}</td>`;
@@ -1376,6 +1470,13 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       if (expandedAssocEventRows.has(ctx)) expandedAssocEventRows.delete(ctx); else expandedAssocEventRows.add(ctx);
       draw();
     }));
+    app.querySelectorAll<HTMLButtonElement>(".yd-project-expand-btn").forEach((b) => (b.onclick = () => {
+      const ctx = b.getAttribute("data-ctx") || "";
+      if (!ctx) return;
+      const key = `${view}||${ctx}`;
+      if (expandedYandexProjectRows.has(key)) expandedYandexProjectRows.delete(key); else expandedYandexProjectRows.add(key);
+      draw();
+    }));
   };
 
   const kpiRows =
@@ -1385,7 +1486,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         ? viewRows.filter((r) => num(r["__assoc_email_detail"]) === 0)
         : isAssocEventHierarchy
           ? viewRows.filter((r) => num(r["__assoc_event_detail"]) === 0)
-          : viewRows;
+          : isYandexProjectHierarchy
+            ? viewRows.filter((r) => num(r["__yandex_project_detail"]) === 0)
+            : viewRows;
   const totalRevenue = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Выручка", "выручка"]), 0);
   const deals = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Сделок_с_выручкой", "Сделок с выручкой"]), 0);
   app.innerHTML = `<div class="app-layout">
@@ -1879,7 +1982,7 @@ async function boot(): Promise<void> {
     for (const r of yandexHierarchy) {
       const lvl = String(r["Level"] ?? "").trim();
       if (lvl === "Campaign") {
-        const key = String(r["Название кампании"] ?? "").trim();
+        const key = mapYandexProjectGroup(r["Название кампании"]);
         if (key) {
           const prev = yandexProjectLeadMetrics.get(key) || yandexEmptyMetrics();
           yandexProjectLeadMetrics.set(key, addYandexMetrics(prev, toYandexMetrics(r)));

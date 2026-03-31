@@ -1,9 +1,5 @@
-import {
-  buildYandexProjectLabelMap,
-  buildYandexProjectLabelMapFromRows,
-  type NoMonthRow,
-} from "../lib/analytics/yandexProjectsNoMonth";
 import { sqlExtractYandexAdId } from "../lib/analytics/yandexAdId";
+import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS } from "../../src/yandexProjectGroups";
 
 interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
@@ -127,6 +123,14 @@ function safeJsonParseArray(raw: string): unknown[] | null {
 
 function sqlQuote(value: string): string {
   return `'${String(value).replace(/'/g, "''")}'`;
+}
+
+function buildYandexProjectGroupSqlExpr(rawExpr: string): string {
+  const trimmed = `NULLIF(TRIM(COALESCE(${rawExpr}, '')), '')`;
+  if (!YANDEX_PROJECT_GROUP_ALIAS_PAIRS.length) return `COALESCE(${trimmed}, '(без маппинга в Yandex raw)')`;
+  return `COALESCE(CASE ${trimmed} ${YANDEX_PROJECT_GROUP_ALIAS_PAIRS
+    .map(([alias, group]) => `WHEN ${sqlQuote(alias)} THEN ${sqlQuote(group)}`)
+    .join(" ")} ELSE ${trimmed} END, '(без маппинга в Yandex raw)')`;
 }
 
 function sqlNormalizeLookupExpr(expr: string): string {
@@ -445,59 +449,9 @@ export async function onRequestGet(context: {
     const hasContactsUid = await tableExists(context.env.DB, "stg_contacts_uid");
     let yandexCampaignExpr = "'(без маппинга в Yandex raw)'";
     let emailCampaignExpr = "'(без маппинга в email raw)'";
-    let yandexCampaignPairs: Array<[string, string]> = [];
-    let yandexSpendAvailable = false;
 
     if (hasYandexStats && (dims.includes("yandex_campaign") || dims.includes("yandex_ad"))) {
-      const rawRowsExists = await tableExists(context.env.DB, "mart_yandex_revenue_projects_raw");
-      let labelMap = new Map<string, string>();
-
-      if (rawRowsExists) {
-        const rowsRes = await context.env.DB
-          .prepare(
-            `
-            SELECT
-              project_name,
-              SUM(leads_raw) AS leads_raw,
-              SUM(paid_deals_raw) AS payments_count,
-              SUM(paid_deals_raw) AS paid_deals_raw,
-              SUM(revenue_raw) AS revenue_raw,
-              SUM(spend) AS spend
-            FROM mart_yandex_revenue_projects_raw
-            GROUP BY project_name
-            ORDER BY revenue_raw DESC
-          `,
-          )
-          .all<NoMonthRow>();
-
-        labelMap = buildYandexProjectLabelMapFromRows(rowsRes.results ?? [], 0.6);
-      }
-
-      if (labelMap.size === 0) {
-        const namesRes = await context.env.DB
-          .prepare(
-            `
-            SELECT DISTINCT NULLIF(TRIM(COALESCE("Название кампании", '')), '') AS project_name
-            FROM stg_yandex_stats
-            WHERE NULLIF(TRIM(COALESCE("Название кампании", '')), '') IS NOT NULL
-          `,
-          )
-          .all<{ project_name: string }>();
-        const names = (namesRes.results ?? []).map((r) => r.project_name).filter(Boolean);
-        labelMap = buildYandexProjectLabelMap(names, 0.6);
-      }
-
-      const pairs = [...labelMap.entries()];
-      yandexCampaignPairs = pairs;
-      yandexSpendAvailable = rawRowsExists;
-
-      if (pairs.length > 0) {
-        yandexCampaignExpr = `COALESCE(CASE ym.project_name ${pairs
-          .map(([original, label]) => `WHEN ${sqlQuote(original)} THEN ${sqlQuote(label)}`)
-          .join(" ")} ELSE ym.project_name END, '(без маппинга в Yandex raw)')`;
-      } else {
-        yandexCampaignExpr = `COALESCE(ym.project_name, '(без маппинга в Yandex raw)')`;
-      }
+      yandexCampaignExpr = buildYandexProjectGroupSqlExpr("ym.project_name");
     }
 
     if (hasEmailSends && dims.includes("email_campaign")) {
@@ -573,11 +527,7 @@ export async function onRequestGet(context: {
         includeYandexSpend = true;
       } else {
         const yandexDimIdx = dims.indexOf("yandex_campaign") + 1; // 1-based, matches d1/d2 column naming
-        const spendMappingExpr = yandexCampaignPairs.length > 0
-          ? `COALESCE(CASE spend_src."Название кампании" ${yandexCampaignPairs
-              .map(([orig, lbl]) => `WHEN ${sqlQuote(orig)} THEN ${sqlQuote(lbl)}`)
-              .join(" ")} ELSE spend_src."Название кампании" END, '(без маппинга в Yandex raw)')`
-          : `COALESCE(spend_src."Название кампании", '(без маппинга в Yandex raw)')`;
+        const spendMappingExpr = buildYandexProjectGroupSqlExpr(`spend_src."Название кампании"`);
 
         yandexSpendCteSql = `,
       yandex_spend_by_label AS (
@@ -602,7 +552,7 @@ export async function onRequestGet(context: {
       ? `yandex_map AS (
           SELECT
             REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
-            MIN(NULLIF(TRIM(COALESCE("Название кампании", '')), '')) AS project_name,
+            MIN(${buildYandexProjectGroupSqlExpr(`"Название кампании"`)}) AS project_name,
             MIN(REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '')) AS ad_label
           FROM stg_yandex_stats
           WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''

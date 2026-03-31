@@ -5,6 +5,7 @@ import { groupYandexProjectsNoMonth } from "./yandexProjectsNoMonth";
 import { sqlExtractYandexAdId } from "./yandexAdId";
 import { buildYdHierarchyRows } from "./ydHierarchy";
 import { buildBitrixContactsUidRows } from "./bitrixContactsUid";
+import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS, mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
 
 async function tableExists(db: D1Database, tableName: string): Promise<boolean> {
   const row = await db
@@ -39,6 +40,139 @@ async function upsertDataset(db: D1Database, path: string, body: string): Promis
     )
     .bind(path, body)
     .run();
+}
+
+function sqlQuote(value: string): string {
+  return `'${String(value ?? "").replace(/'/g, "''")}'`;
+}
+
+function buildYandexProjectGroupSqlExpr(rawExpr: string): string {
+  const trimmed = `NULLIF(TRIM(COALESCE(${rawExpr}, '')), '')`;
+  if (!YANDEX_PROJECT_GROUP_ALIAS_PAIRS.length) return `COALESCE(${trimmed}, 'UNMAPPED')`;
+  return `COALESCE(CASE ${trimmed} ${YANDEX_PROJECT_GROUP_ALIAS_PAIRS
+    .map(([alias, group]) => `WHEN ${sqlQuote(alias)} THEN ${sqlQuote(group)}`)
+    .join(" ")} ELSE ${trimmed} END, 'UNMAPPED')`;
+}
+
+function isValidYandexAdId(value: unknown): boolean {
+  return /^17\d{9}$/.test(String(value ?? "").trim());
+}
+
+function groupAssocQaRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
+  const agg = new Map<string, Record<string, unknown>>();
+  for (const row of rows) {
+    const project = mapYandexProjectGroup(row.project_name);
+    const current = agg.get(project);
+    if (!current) {
+      agg.set(project, {
+        project_name: project,
+        "Лиды_Yandex": Number(row["Лиды_Yandex"] ?? 0) || 0,
+        "Контактов_в_пуле": Number(row["Контактов_в_пуле"] ?? 0) || 0,
+        "Сделок_Bitrix": Number(row["Сделок_Bitrix"] ?? 0) || 0,
+        assoc_revenue: Number(row.assoc_revenue ?? 0) || 0,
+      });
+      continue;
+    }
+    current["Лиды_Yandex"] = (Number(current["Лиды_Yandex"] ?? 0) || 0) + (Number(row["Лиды_Yandex"] ?? 0) || 0);
+    current["Контактов_в_пуле"] = (Number(current["Контактов_в_пуле"] ?? 0) || 0) + (Number(row["Контактов_в_пуле"] ?? 0) || 0);
+    current["Сделок_Bitrix"] = (Number(current["Сделок_Bitrix"] ?? 0) || 0) + (Number(row["Сделок_Bitrix"] ?? 0) || 0);
+    current.assoc_revenue = (Number(current.assoc_revenue ?? 0) || 0) + (Number(row.assoc_revenue ?? 0) || 0);
+  }
+  return [...agg.values()].sort((a, b) => (Number(b.assoc_revenue ?? 0) || 0) - (Number(a.assoc_revenue ?? 0) || 0));
+}
+
+function buildYandexNoMonthHierarchyRows(
+  projectRows: Array<Record<string, unknown>>,
+  adRows: Array<Record<string, unknown>>,
+): Record<string, unknown>[] {
+  const byProject = new Map<string, Record<string, unknown>[]>();
+  for (const raw of adRows) {
+    const project = mapYandexProjectGroup(raw.project_name);
+    const adId = String(raw.ad_id ?? "").trim();
+    if (!project || !isValidYandexAdId(adId)) continue;
+    const child = {
+      Level: "Ad",
+      project_name: project,
+      ad_id: adId,
+      leads_raw: Number(raw.leads_raw ?? 0) || 0,
+      payments_count: Number(raw.payments_count ?? raw.paid_deals_raw ?? 0) || 0,
+      paid_deals_raw: Number(raw.paid_deals_raw ?? raw.payments_count ?? 0) || 0,
+      revenue_raw: Number(raw.revenue_raw ?? 0) || 0,
+      clicks: Number(raw.clicks ?? 0) || 0,
+      spend: Number(raw.spend ?? 0) || 0,
+      assoc_revenue: Number(raw.assoc_revenue ?? 0) || 0,
+      __yandex_project_ctx: project,
+      __yandex_project_detail: 1,
+    } satisfies Record<string, unknown>;
+    const bucket = byProject.get(project);
+    if (bucket) bucket.push(child);
+    else byProject.set(project, [child]);
+  }
+
+  const out: Record<string, unknown>[] = [];
+  for (const row of projectRows) {
+    const project = String(row.project_name ?? "").trim();
+    if (!project) continue;
+    const details = (byProject.get(project) || []).sort((a, b) => {
+      const spendDiff = (Number(b.spend ?? 0) || 0) - (Number(a.spend ?? 0) || 0);
+      if (spendDiff !== 0) return spendDiff;
+      return String(a.ad_id ?? "").localeCompare(String(b.ad_id ?? ""));
+    });
+    out.push({
+      ...row,
+      Level: "Project",
+      __yandex_project_ctx: project,
+      __yandex_project_has_details: details.length > 0 ? 1 : 0,
+    });
+    out.push(...details);
+  }
+  return out;
+}
+
+function buildYandexAssocQaHierarchyRows(
+  projectRows: Array<Record<string, unknown>>,
+  adRows: Array<Record<string, unknown>>,
+): Record<string, unknown>[] {
+  const byProject = new Map<string, Record<string, unknown>[]>();
+  for (const raw of adRows) {
+    const project = mapYandexProjectGroup(raw.project_name);
+    const adId = String(raw.ad_id ?? "").trim();
+    if (!project || !isValidYandexAdId(adId)) continue;
+    const child = {
+      Level: "Ad",
+      "Проект": project,
+      "Yandex объявление": adId,
+      "Лиды_Yandex": Number(raw["Лиды_Yandex"] ?? 0) || 0,
+      "Контактов_в_пуле": Number(raw["Контактов_в_пуле"] ?? 0) || 0,
+      "Сделок_Bitrix": Number(raw["Сделок_Bitrix"] ?? 0) || 0,
+      "Ассоц. Выручка": Number(raw.assoc_revenue ?? 0) || 0,
+      __yandex_project_ctx: project,
+      __yandex_project_detail: 1,
+    } satisfies Record<string, unknown>;
+    const bucket = byProject.get(project);
+    if (bucket) bucket.push(child);
+    else byProject.set(project, [child]);
+  }
+
+  const out: Record<string, unknown>[] = [];
+  for (const row of projectRows) {
+    const project = String(row["Проект"] ?? "").trim();
+    if (!project) continue;
+    const details = (byProject.get(project) || []).sort((a, b) => {
+      const revenueDiff = (Number(b["Ассоц. Выручка"] ?? 0) || 0) - (Number(a["Ассоц. Выручка"] ?? 0) || 0);
+      if (revenueDiff !== 0) return revenueDiff;
+      return String(a["Yandex объявление"] ?? "").localeCompare(String(b["Yandex объявление"] ?? ""));
+    });
+    out.push({
+      ...row,
+      Level: "Project",
+      "Yandex объявление": "-",
+      __yandex_project_ctx: project,
+      __yandex_project_has_details: details.length > 0 ? 1 : 0,
+    });
+    out.push(...details);
+  }
+  return out;
 }
 
 export async function materializeSliceDatasets(db: D1Database): Promise<{ paths: number }> {
@@ -1494,6 +1628,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   // deals are found.
   const hasContactsUid = await tableExists(db, "stg_contacts_uid");
   const sourceYandexAdExpr = sqlExtractYandexAdId(`src."UTM Content"`);
+  const validSourceYandexAdExpr = `LENGTH(${sourceYandexAdExpr}) = 11 AND SUBSTR(${sourceYandexAdExpr}, 1, 2) = '17' AND ${sourceYandexAdExpr} NOT GLOB '*[^0-9]*'`;
+  const groupedStatsProjectExpr = buildYandexProjectGroupSqlExpr(`"Название кампании"`);
+  const groupedMappedProjectExpr = buildYandexProjectGroupSqlExpr("ym.project_name");
 
   const assocQaSql = hasContactsUid
     ? `WITH
@@ -1501,7 +1638,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        yandex_map AS (
          SELECT
            REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
-           MIN(NULLIF(TRIM(COALESCE("Название кампании", '')), '')) AS project_name
+           MIN(${groupedStatsProjectExpr}) AS project_name
          FROM stg_yandex_stats
          WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
          GROUP BY 1
@@ -1512,7 +1649,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        yandex_source_deals AS (
          SELECT
            REPLACE(TRIM(COALESCE(src."Контакт: ID", '')), '.0', '') AS contact_id,
-           COALESCE(ym.project_name, 'UNMAPPED') AS project_name
+           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name
          FROM mart_deals_enriched src
          LEFT JOIN yandex_map ym
            ON ym.ad_id = ${sourceYandexAdExpr}
@@ -1583,7 +1720,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        yandex_map AS (
          SELECT
            REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
-           MIN(NULLIF(TRIM(COALESCE("Название кампании", '')), '')) AS project_name
+           MIN(${groupedStatsProjectExpr}) AS project_name
          FROM stg_yandex_stats
          WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
          GROUP BY 1
@@ -1594,7 +1731,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        yandex_source_deals AS (
          SELECT
            REPLACE(TRIM(COALESCE(src."Контакт: ID", '')), '.0', '') AS contact_id,
-           COALESCE(ym.project_name, 'UNMAPPED') AS project_name
+           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name
          FROM mart_deals_enriched src
          LEFT JOIN yandex_map ym
            ON ym.ad_id = ${sourceYandexAdExpr}
@@ -1643,8 +1780,201 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        GROUP BY yl.project_name
        ORDER BY assoc_revenue DESC`;
 
+  const assocQaByAdSql = hasContactsUid
+    ? `WITH
+       yandex_map AS (
+         SELECT
+           REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
+           MIN(${groupedStatsProjectExpr}) AS project_name
+         FROM stg_yandex_stats
+         WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
+         GROUP BY 1
+       ),
+       yandex_source_deals AS (
+         SELECT
+           REPLACE(TRIM(COALESCE(src."Контакт: ID", '')), '.0', '') AS contact_id,
+           ${sourceYandexAdExpr} AS ad_id,
+           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name
+         FROM mart_deals_enriched src
+         LEFT JOIN yandex_map ym
+           ON ym.ad_id = ${sourceYandexAdExpr}
+         WHERE LOWER(TRIM(COALESCE(src."UTM Source", ''))) LIKE 'y%'
+           AND LOWER(TRIM(COALESCE(src."UTM Source", ''))) <> 'yah'
+           AND ${validSourceYandexAdExpr}
+       ),
+       yandex_leads AS (
+         SELECT project_name, ad_id, COUNT(*) AS yandex_leads_count
+         FROM yandex_source_deals
+         GROUP BY project_name, ad_id
+       ),
+       campaign_uid_pool AS (
+         SELECT DISTINCT
+           ysd.project_name,
+           ysd.ad_id,
+           COALESCE(cu.contact_uid, ysd.contact_id) AS contact_uid
+         FROM yandex_source_deals ysd
+         LEFT JOIN stg_contacts_uid cu ON cu.contact_id = ysd.contact_id
+         WHERE ysd.contact_id <> ''
+       ),
+       all_pool_contact_ids AS (
+         SELECT DISTINCT
+           cup.project_name,
+           cup.ad_id,
+           REPLACE(TRIM(COALESCE(cu2.contact_id, cup.contact_uid)), '.0', '') AS contact_id
+         FROM campaign_uid_pool cup
+         LEFT JOIN stg_contacts_uid cu2 ON cu2.contact_uid = cup.contact_uid
+         WHERE REPLACE(TRIM(COALESCE(cu2.contact_id, cup.contact_uid)), '.0', '') <> ''
+       ),
+       contact_deals AS (
+         SELECT apc.project_name, apc.ad_id, d.ID AS deal_id, d.revenue_amount
+         FROM all_pool_contact_ids apc
+         JOIN mart_deals_enriched d
+           ON REPLACE(TRIM(COALESCE(d."Контакт: ID", '')), '.0', '') = apc.contact_id
+         WHERE d.is_revenue_variant3 = 1
+       ),
+       ad_assoc_revenue AS (
+         SELECT
+           project_name,
+           ad_id,
+           COUNT(DISTINCT deal_id) AS deal_count,
+           COALESCE(SUM(revenue_amount), 0) AS assoc_revenue
+         FROM contact_deals
+         GROUP BY project_name, ad_id
+       )
+       SELECT
+         yl.project_name,
+         yl.ad_id,
+         MAX(yl.yandex_leads_count) AS "Лиды_Yandex",
+         COUNT(DISTINCT cup.contact_uid) AS "Контактов_в_пуле",
+         COALESCE(MAX(aar.deal_count), 0) AS "Сделок_Bitrix",
+         COALESCE(MAX(aar.assoc_revenue), 0) AS assoc_revenue
+       FROM yandex_leads yl
+       LEFT JOIN campaign_uid_pool cup
+         ON cup.project_name = yl.project_name AND cup.ad_id = yl.ad_id
+       LEFT JOIN ad_assoc_revenue aar
+         ON aar.project_name = yl.project_name AND aar.ad_id = yl.ad_id
+       GROUP BY yl.project_name, yl.ad_id
+       ORDER BY assoc_revenue DESC`
+    : `WITH
+       yandex_map AS (
+         SELECT
+           REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
+           MIN(${groupedStatsProjectExpr}) AS project_name
+         FROM stg_yandex_stats
+         WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
+         GROUP BY 1
+       ),
+       yandex_source_deals AS (
+         SELECT
+           REPLACE(TRIM(COALESCE(src."Контакт: ID", '')), '.0', '') AS contact_id,
+           ${sourceYandexAdExpr} AS ad_id,
+           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name
+         FROM mart_deals_enriched src
+         LEFT JOIN yandex_map ym
+           ON ym.ad_id = ${sourceYandexAdExpr}
+         WHERE LOWER(TRIM(COALESCE(src."UTM Source", ''))) LIKE 'y%'
+           AND LOWER(TRIM(COALESCE(src."UTM Source", ''))) <> 'yah'
+           AND ${validSourceYandexAdExpr}
+       ),
+       yandex_leads AS (
+         SELECT project_name, ad_id, COUNT(*) AS yandex_leads_count
+         FROM yandex_source_deals
+         GROUP BY project_name, ad_id
+       ),
+       campaign_contacts AS (
+         SELECT DISTINCT project_name, ad_id, contact_id
+         FROM yandex_source_deals
+         WHERE contact_id <> ''
+       ),
+       contact_deals AS (
+         SELECT cc.project_name, cc.ad_id, d.ID AS deal_id, d.revenue_amount
+         FROM campaign_contacts cc
+         JOIN mart_deals_enriched d
+           ON REPLACE(TRIM(COALESCE(d."Контакт: ID", '')), '.0', '') = cc.contact_id
+         WHERE d.is_revenue_variant3 = 1
+       ),
+       ad_assoc_revenue AS (
+         SELECT
+           project_name,
+           ad_id,
+           COUNT(DISTINCT deal_id) AS deal_count,
+           COALESCE(SUM(revenue_amount), 0) AS assoc_revenue
+         FROM contact_deals
+         GROUP BY project_name, ad_id
+       )
+       SELECT
+         yl.project_name,
+         yl.ad_id,
+         MAX(yl.yandex_leads_count) AS "Лиды_Yandex",
+         COUNT(DISTINCT cc.contact_id) AS "Контактов_в_пуле",
+         COALESCE(MAX(aar.deal_count), 0) AS "Сделок_Bitrix",
+         COALESCE(MAX(aar.assoc_revenue), 0) AS assoc_revenue
+       FROM yandex_leads yl
+       LEFT JOIN campaign_contacts cc
+         ON cc.project_name = yl.project_name AND cc.ad_id = yl.ad_id
+       LEFT JOIN ad_assoc_revenue aar
+         ON aar.project_name = yl.project_name AND aar.ad_id = yl.ad_id
+       GROUP BY yl.project_name, yl.ad_id
+       ORDER BY assoc_revenue DESC`;
+
+  const adPerfSql = `WITH
+       yandex_map AS (
+         SELECT
+           REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
+           MIN(${groupedStatsProjectExpr}) AS project_name
+         FROM stg_yandex_stats
+         WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
+         GROUP BY 1
+       ),
+       ystats AS (
+         SELECT
+           ${groupedStatsProjectExpr} AS project_name,
+           REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
+           SUM(COALESCE("Клики", 0)) AS clicks,
+           SUM(COALESCE("Расход, ₽", 0)) AS spend
+         FROM stg_yandex_stats
+         WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
+         GROUP BY 1, 2
+       ),
+       ydeal AS (
+         SELECT
+           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name,
+           ${sourceYandexAdExpr} AS ad_id,
+           COUNT(*) AS leads_raw,
+           SUM(CASE WHEN COALESCE(src.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END) AS payments_count,
+           SUM(CASE WHEN COALESCE(src.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END) AS paid_deals_raw,
+           SUM(COALESCE(src.revenue_amount, 0)) AS revenue_raw
+         FROM mart_deals_enriched src
+         LEFT JOIN yandex_map ym
+           ON ym.ad_id = ${sourceYandexAdExpr}
+         WHERE LOWER(TRIM(COALESCE(src."UTM Source", ''))) LIKE 'y%'
+           AND LOWER(TRIM(COALESCE(src."UTM Source", ''))) <> 'yah'
+           AND ${validSourceYandexAdExpr}
+         GROUP BY 1, 2
+       ),
+       dims AS (
+         SELECT project_name, ad_id FROM ystats
+         UNION
+         SELECT project_name, ad_id FROM ydeal
+       )
+       SELECT
+         d.project_name,
+         d.ad_id,
+         COALESCE(yd.leads_raw, 0) AS leads_raw,
+         COALESCE(yd.payments_count, 0) AS payments_count,
+         COALESCE(yd.paid_deals_raw, 0) AS paid_deals_raw,
+         COALESCE(yd.revenue_raw, 0) AS revenue_raw,
+         COALESCE(ys.clicks, 0) AS clicks,
+         COALESCE(ys.spend, 0) AS spend
+       FROM dims d
+       LEFT JOIN ystats ys ON ys.project_name = d.project_name AND ys.ad_id = d.ad_id
+       LEFT JOIN ydeal yd ON yd.project_name = d.project_name AND yd.ad_id = d.ad_id
+       ORDER BY spend DESC, ad_id`;
+
   const q11assocQa = await db.prepare(assocQaSql).all<Record<string, unknown>>();
-  const assocQaRows = q11assocQa.results ?? [];
+  const assocQaRows = groupAssocQaRows(q11assocQa.results ?? []);
+  const q11assocQaByAd = await db.prepare(assocQaByAdSql).all<Record<string, unknown>>();
+  const q11adPerf = await db.prepare(adPerfSql).all<Record<string, unknown>>();
 
   // Build the assoc revenue lookup map (feeds into yandex_projects_revenue_no_month.json).
   const assocRevenueByProject = new Map<string, number>();
@@ -1654,28 +1984,30 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   }
 
   // Materialize the per-project QA dataset.
-  const qaRows = assocQaRows.map((r) => ({
+  const qaProjectRows = assocQaRows.map((r) => ({
     "Проект": String(r.project_name ?? "").trim(),
     "Лиды_Yandex": Number(r["Лиды_Yandex"] ?? 0) || 0,
     "Контактов_в_пуле": Number(r["Контактов_в_пуле"] ?? 0) || 0,
     "Сделок_Bitrix": Number(r["Сделок_Bitrix"] ?? 0) || 0,
     "Ассоц. Выручка": Number(r.assoc_revenue ?? 0) || 0,
   }));
+  const qaRows = buildYandexAssocQaHierarchyRows(qaProjectRows, q11assocQaByAd.results ?? []);
   await upsertDataset(db, "qa/yandex_assoc_revenue_qa.json", rowsToJson(qaRows));
   paths.push("qa/yandex_assoc_revenue_qa.json");
 
   const q11rows = (q11.results ?? []).map((r) => ({
-    project_name: String(r.project_name ?? "").trim(),
+    project_name: mapYandexProjectGroup(r.project_name),
     leads_raw: Number(r.leads_raw ?? 0) || 0,
     payments_count: Number(r.payments_count ?? 0) || 0,
     paid_deals_raw: Number(r.paid_deals_raw ?? 0) || 0,
     revenue_raw: Number(r.revenue_raw ?? 0) || 0,
     spend: Number(r.spend ?? 0) || 0,
-    assoc_revenue: assocRevenueByProject.get(String(r.project_name ?? "").trim()) ?? 0,
+    assoc_revenue: assocRevenueByProject.get(mapYandexProjectGroup(r.project_name)) ?? 0,
   }));
 
   const grouped = groupYandexProjectsNoMonth(q11rows);
-  await upsertDataset(db, "global/yandex_projects_revenue_no_month.json", JSON.stringify(grouped));
+  const groupedWithDetails = buildYandexNoMonthHierarchyRows(grouped as Record<string, unknown>[], q11adPerf.results ?? []);
+  await upsertDataset(db, "global/yandex_projects_revenue_no_month.json", rowsToJson(groupedWithDetails));
   paths.push("global/yandex_projects_revenue_no_month.json");
 
 
