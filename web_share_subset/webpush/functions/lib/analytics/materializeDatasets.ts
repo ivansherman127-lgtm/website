@@ -557,12 +557,10 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ) AS spend_alloc
          FROM campaign_week_leads wl
          LEFT JOIN campaign_month_leads ml
-           ON ml.campaign_name = wl.campaign_name
-          AND ml.campaign_id = wl.campaign_id
+             ON ml.campaign_id = wl.campaign_id
           AND ml.month = wl.month
          LEFT JOIN campaign_month_spend ms
-           ON ms.campaign_name = wl.campaign_name
-          AND ms.campaign_id = wl.campaign_id
+             ON ms.campaign_id = wl.campaign_id
           AND ms.month = wl.month
          GROUP BY wl.week_start, wl.campaign_name, wl.campaign_id
        )

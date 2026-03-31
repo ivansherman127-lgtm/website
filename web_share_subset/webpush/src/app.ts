@@ -2582,9 +2582,22 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
     return hasAd || hasSpend;
   });
 
+  const maxIsoDate = (rows: Record<string, unknown>[], col: string): string => {
+    let best = "";
+    for (const row of rows) {
+      const s = String(row[col] ?? "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) continue;
+      if (!best || s > best) best = s;
+    }
+    return best;
+  };
+
   const drawDashboard = (): void => {
     const latestBitrixRecordDate = String(bitrixWeekFunnel[0]?.["Дата_последней_записи_Bitrix"] ?? "-").trim() || "-";
-    const latestYandexRecordDate = String((yandexWeekFiltered[0] ?? yandexWeekCampaign[0])?.["Дата_последней_записи_Yandex"] ?? "-").trim() || "-";
+    const latestYandexRecordDate =
+      maxIsoDate(yandexWeekCampaign, "Макс_дата_в_строке") ||
+      maxIsoDate(yandexWeekCampaign, "Дата_последней_записи_Yandex") ||
+      "-";
 
     app.innerHTML = `<div class="app-layout">
       <aside class="side-menu">
