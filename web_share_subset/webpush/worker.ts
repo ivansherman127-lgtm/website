@@ -2,8 +2,8 @@ import { onRequestGet as assocRevenueGet } from "./functions/api/assoc-revenue";
 import { onRequestGet as dataGet } from "./functions/api/data";
 import { onRequestGet as cohortDealsGet } from "./functions/api/cohort-deals";
 import { onRequestGet as protectedTableGet } from "./functions/api/protected-table";
-import { onRequestPost as saveToGithubPost } from "./functions/api/save-to-github";
 import { onRequestPost as analyticsRebuildPost } from "./functions/api/analytics/rebuild";
+import { onRequestPost as analyticsMaterializePost } from "./functions/api/analytics/materialize";
 
 interface Env {
   DB: D1Database;
@@ -18,6 +18,13 @@ interface Env {
 function methodNotAllowed(): Response {
   return new Response(JSON.stringify({ ok: false, error: "method_not_allowed" }), {
     status: 405,
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
+}
+
+function json(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 }
@@ -47,14 +54,23 @@ export default {
       return protectedTableGet({ request, env } as never);
     }
 
-    if (pathname === "/api/save-to-github") {
+    if (pathname === "/api/save-view-json") {
       if (request.method !== "POST") return methodNotAllowed();
-      return saveToGithubPost({ request, env } as never);
+      return json(501, {
+        ok: false,
+        error: "save_view_json_unavailable",
+        message: "Local JSON save is only available in the Vite dev server.",
+      });
     }
 
     if (pathname === "/api/analytics/rebuild") {
       if (request.method !== "POST") return methodNotAllowed();
       return analyticsRebuildPost({ request, env });
+    }
+
+    if (pathname === "/api/analytics/materialize") {
+      if (request.method !== "POST") return methodNotAllowed();
+      return analyticsMaterializePost({ request, env });
     }
 
     return env.ASSETS.fetch(request);

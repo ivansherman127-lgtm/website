@@ -1,28 +1,11 @@
 import "./style.css";
 import Chart from "chart.js/auto";
 import { dataUrl, staticUrl } from "./data-source";
+import { mapYandexProjectGroup } from "./yandexProjectGroups";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const columnAliasesByView = new Map<string, Record<string, string>>();
 
-function monthLabelToIso(v: unknown): string {
-  const s = String(v ?? "").trim();
-  if (!s) return "";
-  const ym = /^(\d{4})-(\d{2})$/.exec(s);
-  if (ym) return `${ym[1]}-${ym[2]}`;
-  const ru = /^([А-Яа-яA-Za-z]+),\s*(\d{4})$/.exec(s);
-  if (!ru) return "";
-  const mon = monthNameToNumber(ru[1]);
-  if (!mon) return "";
-  return `${ru[2]}-${String(mon).padStart(2, "0")}`;
-}
-
-function inMonthRange(monthIso: string, fromIso: string, toIso: string): boolean {
-  if (!monthIso) return true;
-  if (fromIso && monthIso < fromIso) return false;
-  if (toIso && monthIso > toIso) return false;
-  return true;
-}
 
 async function fetchJson<T>(path: string): Promise<T> {
   const parseBody = (urlLabel: string, ct: string, txt: string): T => {
@@ -37,7 +20,7 @@ async function fetchJson<T>(path: string): Promise<T> {
   };
 
   const url1 = dataUrl(path);
-  const r1 = await fetch(url1);
+  const r1 = await fetch(url1, { cache: "no-store" });
   if (!r1.ok) {
     if (path.startsWith("/api/assoc-revenue") && r1.status === 404) {
       return [] as T;
@@ -53,7 +36,7 @@ async function fetchJson<T>(path: string): Promise<T> {
     const base = import.meta.env.BASE_URL || "/";
     const altUrl = url1.startsWith("/api/") ? `${base}${path.slice(1)}` : path;
     if (altUrl !== url1) {
-      const r2 = await fetch(altUrl);
+      const r2 = await fetch(altUrl, { cache: "no-store" });
       if (r2.ok) {
         const ct2 = (r2.headers.get("content-type") || "").toLowerCase();
         const txt2 = await r2.text();
@@ -272,7 +255,7 @@ type ViewMeta = { tab: TabKey; label: string; path: string; rowsLabel: string; t
 const VIEW_META: Record<ViewKey, ViewMeta> = {
   assoc_dynamic: { tab: "assoc_builder", label: "Конструктор", path: "/api/assoc-revenue", rowsLabel: "Групп", title: "Ассоциативная выручка (конструктор)" },
   media_email: { tab: "media", label: "Имейл по месяцам", path: "data/email_hierarchy_by_send.json", rowsLabel: "Строк", title: "Рекламные медиумы" },
-  media_yandex: { tab: "media", label: "Yandex по проектам (без месяцев)", path: "data/global/yandex_projects_revenue_no_month.json", rowsLabel: "Проектов", title: "Рекламные медиумы" },
+  media_yandex: { tab: "media", label: "Yandex по кампаниям (без месяцев)", path: "data/global/yandex_projects_revenue_no_month.json", rowsLabel: "Кампаний", title: "Рекламные медиумы" },
   media_yandex_month: { tab: "media", label: "Yandex по месяцам", path: "data/global/yandex_projects_revenue_by_month.json", rowsLabel: "Месяцев", title: "Рекламные медиумы" },
   media_yandex_assoc_qa: { tab: "media", label: "Yandex: QA ассоц. выручки", path: "data/qa/yandex_assoc_revenue_qa.json", rowsLabel: "Проектов", title: "Рекламные медиумы" },
   email_ops_summary: { tab: "media", label: "Email: база, рассылки, лиды, выручка", path: "data/email_operational_summary.json", rowsLabel: "Периодов", title: "Рекламные медиумы" },
@@ -316,10 +299,9 @@ function writeUrlState(menu: MenuMode, view?: ViewKey): void {
   window.history.replaceState({}, "", url.toString());
 }
 
-type AssocDynamicDim = "yandex_campaign" | "yandex_ad" | "email_campaign" | "event";
+type AssocDynamicDim = "yandex_campaign" | "email_campaign" | "event";
 const ASSOC_DYNAMIC_DIM_OPTIONS: Array<{ key: AssocDynamicDim; label: string }> = [
   { key: "yandex_campaign", label: "Yandex кампания" },
-  { key: "yandex_ad", label: "Yandex объявление" },
   { key: "email_campaign", label: "Email кампания" },
   { key: "event", label: "Мероприятие" },
 ];
@@ -346,11 +328,6 @@ function managerFormulaNote(view: ViewKey): string {
   `;
 }
 
-const DEFAULT_WORKSHEET = "AJ associative revenue";
-const REVENUE_FLAG_COL = "Выручка_учитывается";
-const EVENT_COL = "Мероприятие";
-const PAY_DATE_COL = "Дата оплаты";
-const INVALID_MONTH_KEY = "Невалидная дата оплаты";
 
 type DealRow = Record<string, unknown>;
 type DealsIndex = { month: Map<string, DealRow[]>; event: Map<string, DealRow[]>; course: Map<string, DealRow[]> };
@@ -579,7 +556,7 @@ function regroupAssocEmailRows(rows: Record<string, unknown>[]): Record<string, 
     const labels = rowOrder.get(ctxKey)!;
     if (!labels.includes(group)) labels.push(group);
 
-    const groupedSeed = { ...row, "Email кампания": group };
+    const groupedSeed: Record<string, unknown> = { ...row, "Email кампания": group };
     if (group === EMAIL_OTHER_GROUP) groupedSeed["__assoc_email_other_group"] = 1;
     addAssoc(grouped, groupedKey, groupedSeed, row);
 
@@ -638,6 +615,70 @@ function addYandexMetrics(a: YandexLeadMetrics, b: YandexLeadMetrics): YandexLea
   };
 }
 
+function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown>): Record<string, unknown> {
+  const m = yandexProjectLeadMetrics.get(project) || yandexEmptyMetrics();
+  const leads = m.leads > 0 ? m.leads : num(raw["leads_raw"]);
+  const qual = m.qual;
+  const unqual = m.unqual;
+  const refusal = m.refusal;
+  const paid = num(raw["payments_count"] ?? raw["paid_deals_raw"]);
+  const revenue = num(raw["revenue_raw"]);
+  const spend = m.spend > 0 ? m.spend : num(raw["spend"]);
+  const assocRevenue = num(raw["assoc_revenue"]);
+  return {
+    "Yandex кампания": project,
+    "Yandex объявление": "-",
+    "Лиды": leads,
+    "Квал": qual,
+    "Конверсия в Квал": leads > 0 ? qual / leads : 0,
+    "Неквал": unqual,
+    "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+    "Отказы": refusal,
+    "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
+    "Клики": m.clicks,
+    "Расход, ₽": spend,
+    "Оплаты": paid,
+    "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
+    "Выручка": revenue,
+    "Прибыль": revenue - spend,
+    "Ассоц. Выручка": assocRevenue,
+    "Ассоц. Прибыль": assocRevenue - spend,
+  };
+}
+
+function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): Record<string, unknown> {
+  const adId = String(raw["ad_id"] ?? "").trim();
+  const leads = num(raw["leads_raw"]);
+  const qual = num(raw["qual"]);
+  const unqual = num(raw["unqual"]);
+  const refusal = num(raw["refusal"]);
+  const paid = num(raw["payments_count"] ?? raw["paid_deals_raw"]);
+  const revenue = num(raw["revenue_raw"]);
+  const spend = num(raw["spend"]);
+  const assocRevenue = num(raw["assoc_revenue"]);
+  return {
+    "Yandex кампания": project,
+    "Yandex объявление": adId,
+    "Лиды": leads,
+    "Квал": qual,
+    "Конверсия в Квал": leads > 0 ? qual / leads : 0,
+    "Неквал": unqual,
+    "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+    "Отказы": refusal,
+    "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
+    "Клики": num(raw["clicks"]),
+    "Расход, ₽": spend,
+    "Оплаты": paid,
+    "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
+    "Выручка": revenue,
+    "Прибыль": revenue - spend,
+    "Ассоц. Выручка": assocRevenue,
+    "Ассоц. Прибыль": assocRevenue - spend,
+    "__yandex_project_ctx": project,
+    "__yandex_project_detail": 1,
+  };
+}
+
 function toYandexMetrics(row: Record<string, unknown>): YandexLeadMetrics {
   return {
     leads: num(row["Leads"]),
@@ -647,25 +688,6 @@ function toYandexMetrics(row: Record<string, unknown>): YandexLeadMetrics {
     clicks: num(row["Клики"]),
     spend: num(row["Расход, ₽"]),
   };
-}
-
-function enrichYandexRow(row: Record<string, unknown>): Record<string, unknown> {
-  const ids = parseFlIds(row["fl_IDs"]);
-  let deals = 0;
-  let revenue = 0;
-  for (const id of ids) {
-    const m = dealRevenueById.get(id);
-    if (!m || !m.isRevenue) continue;
-    deals += 1;
-    revenue += m.revenue;
-  }
-  const spend = num(row["Расход, ₽"]);
-  const out = { ...row };
-  out["Сделок_с_выручкой"] = deals;
-  out["Выручка"] = revenue;
-  out["Прибыль"] = revenue - spend;
-  out["Средний_чек"] = deals > 0 ? revenue / deals : 0;
-  return out;
 }
 
 function addKpi(row: Record<string, unknown>): Record<string, unknown> {
@@ -693,37 +715,7 @@ function pickNum(row: Record<string, unknown>, keys: string[]): number {
   return 0;
 }
 
-function parseMonthKey(v: unknown): string {
-  const s = String(v ?? "").trim();
-  if (!s) return "";
-  if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);
-  const m = s.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})/);
-  if (!m) return INVALID_MONTH_KEY;
-  return `${m[3]}-${m[2].padStart(2, "0")}`;
-}
-
-function toBool(v: unknown): boolean {
-  const s = String(v ?? "").trim().toLowerCase();
-  return s === "true" || s === "1" || s === "yes";
-}
-
-function buildDealsIndex(allDeals: DealRow[]): DealsIndex {
-  const month = new Map<string, DealRow[]>();
-  const event = new Map<string, DealRow[]>();
-  const course = new Map<string, DealRow[]>();
-  for (const d of allDeals) {
-    if (!toBool(d[REVENUE_FLAG_COL])) continue;
-    const mk = parseMonthKey(d[PAY_DATE_COL]);
-    const ev = String(d[EVENT_COL] ?? "").trim();
-    const cc = String(d["Нормализованный_код_курса"] ?? d["Код_курса_норм"] ?? d["Код_курса_сайт"] ?? "").trim();
-    if (mk) (month.get(mk) ?? (month.set(mk, []), month.get(mk)!)).push(d);
-    if (ev) (event.get(ev) ?? (event.set(ev, []), event.get(ev)!)).push(d);
-    if (cc) (course.get(cc) ?? (course.set(cc, []), course.get(cc)!)).push(d);
-  }
-  return { month, event, course };
-}
-
-function rowKey(view: ViewKey, row: Record<string, unknown>): string {
+function rowKey(_view: ViewKey, row: Record<string, unknown>): string {
   return [String(row["Level"] ?? ""), String(row["Месяц"] ?? ""), String(row["Название выпуска"] ?? ""), String(row["utm_campaign"] ?? "")].join("::");
 }
 
@@ -805,67 +797,79 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
     return regroupAssocEmailRows(clean);
   }
   if (view === "media_yandex") {
-    const rowsByProject = new Map<string, Record<string, unknown>>();
-    for (const r of clean) {
-      const project = String(r["project_name"] ?? "").trim();
-      if (!project) continue;
-      const m = yandexProjectLeadMetrics.get(project) || yandexEmptyMetrics();
-      const leads = m.leads > 0 ? m.leads : num(r["leads_raw"]);
-      const qual = m.qual;
-      const unqual = m.unqual;
-      const refusal = m.refusal;
-      const paid = num(r["payments_count"] ?? r["paid_deals_raw"]);
-      const revenue = num(r["revenue_raw"]);
-      const spend = m.spend > 0 ? m.spend : num(r["spend"]);
-      const profit = revenue - spend;
-      const assocRevenue = num(r["assoc_revenue"]);
-      const assocProfit = assocRevenue - spend;
-      rowsByProject.set(project, {
-        "Проект": project,
-        "Лиды": leads,
-        "Квал": qual,
-        "Конверсия в Квал": leads > 0 ? qual / leads : 0,
-        "Неквал": unqual,
-        "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
-        "Отказы": refusal,
-        "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
-        "Клики": m.clicks,
-        "Расход, ₽": spend,
-        "Оплаты": paid,
-        "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
-        "Выручка": revenue,
-        "Прибыль": profit,
-        "Ассоц. Выручка": assocRevenue,
-        "Ассоц. Прибыль": assocProfit,
-      });
+    const hasHierarchyRows = clean.some((r) => String(r["Level"] ?? "").trim() === "Project" || num(r["__yandex_project_detail"]) > 0);
+    if (hasHierarchyRows) {
+      const out: Record<string, unknown>[] = [];
+      const parentProjects = new Set<string>();
+      for (const r of clean) {
+        const level = String(r["Level"] ?? "").trim();
+        const project = String(r["project_name"] ?? r["Yandex кампания"] ?? r["Проект"] ?? "").trim();
+        if (!project) continue;
+        if (level === "Project") {
+          parentProjects.add(project);
+          out.push({
+            ...buildMediaYandexProjectRow(project, r),
+            Level: "Project",
+            __yandex_project_ctx: project,
+            __yandex_project_has_details: num(r["__yandex_project_has_details"]) > 0 ? 1 : 0,
+          });
+          continue;
+        }
+        if (num(r["__yandex_project_detail"]) > 0 || level === "Ad") {
+          out.push(buildMediaYandexAdRow(project, r));
+        }
+      }
+
+      for (const [project, m] of yandexProjectLeadMetrics.entries()) {
+        if (!project || parentProjects.has(project)) continue;
+        if (m.spend <= 0 && m.clicks <= 0 && m.leads <= 0) continue;
+        out.push({
+          ...buildMediaYandexProjectRow(project, { spend: m.spend }),
+          Level: "Project",
+          __yandex_project_ctx: project,
+          __yandex_project_has_details: 0,
+        });
+      }
+      return out;
     }
 
-    // Keep spend totals consistent with monthly Yandex totals by adding projects
-    // that have ad spend but no matched Bitrix deal rows.
+    const rowsByProject = new Map<string, Record<string, unknown>>();
+    for (const r of clean) {
+      const project = mapYandexProjectGroup(r["project_name"]);
+      if (!project) continue;
+      rowsByProject.set(project, buildMediaYandexProjectRow(project, r));
+    }
+
     for (const [project, m] of yandexProjectLeadMetrics.entries()) {
       if (!project || rowsByProject.has(project)) continue;
       if (m.spend <= 0 && m.clicks <= 0 && m.leads <= 0) continue;
-      rowsByProject.set(project, {
-        "Проект": project,
-        "Лиды": m.leads,
-        "Квал": m.qual,
-        "Конверсия в Квал": m.leads > 0 ? m.qual / m.leads : 0,
-        "Неквал": m.unqual,
-        "Конверсия в Неквал": m.leads > 0 ? m.unqual / m.leads : 0,
-        "Отказы": m.refusal,
-        "Конверсия в Отказ": m.leads > 0 ? m.refusal / m.leads : 0,
-        "Клики": m.clicks,
-        "Расход, ₽": m.spend,
-        "Оплаты": 0,
-        "Конверсия в Оплаты": 0,
-        "Выручка": 0,
-        "Прибыль": -m.spend,
-        "Ассоц. Выручка": 0,
-        "Ассоц. Прибыль": -m.spend,
-      });
+      rowsByProject.set(project, buildMediaYandexProjectRow(project, { spend: m.spend }));
     }
 
     return Array.from(rowsByProject.values());
+  }
+  if (view === "media_yandex_assoc_qa") {
+    const hasHierarchyRows = clean.some((r) => String(r["Level"] ?? "").trim() === "Project" || num(r["__yandex_project_detail"]) > 0);
+    if (!hasHierarchyRows) return clean;
+    return clean.map((r) => {
+      const level = String(r["Level"] ?? "").trim();
+      if (level === "Project") {
+        return {
+          ...r,
+          "Yandex объявление": "-",
+          __yandex_project_ctx: String(r["Yandex кампания"] ?? r["Проект"] ?? "").trim(),
+          __yandex_project_has_details: num(r["__yandex_project_has_details"]) > 0 ? 1 : 0,
+        };
+      }
+      if (num(r["__yandex_project_detail"]) > 0 || level === "Ad") {
+        return {
+          ...r,
+          __yandex_project_ctx: String(r["Yandex кампания"] ?? r["Проект"] ?? "").trim(),
+          __yandex_project_detail: 1,
+        };
+      }
+      return r;
+    });
   }
   if (view === "media_yandex_month") {
     return clean.map((r) => {
@@ -1011,14 +1015,17 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const expandedFunnelMonths = new Set<string>();
   const expandedAssocOtherRows = new Set<string>();
   const expandedAssocEventRows = new Set<string>();
+  const expandedAssocYandexRows = new Set<string>();
+  const expandedYandexProjectRows = new Set<string>();
   const isEmailHierarchy = view === "media_email";
   const isAssocEmailHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_email_detail"]) > 0);
   const isAssocEventHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_event_detail"]) > 0);
+  const isAssocYandexHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_yandex_detail"]) > 0);
   const isYandexHierarchy = false;
+  const isYandexProjectHierarchy = (view === "media_yandex" || view === "media_yandex_assoc_qa") && viewRows.some((r) => num(r["__yandex_project_detail"]) > 0);
   const isManagerHierarchy = view.startsWith("managers_");
-  const isFunnelSourceHierarchy = false;
-  const isFunnelMediumHierarchy = false;
   const isFunnelHierarchy = view === "funnels_hierarchy";
+  const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let visibleRows: Record<string, unknown>[] = [];
   const postJson = async (url: string, body: unknown): Promise<{ ok: boolean; rows?: number; error?: string }> => {
     try {
@@ -1027,7 +1034,19 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
-      const payload = (await resp.json()) as { ok?: boolean; rows?: number; error?: string };
+      const text = await resp.text();
+      let payload: { ok?: boolean; rows?: number; error?: string };
+      try {
+        payload = JSON.parse(text) as { ok?: boolean; rows?: number; error?: string };
+      } catch {
+        const compact = text.replace(/\s+/g, " ").trim();
+        return {
+          ok: false,
+          error: compact.startsWith("<!DOCTYPE")
+            ? "Локальное сохранение недоступно в этом окружении"
+            : compact.slice(0, 200) || `${url} failed`,
+        };
+      }
       if (!resp.ok || !payload.ok) return { ok: false, error: payload.error || `${url} failed` };
       return { ok: true, rows: payload.rows };
     } catch (e) {
@@ -1035,23 +1054,18 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
   };
   const saveViewJson = async (): Promise<void> => {
+    if (!canSaveViewJson) return;
     const aliases = columnAliasesByView.get(view) || {};
     const rowsToSave: Record<string, unknown>[] = Object.keys(aliases).length > 0
       ? [{ __type: "column_aliases", ...aliases }, ...viewRows]
       : [...viewRows];
     const local = await postJson("/api/save-view-json", { path: resolvedPath, rows: rowsToSave });
+    const s = app.querySelector<HTMLDivElement>(".push-status");
     if (local.ok) {
-      const s = app.querySelector<HTMLDivElement>(".push-status");
       if (s) s.textContent = `JSON обновлен локально (${(local.rows ?? viewRows.length).toLocaleString("ru-RU")} строк)`;
       return;
     }
-    const cloud = await postJson("/api/save-to-github", { path: resolvedPath, rows: rowsToSave });
-    const s = app.querySelector<HTMLDivElement>(".push-status");
-    if (cloud.ok) {
-      if (s) s.textContent = `JSON закоммичен в GitHub (${(cloud.rows ?? viewRows.length).toLocaleString("ru-RU")} строк)`;
-      return;
-    }
-    if (s) s.textContent = `Ошибка сохранения JSON: ${cloud.error || local.error || "unknown"}`;
+    if (s) s.textContent = `Ошибка сохранения JSON: ${local.error || "unknown"}`;
   };
 
   const draw = (): void => {
@@ -1072,7 +1086,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       data = data.filter((r) => cols.some((c) => String(r[c] ?? "").toLowerCase().includes(q)));
     }
     // Иерархии строят порядок строк сами; глобальная сортировка ломает вложенные таблицы.
-    if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isAssocEmailHierarchy && !isAssocEventHierarchy) {
+    if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isYandexProjectHierarchy && !isAssocEmailHierarchy && !isAssocEventHierarchy && !isAssocYandexHierarchy) {
       data.sort((a, b) => compareCell(sortCol, a[sortCol], b[sortCol], sortDir));
     }
     if (isEmailHierarchy) {
@@ -1104,6 +1118,26 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         const ctxKey = String(r["__assoc_event_ctx"] ?? "");
         if (!isDetail) ordered.push(r);
         else if (expandedAssocEventRows.has(ctxKey)) ordered.push(r);
+      }
+      data = ordered;
+    }
+    if (isAssocYandexHierarchy) {
+      const ordered: Record<string, unknown>[] = [];
+      for (const r of data) {
+        const isDetail = num(r["__assoc_yandex_detail"]) > 0;
+        const ctxKey = String(r["__assoc_yandex_ctx"] ?? r["Yandex кампания"] ?? "").trim();
+        if (!isDetail) ordered.push(r);
+        else if (expandedAssocYandexRows.has(ctxKey)) ordered.push(r);
+      }
+      data = ordered;
+    }
+    if (isYandexProjectHierarchy) {
+      const ordered: Record<string, unknown>[] = [];
+      for (const r of data) {
+        const isDetail = num(r["__yandex_project_detail"]) > 0;
+        const ctxKey = String(r["__yandex_project_ctx"] ?? r["Yandex кампания"] ?? r["Проект"] ?? "").trim();
+        if (!isDetail) ordered.push(r);
+        else if (expandedYandexProjectRows.has(`${view}||${ctxKey}`)) ordered.push(r);
       }
       data = ordered;
     }
@@ -1153,9 +1187,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     const topCountEl = app.querySelector<HTMLElement>(".kpi-grid .kpi:first-child .value");
     if (topCountEl) topCountEl.textContent = data.length.toLocaleString("ru-RU");
 
-    const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy;
+    const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isYandexProjectHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy || isAssocYandexHierarchy;
     visibleRows = data;
-    const th = `${showCtrl ? '<th class="ctrl-col">#</th>' : ""}${cols.map((c) => `<th data-col="${escapeHtml(c)}" title="клик: сортировка · Ctrl+клик: переименовать">${escapeHtml(displayColName(view, c))}</th>`).join("")}`;
+    const th = `${showCtrl ? '<th class="ctrl-col">#</th>' : ""}${cols.map((c) => `<th data-col="${escapeHtml(c)}" title="${escapeHtml(canSaveViewJson ? "клик: сортировка · Ctrl+клик: переименовать" : "клик: сортировка")}">${escapeHtml(displayColName(view, c))}</th>`).join("")}`;
     const rendered = data.slice(0, 5000);
     visibleRows = rendered;
     const body = rendered.map((r, idx) => {
@@ -1182,11 +1216,6 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
                   : expandedManagerCodes.has(mmc) ? "−" : "+"
             }</button>`
           : "";
-      const fMonth = String(r["Месяц"] ?? "");
-      const fMedium = String(r["UTM Medium"] ?? "");
-      const fSource = String(r["UTM Source"] ?? "");
-      const fmm = `${fMonth}||${fMedium}`;
-      const fmms = `${fMonth}||${fMedium}||${fSource}`;
       const fNode = String(r["__node"] ?? "").trim();
       const fFunnel = String(r["__funnel"] ?? r["Воронка"] ?? "").trim();
       const fMonth2 = String(r["__month"] ?? r["Месяц"] ?? "").trim();
@@ -1222,9 +1251,19 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         isAssocEventHierarchy && num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0
           ? `<button class="assoc-event-expand-btn" data-ctx="${escapeHtml(assocEventCtx)}">${expandedAssocEventRows.has(assocEventCtx) ? "−" : "+"}</button>`
           : "";
-      const row = `<tr>${showCtrl ? `<td class="ctrl-col">${emailBtn || emailOtherBtn || managerBtn || funnelBtn || yandexBtn || assocOtherBtn || assocEventBtn}</td>` : ""}${cols
+      const assocYandexCtx = String(r["__assoc_yandex_ctx"] ?? r["Yandex кампания"] ?? "").trim();
+      const assocYandexBtn =
+        isAssocYandexHierarchy && num(r["__assoc_yandex_detail"]) === 0 && num(r["__assoc_yandex_has_details"]) > 0
+          ? `<button class="assoc-yandex-expand-btn" data-ctx="${escapeHtml(assocYandexCtx)}">${expandedAssocYandexRows.has(assocYandexCtx) ? "−" : "+"}</button>`
+          : "";
+      const yProjectCtx = String(r["__yandex_project_ctx"] ?? r["Yandex кампания"] ?? r["Проект"] ?? "").trim();
+      const yProjectBtn =
+        isYandexProjectHierarchy && num(r["__yandex_project_detail"]) === 0 && num(r["__yandex_project_has_details"]) > 0
+          ? `<button class="yd-project-expand-btn" data-ctx="${escapeHtml(yProjectCtx)}">${expandedYandexProjectRows.has(`${view}||${yProjectCtx}`) ? "−" : "+"}</button>`
+          : "";
+      const row = `<tr>${showCtrl ? `<td class="ctrl-col">${emailBtn || emailOtherBtn || managerBtn || funnelBtn || yandexBtn || assocOtherBtn || assocEventBtn || assocYandexBtn || yProjectBtn}</td>` : ""}${cols
         .map((c) => {
-          const editable = isEditableDataColumn(c) ? "1" : "0";
+          const editable = canSaveViewJson && isEditableDataColumn(c) ? "1" : "0";
           return `<td data-row="${idx}" data-col="${escapeHtml(c)}" data-editable="${editable}">${escapeHtml(formatCell(c, r[c]))}</td>`;
         })
         .join("")}</tr>`;
@@ -1240,7 +1279,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         const c = h.getAttribute("data-col") || "";
         if (!c) return;
         const me = ev as MouseEvent;
-        if (me.metaKey || me.ctrlKey) {
+        if ((me.metaKey || me.ctrlKey) && canSaveViewJson) {
           if (h.querySelector("input")) return;
           const currentName = displayColName(view, c);
           const input = document.createElement("input");
@@ -1376,6 +1415,19 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       if (expandedAssocEventRows.has(ctx)) expandedAssocEventRows.delete(ctx); else expandedAssocEventRows.add(ctx);
       draw();
     }));
+    app.querySelectorAll<HTMLButtonElement>(".assoc-yandex-expand-btn").forEach((b) => (b.onclick = () => {
+      const ctx = b.getAttribute("data-ctx") || "";
+      if (!ctx) return;
+      if (expandedAssocYandexRows.has(ctx)) expandedAssocYandexRows.delete(ctx); else expandedAssocYandexRows.add(ctx);
+      draw();
+    }));
+    app.querySelectorAll<HTMLButtonElement>(".yd-project-expand-btn").forEach((b) => (b.onclick = () => {
+      const ctx = b.getAttribute("data-ctx") || "";
+      if (!ctx) return;
+      const key = `${view}||${ctx}`;
+      if (expandedYandexProjectRows.has(key)) expandedYandexProjectRows.delete(key); else expandedYandexProjectRows.add(key);
+      draw();
+    }));
   };
 
   const kpiRows =
@@ -1385,7 +1437,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         ? viewRows.filter((r) => num(r["__assoc_email_detail"]) === 0)
         : isAssocEventHierarchy
           ? viewRows.filter((r) => num(r["__assoc_event_detail"]) === 0)
-          : viewRows;
+          : isAssocYandexHierarchy
+            ? viewRows.filter((r) => num(r["__assoc_yandex_detail"]) === 0)
+          : isYandexProjectHierarchy
+            ? viewRows.filter((r) => num(r["__yandex_project_detail"]) === 0)
+            : viewRows;
   const totalRevenue = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Выручка", "выручка"]), 0);
   const deals = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Сделок_с_выручкой", "Сделок с выручкой"]), 0);
   app.innerHTML = `<div class="app-layout">
@@ -1438,7 +1494,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       <input type="search" placeholder="Фильтр по строке…" class="filter-input" />
       <span class="row-note"></span>
     </div>
-    <div class="push-status muted"></div>
+    ${canSaveViewJson ? '<div class="push-status muted"></div>' : ""}
     <div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
     </main>
   </div>`;
@@ -1447,7 +1503,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const contactsFullBtn = app.querySelector<HTMLButtonElement>(".contacts-full-btn");
   const copyTableBtn = app.querySelector<HTMLButtonElement>(".copy-table-btn")!;
   const downloadTableBtn = app.querySelector<HTMLButtonElement>(".download-table-btn")!;
-  const status = app.querySelector<HTMLDivElement>(".push-status")!;
+  const status = app.querySelector<HTMLDivElement>(".push-status");
 
   app.querySelectorAll<HTMLButtonElement>(".top-tabs .tab-btn").forEach((btn) => {
     btn.onclick = async () => {
@@ -1459,7 +1515,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         const r = await fetchJson<Record<string, unknown>[]>(viewPath(first));
         void renderTable(first, r, dealsIndex);
       } catch (e) {
-        status.textContent = `Ошибка загрузки: ${String(e)}`;
+        if (status) status.textContent = `Ошибка загрузки: ${String(e)}`;
       }
     };
   });
@@ -1530,9 +1586,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
     try {
       await navigator.clipboard.writeText(lines.join("\n"));
-      status.textContent = `Скопировано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
+      if (status) status.textContent = `Скопировано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
     } catch (e) {
-      status.textContent = `Ошибка копирования: ${String(e)}`;
+      if (status) status.textContent = `Ошибка копирования: ${String(e)}`;
     }
   };
   downloadTableBtn.onclick = () => {
@@ -1550,7 +1606,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     a.click();
     a.remove();
     URL.revokeObjectURL(a.href);
-    status.textContent = `Скачано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
+    if (status) status.textContent = `Скачано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
   };
   draw();
 }
@@ -1874,12 +1930,24 @@ async function boot(): Promise<void> {
     dealRevenueById.clear();
     yandexProjectLeadMetrics.clear();
     yandexMonthLeadMetrics.clear();
+    // Regenerate all table JSONs fresh from D1 using the current campaign-group mapping.
+    // Rate-limited server-side to 90 s so rapid reloads don't spam SQL.
+    // This must succeed before we fetch any table data, otherwise we'd read stale/missing rows.
+    const matRes = await fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" });
+    if (!matRes.ok) {
+      const errText = await matRes.text().catch(() => matRes.status.toString());
+      throw new Error(`Materialize failed (${matRes.status}): ${errText}`);
+    }
+    const matJson = await matRes.json() as { ok?: boolean; error?: string; skipped?: boolean };
+    if (!matJson.ok) {
+      throw new Error(`Materialize error: ${matJson.error ?? "unknown"}`);
+    }
     loadEmailOverridesMap(await fetch(staticUrl("data/email_group_overrides.json")).then(r => r.json() as Promise<EmailOverridesFile>));
     const yandexHierarchy = await fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
     for (const r of yandexHierarchy) {
       const lvl = String(r["Level"] ?? "").trim();
       if (lvl === "Campaign") {
-        const key = String(r["Название кампании"] ?? "").trim();
+        const key = mapYandexProjectGroup(r["Название кампании"]);
         if (key) {
           const prev = yandexProjectLeadMetrics.get(key) || yandexEmptyMetrics();
           yandexProjectLeadMetrics.set(key, addYandexMetrics(prev, toYandexMetrics(r)));
