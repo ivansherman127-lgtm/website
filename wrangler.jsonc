@@ -1,5 +1,5 @@
 {
-  "name": "deved-webpush",
+  "name": "website",
   "main": "./web_share_subset/webpush/worker.ts",
   "compatibility_date": "2025-09-27",
   "observability": {
