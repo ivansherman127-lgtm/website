@@ -2008,6 +2008,10 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   await upsertDataset(db, "qa/yandex_assoc_revenue_qa.json", rowsToJson(qaRows));
   paths.push("qa/yandex_assoc_revenue_qa.json");
 
+  // Note: assoc_revenue is NOT included here. groupYandexProjectsNoMonth sums numeric fields,
+  // so if we passed assoc_revenue (which is already a per-group total) it would be multiplied
+  // by the number of raw campaign rows that map to the same group. Instead we apply it once
+  // per group after grouping, directly from assocRevenueByProject.
   const q11rows = (q11.results ?? []).map((r) => ({
     project_name: toKnownGroup(r.project_name),
     leads_raw: Number(r.leads_raw ?? 0) || 0,
@@ -2015,10 +2019,13 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     paid_deals_raw: Number(r.paid_deals_raw ?? 0) || 0,
     revenue_raw: Number(r.revenue_raw ?? 0) || 0,
     spend: Number(r.spend ?? 0) || 0,
-    assoc_revenue: assocRevenueByProject.get(toKnownGroup(r.project_name)) ?? 0,
+    assoc_revenue: 0,
   }));
 
-  const grouped = groupYandexProjectsNoMonth(q11rows);
+  const grouped = groupYandexProjectsNoMonth(q11rows).map((r) => ({
+    ...r,
+    assoc_revenue: assocRevenueByProject.get(r.project_name) ?? 0,
+  }));
   const groupedWithDetails = buildYandexNoMonthHierarchyRows(grouped as Record<string, unknown>[], q11adPerf.results ?? []);
   await upsertDataset(db, "global/yandex_projects_revenue_no_month.json", rowsToJson(groupedWithDetails));
   paths.push("global/yandex_projects_revenue_no_month.json");
