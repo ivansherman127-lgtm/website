@@ -16,6 +16,7 @@ export async function buildBitrixContactsUidRows(db: D1Database): Promise<Record
       .prepare(
         `SELECT
            contact_uid AS uid,
+           GROUP_CONCAT(DISTINCT contact_id) AS contact_ids,
            MAX(NULLIF(TRIM(COALESCE(all_names, '')), '')) AS name,
            MAX(NULLIF(TRIM(COALESCE(all_phones, '')), '')) AS phone,
            MAX(NULLIF(TRIM(COALESCE(all_emails, '')), '')) AS email

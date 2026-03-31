@@ -110,6 +110,7 @@ function buildYandexNoMonthHierarchyRows(
       Level: "Ad",
       project_name: project,
       ad_id: adId,
+      ad_title: String(raw.ad_title ?? "").trim(),
       leads_raw: Number(raw.leads_raw ?? 0) || 0,
       payments_count: Number(raw.payments_count ?? raw.paid_deals_raw ?? 0) || 0,
       paid_deals_raw: Number(raw.paid_deals_raw ?? raw.payments_count ?? 0) || 0,
@@ -526,7 +527,27 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
 
   const emailHierarchyBySend = await db
     .prepare(
-      `WITH deals_by_campaign AS (
+      `WITH email_pools AS (
+         SELECT DISTINCT
+           lower(trim(COALESCE("UTM Campaign", ''))) AS utm_key,
+           REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id
+         FROM mart_deals_enriched
+         WHERE LOWER(TRIM(COALESCE("UTM Source", ''))) = 'sendsay'
+           AND lower(trim(COALESCE("UTM Campaign", ''))) <> ''
+           AND REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') <> ''
+       ),
+       assoc_rev AS (
+         SELECT
+           ep.utm_key,
+           COUNT(DISTINCT rev."ID") AS assoc_deals,
+           COALESCE(SUM(COALESCE(rev.revenue_amount, 0)), 0) AS assoc_revenue
+         FROM email_pools ep
+         JOIN mart_deals_enriched rev
+           ON REPLACE(TRIM(COALESCE(rev."Контакт: ID", '')), '.0', '') = ep.contact_id
+         WHERE rev.is_revenue_variant3 = 1
+         GROUP BY ep.utm_key
+       ),
+       deals_by_campaign AS (
          SELECT
            lower(trim(COALESCE("UTM Campaign", ''))) AS utm_campaign_key,
            COUNT(*) AS leads,
@@ -583,10 +604,16 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE(dbc.refusal, 0) AS refusal,
            COALESCE(dbc.fl_ids, '') AS fl_ids,
            COALESCE(dbc.paid_deals, 0) AS paid_deals,
-           COALESCE(dbc.revenue, 0) AS revenue
+           COALESCE(dbc.revenue, 0) AS revenue,
+           COALESCE(ar.assoc_revenue, 0) AS assoc_revenue,
+           COALESCE(ar.assoc_deals, 0) AS assoc_deals,
+           CASE WHEN COALESCE(ar.assoc_revenue, 0) < COALESCE(dbc.revenue, 0) THEN COALESCE(dbc.revenue, 0) ELSE COALESCE(ar.assoc_revenue, 0) END AS assoc_rev_eff,
+           CASE WHEN COALESCE(ar.assoc_deals, 0) < COALESCE(dbc.paid_deals, 0) THEN COALESCE(dbc.paid_deals, 0) ELSE COALESCE(ar.assoc_deals, 0) END AS assoc_deals_eff
          FROM stg_email_sends e
          LEFT JOIN deals_by_campaign dbc
            ON dbc.utm_campaign_key = lower(trim(COALESCE(e.utm_campaign, '')))
+         LEFT JOIN assoc_rev ar
+           ON ar.utm_key = lower(trim(COALESCE(e.utm_campaign, '')))
          WHERE COALESCE(e.month, '') <> ''
        ),
        month_rows AS (
@@ -621,7 +648,11 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(refusal) AS refusal,
            SUBSTR(GROUP_CONCAT(fl_ids), 1, 50000) AS fl_ids,
            SUM(paid_deals) AS paid_deals,
-           SUM(revenue) AS revenue
+           SUM(revenue) AS revenue,
+           SUM(assoc_revenue) AS assoc_revenue,
+           SUM(assoc_deals) AS assoc_deals,
+           SUM(assoc_rev_eff) AS assoc_rev_eff,
+           SUM(assoc_deals_eff) AS assoc_deals_eff
          FROM send_rows
          GROUP BY month
        ),
@@ -663,7 +694,6 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            qual AS "Квал Лиды",
            unqual AS "Неквал",
            refusal AS "Отказы",
-           CASE WHEN qual <= leads THEN 'OK' ELSE 'ERR' END AS "QualCheck",
            CASE WHEN uniq_opens = 0 THEN 0 ELSE ROUND(uniq_clicks * 100.0 / uniq_opens, 2) END AS "CTOR%",
            CASE WHEN delivered_total = 0 THEN 0 ELSE ROUND(uniq_opens * 100.0 / delivered_total, 2) END AS "%Уник открытий",
            CASE WHEN delivered_total = 0 THEN 0 ELSE ROUND(unsub_total * 100.0 / delivered_total, 2) END AS "Конверсия в Отписки",
@@ -673,7 +703,10 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            CASE WHEN delivered_total = 0 THEN 0 ELSE ROUND(refusal * 100.0 / delivered_total, 2) END AS "Конверсия в Отказ",
            revenue AS "Выручка",
            paid_deals AS "Сделок с выручкой",
-           CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средняя выручка на сделку",
+           CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средняя за сделку",
+           assoc_rev_eff AS "Ассоц. Выручка",
+           assoc_deals_eff AS "Ассоц. Сделок",
+           CASE WHEN assoc_deals_eff = 0 THEN 0 ELSE assoc_rev_eff * 1.0 / assoc_deals_eff END AS "Средняя ассоц. за сделку",
            0 AS "Средний остаток по сделке",
            NULL AS "Рассылок за месяц",
            NULL AS "Лидов с некорр. email",
@@ -704,7 +737,6 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          qual AS "Квал Лиды",
          unqual AS "Неквал",
          refusal AS "Отказы",
-         NULL AS "QualCheck",
          CASE WHEN uniq_opens = 0 THEN 0 ELSE ROUND(uniq_clicks * 100.0 / uniq_opens, 2) END AS "CTOR%",
          CASE WHEN delivered_total = 0 THEN 0 ELSE ROUND(uniq_opens * 100.0 / delivered_total, 2) END AS "%Уник открытий",
          CASE WHEN delivered_total = 0 THEN 0 ELSE ROUND(unsub_total * 100.0 / delivered_total, 2) END AS "Конверсия в Отписки",
@@ -714,7 +746,10 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          CASE WHEN delivered_total = 0 THEN 0 ELSE ROUND(refusal * 100.0 / delivered_total, 2) END AS "Конверсия в Отказ",
          revenue AS "Выручка",
          paid_deals AS "Сделок с выручкой",
-         CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средняя выручка на сделку",
+         CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средняя за сделку",
+         assoc_rev_eff AS "Ассоц. Выручка",
+         assoc_deals_eff AS "Ассоц. Сделок",
+         CASE WHEN assoc_deals_eff = 0 THEN 0 ELSE assoc_rev_eff * 1.0 / assoc_deals_eff END AS "Средняя ассоц. за сделку",
          0 AS "Средний остаток по сделке",
          sends AS "Рассылок за месяц",
          CASE WHEN leads > 0 THEN sends ELSE 0 END AS "Лидов с некорр. email",
@@ -745,7 +780,6 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          "Квал Лиды",
          "Неквал",
          "Отказы",
-         "QualCheck",
          "CTOR%",
          "%Уник открытий",
          "Конверсия в Отписки",
@@ -755,14 +789,17 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          "Конверсия в Отказ",
          "Выручка",
          "Сделок с выручкой",
-         "Средняя выручка на сделку",
+         "Средняя за сделку",
+         "Ассоц. Выручка",
+         "Ассоц. Сделок",
+         "Средняя ассоц. за сделку",
          "Средний остаток по сделке",
          "Рассылок за месяц",
          "Лидов с некорр. email",
          "Доля некорр. email (лиды)",
          month
        FROM send_rows_labeled
-       ORDER BY month DESC, "Level" DESC, "Название выпуска" ASC`,
+       ORDER BY month DESC, "Level" ASC, "Название выпуска" ASC`,
     )
     .all<Record<string, unknown>>();
   await upsertDataset(db, "email_hierarchy_by_send.json", rowsToJson((emailHierarchyBySend.results ?? []) as Record<string, unknown>[]));
@@ -1949,6 +1986,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          SELECT
            ${groupedStatsProjectExpr} AS project_name,
            REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
+           MIN(NULLIF(TRIM(COALESCE("Заголовок", '')), '')) AS ad_title,
            SUM(COALESCE("Клики", 0)) AS clicks,
            SUM(COALESCE("Расход, ₽", 0)) AS spend
          FROM stg_yandex_stats
@@ -1979,6 +2017,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        SELECT
          d.project_name,
          d.ad_id,
+         COALESCE(ys.ad_title, '') AS ad_title,
          COALESCE(yd.leads_raw, 0) AS leads_raw,
          COALESCE(yd.payments_count, 0) AS payments_count,
          COALESCE(yd.paid_deals_raw, 0) AS paid_deals_raw,
@@ -2030,9 +2069,23 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
 
   const grouped = groupYandexProjectsNoMonth(q11rows).map((r) => ({
     ...r,
-    assoc_revenue: assocRevenueByProject.get(r.project_name) ?? 0,
+    assoc_revenue: Math.max(assocRevenueByProject.get(r.project_name) ?? 0, r.revenue_raw),
   }));
-  const groupedWithDetails = buildYandexNoMonthHierarchyRows(grouped as Record<string, unknown>[], q11adPerf.results ?? []);
+
+  // Enrich ad-perf rows with assoc_revenue from QA data; enforce assoc >= direct.
+  const assocByAd = new Map<string, number>();
+  for (const r of q11assocQaByAd.results ?? []) {
+    const key = `${toKnownGroup(r.project_name)}||${String(r.ad_id ?? "").trim()}`;
+    assocByAd.set(key, Number(r.assoc_revenue ?? 0) || 0);
+  }
+  const adPerfEnriched = (q11adPerf.results ?? []).map((r) => {
+    const proj = toKnownGroup(r.project_name);
+    const adId = String(r.ad_id ?? "").trim();
+    const assocRev = assocByAd.get(`${proj}||${adId}`) ?? 0;
+    const directRev = Number(r.revenue_raw ?? 0) || 0;
+    return { ...r, assoc_revenue: Math.max(assocRev, directRev) };
+  });
+  const groupedWithDetails = buildYandexNoMonthHierarchyRows(grouped as Record<string, unknown>[], adPerfEnriched);
   await upsertDataset(db, "global/yandex_projects_revenue_no_month.json", rowsToJson(groupedWithDetails));
   paths.push("global/yandex_projects_revenue_no_month.json");
 

@@ -78,6 +78,7 @@ function isMoneyColumn(col: string): boolean {
     c.includes("выруч") ||
     c === "средний_чек" ||
     c === "средний чек" ||
+    c.startsWith("средняя") ||
     c === "sum" ||
     c === "profit" ||
     c.includes("прибыл") ||
@@ -232,7 +233,6 @@ type ViewKey =
   | "media_email"
   | "media_yandex"
   | "media_yandex_month"
-  | "media_yandex_assoc_qa"
   | "budget_monthly"
   | "months_total"
   | "managers_sales_course"
@@ -257,7 +257,7 @@ const VIEW_META: Record<ViewKey, ViewMeta> = {
   media_email: { tab: "media", label: "Имейл по месяцам", path: "data/email_hierarchy_by_send.json", rowsLabel: "Строк", title: "Рекламные медиумы" },
   media_yandex: { tab: "media", label: "Yandex по кампаниям (без месяцев)", path: "data/global/yandex_projects_revenue_no_month.json", rowsLabel: "Кампаний", title: "Рекламные медиумы" },
   media_yandex_month: { tab: "media", label: "Yandex по месяцам", path: "data/global/yandex_projects_revenue_by_month.json", rowsLabel: "Месяцев", title: "Рекламные медиумы" },
-  media_yandex_assoc_qa: { tab: "media", label: "Yandex: QA ассоц. выручки", path: "data/qa/yandex_assoc_revenue_qa.json", rowsLabel: "Проектов", title: "Рекламные медиумы" },
+
   email_ops_summary: { tab: "media", label: "Email: база, рассылки, лиды, выручка", path: "data/email_operational_summary.json", rowsLabel: "Периодов", title: "Рекламные медиумы" },
   budget_monthly: { tab: "budget", label: "Выручка / расход / прибыль по месяцам", path: "data/global/budget_monthly.json", rowsLabel: "Периодов", title: "Бюджет" },
   months_total: { tab: "months", label: "Bitrix по месяцам", path: "data/bitrix_month_total_full.json", rowsLabel: "Месяцев", title: "Отчеты по месяцам" },
@@ -299,33 +299,15 @@ function writeUrlState(menu: MenuMode, view?: ViewKey): void {
   window.history.replaceState({}, "", url.toString());
 }
 
-type AssocDynamicDim = "yandex_campaign" | "email_campaign" | "event";
-const ASSOC_DYNAMIC_DIM_OPTIONS: Array<{ key: AssocDynamicDim; label: string }> = [
-  { key: "yandex_campaign", label: "Yandex кампания" },
-  { key: "email_campaign", label: "Email кампания" },
-  { key: "event", label: "Мероприятие" },
-];
-let assocDynamicDim1: AssocDynamicDim = "yandex_campaign";
-
 function viewPath(view: ViewKey): string {
   if (view === "assoc_dynamic") {
-    const q = new URLSearchParams();
-    q.set("dims", assocDynamicDim1);
-    return `/api/assoc-revenue?${q.toString()}`;
+    return "/api/assoc-revenue?dims=event";
   }
   return VIEW_META[view].path;
 }
 
-function managerFormulaNote(view: ViewKey): string {
-  if (!view.startsWith("managers_")) return "";
-  return `
-    <div class="calc-note">
-      <strong>Логика расчета:</strong>
-      Выручка считается по <code>variant3</code> (закрытие/стадия + обязательная <code>Дата оплаты</code>).
-      <code>Средний чек = Выручка / Сделок с выручкой</code>.
-      <code>В работе</code> — стадии без признаков закрытия/отказа/неквала/спама/дубля/ЧС.
-    </div>
-  `;
+function managerFormulaNote(_view: ViewKey): string {
+  return "";
 }
 
 
@@ -624,10 +606,11 @@ function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown
   const paid = num(raw["payments_count"] ?? raw["paid_deals_raw"]);
   const revenue = num(raw["revenue_raw"]);
   const spend = m.spend > 0 ? m.spend : num(raw["spend"]);
-  const assocRevenue = num(raw["assoc_revenue"]);
+  const assocRevenue = Math.max(num(raw["assoc_revenue"]), revenue);
   return {
     "Yandex кампания": project,
     "Yandex объявление": "-",
+    "Заголовок": "-",
     "Лиды": leads,
     "Квал": qual,
     "Конверсия в Квал": leads > 0 ? qual / leads : 0,
@@ -648,6 +631,7 @@ function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown
 
 function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): Record<string, unknown> {
   const adId = String(raw["ad_id"] ?? "").trim();
+  const adTitle = String(raw["ad_title"] ?? "").trim();
   const leads = num(raw["leads_raw"]);
   const qual = num(raw["qual"]);
   const unqual = num(raw["unqual"]);
@@ -655,10 +639,11 @@ function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): R
   const paid = num(raw["payments_count"] ?? raw["paid_deals_raw"]);
   const revenue = num(raw["revenue_raw"]);
   const spend = num(raw["spend"]);
-  const assocRevenue = num(raw["assoc_revenue"]);
+  const assocRevenue = Math.max(num(raw["assoc_revenue"]), revenue);
   return {
     "Yandex кампания": project,
     "Yandex объявление": adId,
+    "Заголовок": adTitle,
     "Лиды": leads,
     "Квал": qual,
     "Конверсия в Квал": leads > 0 ? qual / leads : 0,
@@ -742,6 +727,15 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
     return out;
   });
   if (view === "months_total") return clean.map(addKpi);
+  if (view === "budget_monthly") {
+    return clean.map((r) => {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(r)) {
+        if (k !== "Расход, ₽" && k !== "Прибыль") out[k] = v;
+      }
+      return out;
+    });
+  }
   if (view === "year_total") {
     const groups = new Map<string, Record<string, unknown>[]>();
     for (const r of clean) {
@@ -847,29 +841,6 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
     }
 
     return Array.from(rowsByProject.values());
-  }
-  if (view === "media_yandex_assoc_qa") {
-    const hasHierarchyRows = clean.some((r) => String(r["Level"] ?? "").trim() === "Project" || num(r["__yandex_project_detail"]) > 0);
-    if (!hasHierarchyRows) return clean;
-    return clean.map((r) => {
-      const level = String(r["Level"] ?? "").trim();
-      if (level === "Project") {
-        return {
-          ...r,
-          "Yandex объявление": "-",
-          __yandex_project_ctx: String(r["Yandex кампания"] ?? r["Проект"] ?? "").trim(),
-          __yandex_project_has_details: num(r["__yandex_project_has_details"]) > 0 ? 1 : 0,
-        };
-      }
-      if (num(r["__yandex_project_detail"]) > 0 || level === "Ad") {
-        return {
-          ...r,
-          __yandex_project_ctx: String(r["Yandex кампания"] ?? r["Проект"] ?? "").trim(),
-          __yandex_project_detail: 1,
-        };
-      }
-      return r;
-    });
   }
   if (view === "media_yandex_month") {
     return clean.map((r) => {
@@ -1017,12 +988,24 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const expandedAssocEventRows = new Set<string>();
   const expandedAssocYandexRows = new Set<string>();
   const expandedYandexProjectRows = new Set<string>();
+  const assocEvents: string[] = [];
+  let assocEventTab: string | null = null;
+  if (view === "assoc_dynamic") {
+    const uniqueEvents = [...new Set(
+      viewRows
+        .filter((r) => num(r["__assoc_event_detail"]) === 0)
+        .map((r) => String(r["Мероприятие"] ?? "").trim())
+        .filter((ev) => ev !== "" && ev !== "Другое"),
+    )];
+    assocEvents.push(...uniqueEvents);
+    assocEventTab = assocEvents[0] ?? null;
+  }
   const isEmailHierarchy = view === "media_email";
   const isAssocEmailHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_email_detail"]) > 0);
   const isAssocEventHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_event_detail"]) > 0);
   const isAssocYandexHierarchy = view === "assoc_dynamic" && viewRows.some((r) => num(r["__assoc_yandex_detail"]) > 0);
   const isYandexHierarchy = false;
-  const isYandexProjectHierarchy = (view === "media_yandex" || view === "media_yandex_assoc_qa") && viewRows.some((r) => num(r["__yandex_project_detail"]) > 0);
+  const isYandexProjectHierarchy = view === "media_yandex" && viewRows.some((r) => num(r["__yandex_project_detail"]) > 0);
   const isManagerHierarchy = view.startsWith("managers_");
   const isFunnelHierarchy = view === "funnels_hierarchy";
   const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
@@ -1084,6 +1067,13 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     if (filter.trim()) {
       const q = filter.trim().toLowerCase();
       data = data.filter((r) => cols.some((c) => String(r[c] ?? "").toLowerCase().includes(q)));
+    }
+    if (view === "assoc_dynamic" && assocEventTab !== null) {
+      data = data.filter((r) =>
+        num(r["__assoc_event_detail"]) > 0
+          ? String(r["__assoc_event_ctx"] ?? "").trim() === assocEventTab
+          : String(r["Мероприятие"] ?? "").trim() === assocEventTab,
+      );
     }
     // Иерархии строят порядок строк сами; глобальная сортировка ломает вложенные таблицы.
     if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isYandexProjectHierarchy && !isAssocEmailHierarchy && !isAssocEventHierarchy && !isAssocYandexHierarchy) {
@@ -1475,13 +1465,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           .join("")}
       </div>
       ${
-        view === "assoc_dynamic"
-          ? `<div class="assoc-builder-controls">
-              <label>Dim 1
-                <select class="assoc-dim1">${ASSOC_DYNAMIC_DIM_OPTIONS.map((d) => `<option value="${d.key}" ${d.key === assocDynamicDim1 ? "selected" : ""}>${escapeHtml(d.label)}</option>`).join("")}</select>
-              </label>
-              <button class="assoc-apply-btn">Применить</button>
-            </div>`
+        view === "assoc_dynamic" && assocEvents.length > 0
+          ? `<div class="tabs-row event-tabs">${assocEvents.map((ev) => `<button class="tab-btn${ev === assocEventTab ? " active" : ""}" data-event="${escapeHtml(ev)}">${escapeHtml(ev)}</button>`).join("")}</div>`
           : ""
       }
       <button class="copy-table-btn">Скопировать таблицу</button>
@@ -1533,23 +1518,16 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     };
   });
 
-  const assocApplyBtn = app.querySelector<HTMLButtonElement>(".assoc-apply-btn");
-  if (assocApplyBtn) {
-    assocApplyBtn.onclick = async () => {
-      const dim1 = app.querySelector<HTMLSelectElement>(".assoc-dim1")?.value as AssocDynamicDim | undefined;
-      if (!dim1) return;
-      assocDynamicDim1 = dim1;
-      try {
-        const q = new URLSearchParams();
-        q.set("dims", assocDynamicDim1);
-        q.set("recalc", "1");
-        const r = await fetchJson<Record<string, unknown>[]>(`/api/assoc-revenue?${q.toString()}`);
-        void renderTable("assoc_dynamic", r, dealsIndex);
-      } catch (e) {
-        status.textContent = `Ошибка загрузки: ${String(e)}`;
-      }
+  app.querySelectorAll<HTMLButtonElement>(".event-tabs .tab-btn").forEach((btn) => {
+    btn.onclick = () => {
+      const ev = btn.getAttribute("data-event") || null;
+      assocEventTab = ev;
+      app.querySelectorAll<HTMLButtonElement>(".event-tabs .tab-btn").forEach((b) =>
+        b.classList.toggle("active", b.getAttribute("data-event") === assocEventTab),
+      );
+      draw();
     };
-  }
+  });
 
   /* tabSelect.onchange = async () => {
     const nextTab = tabSelect.value as TabKey;
