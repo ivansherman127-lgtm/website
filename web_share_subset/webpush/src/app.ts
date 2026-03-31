@@ -2167,8 +2167,49 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
     managerBar: "#60a5fa",
   };
 
+  const getXAxisConfig = (dataPointCount: number): Record<string, unknown> => {
+    // Dynamically adjust x-axis based on number of data points for better readability
+    let maxRotation = 0;
+    let maxTicksLimit = undefined;
+    let fontSize = 12;
+    
+    if (dataPointCount <= 3) {
+      maxRotation = 0;
+      maxTicksLimit = undefined;
+      fontSize = 13;
+    } else if (dataPointCount <= 6) {
+      maxRotation = 45;
+      maxTicksLimit = undefined;
+      fontSize = 12;
+    } else if (dataPointCount <= 12) {
+      maxRotation = 45;
+      maxTicksLimit = 12;
+      fontSize = 11;
+    } else if (dataPointCount <= 18) {
+      maxRotation = 60;
+      maxTicksLimit = 10;
+      fontSize = 10;
+    } else {
+      maxRotation = 90;
+      maxTicksLimit = 8;
+      fontSize = 9;
+    }
+    
+    return {
+      ticks: { 
+        color: "#8b92a8", 
+        maxRotation,
+        minRotation: maxRotation,
+        font: { size: fontSize }
+      },
+      grid: { color: "#2a3142" },
+      max: dataPointCount > 0 ? undefined : 0,
+    };
+  };
+
   const chartDefaults = {
     responsive: true,
+    maintainAspectRatio: true,
     plugins: {
       legend: { labels: { color: "#e8eaef" } },
       tooltip: { mode: "index" as const, intersect: false },
@@ -2217,6 +2258,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
       const leadsData = sorted.map((r) => num(r["Лиды"]));
       const qualData = sorted.map((r) => num(r["Квал"]));
       const dealsData = sorted.map((r) => num(r["Сделок_с_выручкой"]));
+      const xAxisConfig = getXAxisConfig(monthLabels.length);
 
       const revenueCanvas = app.querySelector<HTMLCanvasElement>("#chart-revenue-month")!;
       new Chart(revenueCanvas, {
@@ -2247,7 +2289,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
         options: {
           ...chartDefaults,
           scales: {
-            x: chartDefaults.scales.x,
+            x: xAxisConfig,
             y: { ...chartDefaults.scales.y, position: "left" as const, title: { display: true, text: "Выручка, ₽", color: "#8b92a8" } },
             y2: { ...chartDefaults.scales.y, position: "right" as const, title: { display: true, text: "Средний чек, ₽", color: "#8b92a8" }, grid: { drawOnChartArea: false, color: "#2a3142" } },
           },
@@ -2265,7 +2307,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
             { label: "Сделок с выручкой", data: dealsData, backgroundColor: CHART_COLORS.deals + "99", borderColor: CHART_COLORS.deals, borderWidth: 1 },
           ],
         },
-        options: { ...chartDefaults },
+        options: { ...chartDefaults, scales: { ...chartDefaults.scales, x: xAxisConfig } },
       });
 
       const convQualData = sorted.map((r) => toConvPct(r["Конверсия в Квал"]));
@@ -2298,7 +2340,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
         options: {
           ...chartDefaults,
           scales: {
-            x: chartDefaults.scales.x,
+            x: xAxisConfig,
             y: { ...chartDefaults.scales.y, title: { display: true, text: "%", color: "#8b92a8" } },
           },
         },
@@ -2313,6 +2355,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
         .filter((r) => !isTotalValue(r["month"]))
         .sort((a, b) => String(a["month"] ?? "").localeCompare(String(b["month"] ?? "")));
       const yLabels = ySorted.map((r) => String(r["month"] ?? ""));
+      const yXAxisConfig = getXAxisConfig(yLabels.length);
       const spendData = ySorted.map((r) => {
         const month = String(r["month"] ?? "").trim();
         const m = yandexMonthLeadMetrics.get(month) || yandexEmptyMetrics();
@@ -2330,7 +2373,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
             { label: "Выручка, ₽", data: yRevenueData, backgroundColor: CHART_COLORS.profit + "99", borderColor: CHART_COLORS.profit, borderWidth: 1 },
           ],
         },
-        options: { ...chartDefaults },
+        options: { ...chartDefaults, scales: { ...chartDefaults.scales, x: yXAxisConfig } },
       });
 
       const roiData = ySorted.map((r) => {
@@ -2360,7 +2403,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
         options: {
           ...chartDefaults,
           scales: {
-            x: chartDefaults.scales.x,
+            x: yXAxisConfig,
             y: { ...chartDefaults.scales.y, title: { display: true, text: "ROI", color: "#8b92a8" } },
           },
         },
@@ -2375,6 +2418,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
         .filter((r) => !isTotalValue(r["Период"]))
         .sort((a, b) => compareCell("Период", a["Период"], b["Период"], "asc"));
       const eLabels = eSorted.map((r) => String(r["Период"] ?? ""));
+      const eXAxisConfig = getXAxisConfig(eLabels.length);
       const eLeadsData = eSorted.map((r) => num(r["Лиды"]));
       const eRevenueData = eSorted.map((r) => num(r["Выручка"]));
 
@@ -2391,7 +2435,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
         options: {
           ...chartDefaults,
           scales: {
-            x: chartDefaults.scales.x,
+            x: eXAxisConfig,
             y: { ...chartDefaults.scales.y, position: "left" as const, title: { display: true, text: "Лиды", color: "#8b92a8" } },
             y2: { ...chartDefaults.scales.y, position: "right" as const, title: { display: true, text: "Выручка, ₽", color: "#8b92a8" }, grid: { drawOnChartArea: false, color: "#2a3142" } },
           },
@@ -2417,6 +2461,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
       const sorted = [...managerTotals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
       const mLabels = sorted.map(([name]) => name);
       const mData = sorted.map(([, revenue]) => revenue);
+      const mYAxisConfig = getXAxisConfig(mLabels.length); // Y-axis shows labels for horizontal chart
       const mCanvas = app.querySelector<HTMLCanvasElement>("#chart-managers-revenue")!;
       new Chart(mCanvas, {
         type: "bar",
@@ -2437,7 +2482,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
           indexAxis: "y" as const,
           scales: {
             x: { ...chartDefaults.scales.x, title: { display: true, text: "Выручка, ₽", color: "#8b92a8" } },
-            y: chartDefaults.scales.y,
+            y: mYAxisConfig,
           },
         },
       });
@@ -2553,7 +2598,8 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
           <p class="sub">Срез: последние 7 дней от последней доступной записи</p>
         </header>
         <div class="kpi-grid">
-          <div class="kpi"><div class="label">Факт контактов Bitrix + Email</div><div class="value">${totalContactsActual.toLocaleString("ru-RU")}</div></div>
+          <div class="kpi"><div class="label">Контакты Bitrix</div><div class="value">${bitrixContactsActual.toLocaleString("ru-RU")}</div></div>
+          <div class="kpi"><div class="label">Контакты Email</div><div class="value">${emailContactsActual.toLocaleString("ru-RU")}</div></div>
           <div class="kpi"><div class="label">Последняя запись Bitrix</div><div class="value">${escapeHtml(latestBitrixRecordDate)}</div></div>
           <div class="kpi"><div class="label">Последняя запись Yandex</div><div class="value">${escapeHtml(latestYandexRecordDate)}</div></div>
         </div>
