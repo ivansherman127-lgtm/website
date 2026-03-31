@@ -729,9 +729,13 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
   if (view === "months_total") return clean.map(addKpi);
   if (view === "budget_monthly") {
     return clean.map((r) => {
+      const lvl = String(r["Level"] ?? "").trim();
+      const isDetail = lvl === "Detail";
       const out: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(r)) {
-        if (k !== "Расход, ₽" && k !== "Прибыль") out[k] = v;
+        // Strip spend/profit on non-detail rows; detail rows never have them anyway
+        if ((k === "Расход, ₽" || k === "Прибыль") && !isDetail) continue;
+        out[k] = v;
       }
       return out;
     });
@@ -988,6 +992,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const expandedAssocEventRows = new Set<string>();
   const expandedAssocYandexRows = new Set<string>();
   const expandedYandexProjectRows = new Set<string>();
+  const expandedBudget = new Set<string>();
   const assocEvents: string[] = [];
   let assocEventTab: string | null = null;
   if (view === "assoc_dynamic") {
@@ -1008,6 +1013,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const isYandexProjectHierarchy = view === "media_yandex" && viewRows.some((r) => num(r["__yandex_project_detail"]) > 0);
   const isManagerHierarchy = view.startsWith("managers_");
   const isFunnelHierarchy = view === "funnels_hierarchy";
+  const isBudgetHierarchy = view === "budget_monthly";
   const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let visibleRows: Record<string, unknown>[] = [];
   const postJson = async (url: string, body: unknown): Promise<{ ok: boolean; rows?: number; error?: string }> => {
@@ -1053,6 +1059,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
 
   const draw = (): void => {
     cols = allCols.filter((c) => !isFlIdsColumn(c) && !isHiddenUiColumn(c));
+    if (isBudgetHierarchy) cols = cols.filter((c) => c !== "month" && c !== "Level");
     if (sortCol && !cols.includes(sortCol)) sortCol = cols[0] || "";
 
     let data = [...viewRows];
@@ -1076,7 +1083,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       );
     }
     // Иерархии строят порядок строк сами; глобальная сортировка ломает вложенные таблицы.
-    if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isYandexProjectHierarchy && !isAssocEmailHierarchy && !isAssocEventHierarchy && !isAssocYandexHierarchy) {
+    if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isYandexProjectHierarchy && !isAssocEmailHierarchy && !isAssocEventHierarchy && !isAssocYandexHierarchy && !isBudgetHierarchy) {
       data.sort((a, b) => compareCell(sortCol, a[sortCol], b[sortCol], sortDir));
     }
     if (isEmailHierarchy) {
@@ -1173,11 +1180,21 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       }
       data = ordered;
     }
+    if (isBudgetHierarchy) {
+      const ordered: Record<string, unknown>[] = [];
+      for (const r of data) {
+        const lvl = String(r["Level"] ?? "").trim();
+        const payMonth = String(r["__pay_month"] ?? "").trim();
+        if (lvl === "Month" || lvl === "Total") ordered.push(r);
+        else if (lvl === "Detail" && expandedBudget.has(payMonth)) ordered.push(r);
+      }
+      data = ordered;
+    }
 
     const topCountEl = app.querySelector<HTMLElement>(".kpi-grid .kpi:first-child .value");
     if (topCountEl) topCountEl.textContent = data.length.toLocaleString("ru-RU");
 
-    const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isYandexProjectHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy || isAssocYandexHierarchy;
+    const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isYandexProjectHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy || isAssocYandexHierarchy || isBudgetHierarchy;
     visibleRows = data;
     const th = `${showCtrl ? '<th class="ctrl-col">#</th>' : ""}${cols.map((c) => `<th data-col="${escapeHtml(c)}" title="${escapeHtml(canSaveViewJson ? "клик: сортировка · Ctrl+клик: переименовать" : "клик: сортировка")}">${escapeHtml(displayColName(view, c))}</th>`).join("")}`;
     const rendered = data.slice(0, 5000);
@@ -1251,7 +1268,12 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         isYandexProjectHierarchy && num(r["__yandex_project_detail"]) === 0 && num(r["__yandex_project_has_details"]) > 0
           ? `<button class="yd-project-expand-btn" data-ctx="${escapeHtml(yProjectCtx)}">${expandedYandexProjectRows.has(`${view}||${yProjectCtx}`) ? "−" : "+"}</button>`
           : "";
-      const row = `<tr>${showCtrl ? `<td class="ctrl-col">${emailBtn || emailOtherBtn || managerBtn || funnelBtn || yandexBtn || assocOtherBtn || assocEventBtn || assocYandexBtn || yProjectBtn}</td>` : ""}${cols
+      const budgetPayMonth = String(r["__pay_month"] ?? "").trim();
+      const budgetBtn =
+        isBudgetHierarchy && lvl === "Month"
+          ? `<button class="budget-expand-btn" data-paymonth="${escapeHtml(budgetPayMonth)}">${expandedBudget.has(budgetPayMonth) ? "−" : "+"}</button>`
+          : "";
+      const row = `<tr>${showCtrl ? `<td class="ctrl-col">${emailBtn || emailOtherBtn || managerBtn || funnelBtn || yandexBtn || assocOtherBtn || assocEventBtn || assocYandexBtn || yProjectBtn || budgetBtn}</td>` : ""}${cols
         .map((c) => {
           const editable = canSaveViewJson && isEditableDataColumn(c) ? "1" : "0";
           return `<td data-row="${idx}" data-col="${escapeHtml(c)}" data-editable="${editable}">${escapeHtml(formatCell(c, r[c]))}</td>`;
@@ -1418,6 +1440,12 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       if (expandedYandexProjectRows.has(key)) expandedYandexProjectRows.delete(key); else expandedYandexProjectRows.add(key);
       draw();
     }));
+    app.querySelectorAll<HTMLButtonElement>(".budget-expand-btn").forEach((b) => (b.onclick = () => {
+      const pm = b.getAttribute("data-paymonth") || "";
+      if (!pm) return;
+      if (expandedBudget.has(pm)) expandedBudget.delete(pm); else expandedBudget.add(pm);
+      draw();
+    }));
   };
 
   const kpiRows =
@@ -1431,7 +1459,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
             ? viewRows.filter((r) => num(r["__assoc_yandex_detail"]) === 0)
           : isYandexProjectHierarchy
             ? viewRows.filter((r) => num(r["__yandex_project_detail"]) === 0)
-            : viewRows;
+            : isBudgetHierarchy
+              ? viewRows.filter((r) => String(r["Level"] ?? "").trim() !== "Detail")
+              : viewRows;
   const totalRevenue = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Выручка", "выручка"]), 0);
   const deals = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Сделок_с_выручкой", "Сделок с выручкой"]), 0);
   app.innerHTML = `<div class="app-layout">

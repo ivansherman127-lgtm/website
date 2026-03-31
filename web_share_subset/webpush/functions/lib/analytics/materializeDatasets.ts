@@ -252,18 +252,27 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
 
   const budgetMonthly = await db
     .prepare(
-      `WITH paid_revenue AS (
+      `WITH paid_revenue_raw AS (
          SELECT
            CASE
              WHEN COALESCE("Дата оплаты", '') LIKE '____-__%' THEN SUBSTR("Дата оплаты", 1, 7)
              WHEN COALESCE("Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR("Дата оплаты", 7, 4) || '-' || SUBSTR("Дата оплаты", 4, 2)
              ELSE ''
            END AS pay_month,
-           COUNT(*) AS paid_deals,
-           SUM(COALESCE(revenue_amount, 0)) AS revenue
+           COALESCE(month, '') AS lead_month,
+           revenue_amount
          FROM mart_deals_enriched
          WHERE COALESCE(is_revenue_variant3, 0) = 1
-         GROUP BY 1
+       ),
+       paid_revenue AS (
+         SELECT pay_month, SUM(1) AS paid_deals, SUM(COALESCE(revenue_amount, 0)) AS revenue
+         FROM paid_revenue_raw
+         GROUP BY pay_month
+       ),
+       paid_revenue_by_creation AS (
+         SELECT pay_month, lead_month, COUNT(*) AS paid_deals, SUM(COALESCE(revenue_amount, 0)) AS revenue
+         FROM paid_revenue_raw
+         GROUP BY pay_month, lead_month
        ),
        spend_by_month AS (
          SELECT
@@ -277,36 +286,56 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          UNION
          SELECT spend_month AS month FROM spend_by_month WHERE COALESCE(spend_month, '') <> ''
        )
-       SELECT
-         "Период",
-         "Сделок_с_выручкой",
-         "Выручка",
-         "Расход, ₽",
-         "Прибыль",
-         month
+       SELECT "Level", "Период", "Сделок_с_выручкой", "Выручка", "Расход, ₽", "Прибыль", month, "__pay_month"
        FROM (
+         -- Month header rows
          SELECT
+           'Month' AS "Level",
            month AS "Период",
            COALESCE(pr.paid_deals, 0) AS "Сделок_с_выручкой",
            COALESCE(pr.revenue, 0) AS "Выручка",
            COALESCE(sb.spend, 0) AS "Расход, ₽",
            COALESCE(pr.revenue, 0) - COALESCE(sb.spend, 0) AS "Прибыль",
            month,
-           0 AS _sort_total
+           month AS "__pay_month",
+           0 AS _sort_level,
+           0 AS _sort_total,
+           '' AS _sort_lead_month
          FROM all_months am
          LEFT JOIN paid_revenue pr ON pr.pay_month = am.month
          LEFT JOIN spend_by_month sb ON sb.spend_month = am.month
          UNION ALL
+         -- Detail rows (breakdown by lead creation month within a payment month)
          SELECT
+           'Detail' AS "Level",
+           COALESCE(pbc.lead_month, '') AS "Период",
+           pbc.paid_deals AS "Сделок_с_выручкой",
+           pbc.revenue AS "Выручка",
+           NULL AS "Расход, ₽",
+           NULL AS "Прибыль",
+           pbc.pay_month AS month,
+           pbc.pay_month AS "__pay_month",
+           1 AS _sort_level,
+           0 AS _sort_total,
+           COALESCE(pbc.lead_month, '') AS _sort_lead_month
+         FROM paid_revenue_by_creation pbc
+         WHERE COALESCE(pbc.pay_month, '') <> ''
+         UNION ALL
+         -- Total row
+         SELECT
+           'Total' AS "Level",
            'Итого' AS "Период",
            (SELECT COALESCE(SUM(paid_deals), 0) FROM paid_revenue) AS "Сделок_с_выручкой",
            (SELECT COALESCE(SUM(revenue), 0) FROM paid_revenue) AS "Выручка",
            (SELECT COALESCE(SUM(spend), 0) FROM spend_by_month) AS "Расход, ₽",
            (SELECT COALESCE(SUM(revenue), 0) FROM paid_revenue) - (SELECT COALESCE(SUM(spend), 0) FROM spend_by_month) AS "Прибыль",
            '' AS month,
-           1 AS _sort_total
+           '' AS "__pay_month",
+           0 AS _sort_level,
+           1 AS _sort_total,
+           '' AS _sort_lead_month
        ) q
-       ORDER BY month DESC, _sort_total ASC`,
+       ORDER BY month DESC, _sort_total ASC, _sort_level ASC, _sort_lead_month DESC`,
     )
     .all<Record<string, unknown>>();
   await upsertDataset(db, "global/budget_monthly.json", rowsToJson((budgetMonthly.results ?? []) as Record<string, unknown>[]));
