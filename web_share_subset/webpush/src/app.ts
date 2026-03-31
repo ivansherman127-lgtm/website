@@ -600,12 +600,13 @@ function addYandexMetrics(a: YandexLeadMetrics, b: YandexLeadMetrics): YandexLea
 function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown>): Record<string, unknown> {
   const m = yandexProjectLeadMetrics.get(project) || yandexEmptyMetrics();
   const leads = m.leads > 0 ? m.leads : num(raw["leads_raw"]);
-  const qual = m.qual;
-  const unqual = m.unqual;
-  const refusal = m.refusal;
+  const qual = m.qual > 0 ? m.qual : num(raw["qual"]);
+  const unqual = m.unqual > 0 ? m.unqual : num(raw["unqual"]);
+  const refusal = m.refusal > 0 ? m.refusal : num(raw["refusal"]);
   const paid = num(raw["payments_count"] ?? raw["paid_deals_raw"]);
   const revenue = num(raw["revenue_raw"]);
   const spend = m.spend > 0 ? m.spend : num(raw["spend"]);
+  const clicks = m.clicks > 0 ? m.clicks : num(raw["clicks"]);
   const assocRevenue = Math.max(num(raw["assoc_revenue"]), revenue);
   return {
     "Yandex кампания": project,
@@ -618,7 +619,7 @@ function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown
     "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
     "Отказы": refusal,
     "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
-    "Клики": m.clicks,
+    "Клики": clicks,
     "Расход, ₽": spend,
     "Оплаты": paid,
     "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
@@ -1962,7 +1963,7 @@ async function boot(): Promise<void> {
         }
       }
       if (lvl === "Month") {
-        const key = String(r["Месяц"] ?? "").trim();
+        const key = String(r["month"] ?? r["Месяц"] ?? "").trim();
         if (key) {
           const prev = yandexMonthLeadMetrics.get(key) || yandexEmptyMetrics();
           yandexMonthLeadMetrics.set(key, addYandexMetrics(prev, toYandexMetrics(r)));

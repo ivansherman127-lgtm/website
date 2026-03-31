@@ -197,6 +197,7 @@ export async function buildYdHierarchyRows(db: D1Database): Promise<Record<strin
     const month = String(r.month ?? "").trim();
     return {
       "Level": "Month",
+      "month": month,
       "Месяц": toMonthLabel(month),
       "№ Кампании": "-",
       "№ Объявления": "-",
@@ -232,6 +233,7 @@ export async function buildYdHierarchyRows(db: D1Database): Promise<Record<strin
     const campaignId = String(r["№ Кампании"] ?? "").trim() || "-";
     return {
       "Level": "Campaign",
+      "month": month,
       "Месяц": toMonthLabel(month),
       "№ Кампании": campaignId,
       "№ Объявления": "-",
