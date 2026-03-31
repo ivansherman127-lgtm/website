@@ -2576,9 +2576,10 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
   const emailContactsActual = Math.round(num(totalsRow["email_contacts_actual"]));
   const totalContactsActual = bitrixContactsActual + emailContactsActual;
   const yandexWeekFiltered = yandexWeekCampaign.filter((r) => {
-    // Only show campaigns that have actual spend in the last 7 days
+    const campaignId = String(r["ID кампании"] ?? "").trim();
+    const hasAd = campaignId !== "" && campaignId !== "(пусто)" && campaignId !== "-";
     const hasSpend = num(r["Расход, ₽"]) > 0;
-    return hasSpend;
+    return hasAd || hasSpend;
   });
 
   const drawDashboard = (): void => {
