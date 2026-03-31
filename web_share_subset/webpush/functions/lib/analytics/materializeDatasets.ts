@@ -5,6 +5,7 @@ import { groupYandexProjectsNoMonth } from "./yandexProjectsNoMonth";
 import { sqlExtractYandexAdId } from "./yandexAdId";
 import { buildYdHierarchyRows } from "./ydHierarchy";
 import { buildBitrixContactsUidRows } from "./bitrixContactsUid";
+import { buildLeadLogicSql } from "./leadLogicSql";
 import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS, YANDEX_KNOWN_GROUPS, mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
 
 async function tableExists(db: D1Database, tableName: string): Promise<boolean> {
@@ -194,6 +195,21 @@ function buildYandexAssocQaHierarchyRows(
 
 export async function materializeSliceDatasets(db: D1Database): Promise<{ paths: string[] }> {
   const paths: string[] = [];
+  const bitrixLeadLogic = buildLeadLogicSql({
+    funnelExpr: `"Воронка"`,
+    stageExpr: `"Стадия сделки"`,
+    monthExpr: "month",
+  });
+  const yandexLeadLogic = buildLeadLogicSql({
+    funnelExpr: "funnel",
+    stageExpr: "stage",
+    monthExpr: "yandex_month",
+  });
+  const managerLeadLogic = buildLeadLogicSql({
+    funnelExpr: `m."Воронка"`,
+    stageExpr: `m."Стадия сделки"`,
+    monthExpr: "m.month",
+  });
   const hasRawP01 = await tableExists(db, "raw_bitrix_deals_p01");
   const hasSendsayContacts = await tableExists(db, "stg_sendsay_contacts");
   const totalEmailContactsExpr = hasSendsayContacts
@@ -350,70 +366,11 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE("Стадия сделки", '') AS stage,
            COALESCE("Воронка", '') AS funnel,
            COALESCE(revenue_amount, 0) AS revenue_amount,
-           CASE
-             -- Холодная воронка: Получившие демо-доступ квал с 09.02.26 (month proxy >= 2026-02)
-             WHEN COALESCE("Воронка", '') = 'Холодная воронка'
-                  AND COALESCE("Стадия сделки", '') = 'Получившие демо-доступ'
-                  AND COALESCE(month, '') >= '2026-02' THEN 1
-             -- B2B/B2C: всё кроме Сделка не заключена — квал
-             WHEN COALESCE("Воронка", '') IN ('B2B', 'B2C')
-                  AND COALESCE("Стадия сделки", '') <> 'Сделка не заключена'
-                  AND COALESCE("Стадия сделки", '') <> '' THEN 1
-             -- Реактивация: B2B отказ квал с 18.03.26 (month proxy >= 2026-03)
-             WHEN COALESCE("Воронка", '') = 'Реактивация'
-                  AND COALESCE("Стадия сделки", '') = 'B2B отказ'
-                  AND COALESCE(month, '') >= '2026-03' THEN 1
-             ELSE 0
-           END AS is_qual,
-           CASE
-             WHEN COALESCE("Воронка", '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE("Стадия сделки", '') <> 'Некачественный лид'
-                  AND COALESCE("Стадия сделки", '') <> 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE("Воронка", '') = 'Реактивация' AND COALESCE("Стадия сделки", '') <> 'Некачественный лид' THEN 1
-             WHEN lower(COALESCE("Стадия сделки", '')) LIKE '%неквал%'
-                  OR lower(COALESCE("Стадия сделки", '')) LIKE '%некачеств%'
-                  OR lower(COALESCE("Стадия сделки", '')) LIKE '%дубл%'
-                  OR lower(COALESCE("Стадия сделки", '')) LIKE '%спам%'
-                  OR lower(COALESCE("Стадия сделки", '')) LIKE '%чс%'
-                  OR lower(COALESCE("Стадия сделки", '')) LIKE '%тест%'
-                  OR lower(COALESCE("Стадия сделки", '')) LIKE '%неправильн%данн%'
-             THEN 1
-             ELSE 0
-           END AS is_unqual,
-           CASE
-             WHEN COALESCE("Воронка", '') IN ('B2B', 'B2C') AND COALESCE("Стадия сделки", '') = 'Сделка не заключена' THEN 1
-             WHEN lower(COALESCE("Стадия сделки", '')) LIKE '%отказ%' THEN 1
-             ELSE 0
-           END AS is_refusal,
-           CASE
-             WHEN lower(COALESCE("Стадия сделки", '')) LIKE '%неквал%'
-               OR lower(COALESCE("Стадия сделки", '')) LIKE '%некачеств%'
-               OR lower(COALESCE("Стадия сделки", '')) LIKE '%дубл%'
-               OR lower(COALESCE("Стадия сделки", '')) LIKE '%спам%'
-               OR lower(COALESCE("Стадия сделки", '')) LIKE '%чс%'
-               OR lower(COALESCE("Стадия сделки", '')) LIKE '%тест%'
-               OR lower(COALESCE("Стадия сделки", '')) LIKE '%неправильн%данн%'
-             THEN 1
-             ELSE 0
-           END AS is_invalid,
-           CASE
-             -- Горячая воронка: в работе = Взято в работу / Нет ответа / Перезвонить
-             WHEN COALESCE("Воронка", '') = 'Горячая воронка'
-                  AND COALESCE("Стадия сделки", '') IN ('Взято в работу', 'Нет ответа', 'Перезвонить') THEN 1
-             -- Холодная воронка: в работе = Взято в работу / Нет ответа / Перезвонить / Получившие демо-доступ
-             WHEN COALESCE("Воронка", '') = 'Холодная воронка'
-                  AND COALESCE("Стадия сделки", '') IN ('Взято в работу', 'Нет ответа', 'Перезвонить', 'Получившие демо-доступ') THEN 1
-             -- B2B: активные стадии сделки
-             WHEN COALESCE("Воронка", '') = 'B2B'
-                  AND COALESCE("Стадия сделки", '') IN ('Новая сделка', 'Потенциал 01', 'Выбор 03', 'Кастомный запрос', 'Согласование КП', 'Тендер', 'Согласование договора', 'Счет выставлен', 'Постоплата') THEN 1
-             -- B2C: активные стадии сделки
-             WHEN COALESCE("Воронка", '') = 'B2C'
-                  AND COALESCE("Стадия сделки", '') IN ('Новая заявка', 'Взято в работу', 'Консультация с экспертом', 'Консультация назначена', 'Потенциал 01', 'Выбор 03', 'Готов к покупке') THEN 1
-             -- Реактивация: только В проработке, нет ответа
-             WHEN COALESCE("Воронка", '') = 'Реактивация'
-                  AND COALESCE("Стадия сделки", '') = 'В проработке, нет ответа' THEN 1
-             ELSE 0
-           END AS is_in_work,
+           ${bitrixLeadLogic.qual} AS is_qual,
+           ${bitrixLeadLogic.unqual} AS is_unqual,
+           ${bitrixLeadLogic.refusal} AS is_refusal,
+           ${bitrixLeadLogic.invalid} AS is_invalid,
+           ${bitrixLeadLogic.inWork} AS is_in_work,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched
          WHERE COALESCE(month, '') <> ''
@@ -447,32 +404,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          SELECT
            lower(trim(COALESCE("UTM Campaign", ''))) AS utm_campaign_key,
            COUNT(*) AS leads,
-           SUM(CASE
-                 WHEN COALESCE("Воронка", '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                      AND COALESCE("Стадия сделки", '') = 'Получившие демо-доступ' THEN 1
-                 WHEN COALESCE("Воронка", '') IN ('B2B', 'B2C') AND COALESCE("Стадия сделки", '') <> 'Сделка не заключена' THEN 1
-                 ELSE 0
-               END) AS qual,
-           SUM(CASE
-                 WHEN COALESCE("Воронка", '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                      AND COALESCE("Стадия сделки", '') <> 'Некачественный лид'
-                      AND COALESCE("Стадия сделки", '') <> 'Получившие демо-доступ' THEN 1
-                 WHEN COALESCE("Воронка", '') = 'Реактивация' AND COALESCE("Стадия сделки", '') <> 'Некачественный лид' THEN 1
-                 WHEN lower(COALESCE("Стадия сделки", '')) LIKE '%неквал%'
-                      OR lower(COALESCE("Стадия сделки", '')) LIKE '%некачеств%'
-                      OR lower(COALESCE("Стадия сделки", '')) LIKE '%дубл%'
-                      OR lower(COALESCE("Стадия сделки", '')) LIKE '%спам%'
-                      OR lower(COALESCE("Стадия сделки", '')) LIKE '%чс%'
-                      OR lower(COALESCE("Стадия сделки", '')) LIKE '%тест%'
-                      OR lower(COALESCE("Стадия сделки", '')) LIKE '%неправильн%данн%'
-                 THEN 1
-                 ELSE 0
-               END) AS unqual,
-           SUM(CASE
-                 WHEN COALESCE("Воронка", '') IN ('B2B', 'B2C') AND COALESCE("Стадия сделки", '') = 'Сделка не заключена' THEN 1
-                 WHEN lower(COALESCE("Стадия сделки", '')) LIKE '%отказ%' THEN 1
-                 ELSE 0
-               END) AS refusal,
+           SUM(${bitrixLeadLogic.qual}) AS qual,
+           SUM(${bitrixLeadLogic.unqual}) AS unqual,
+           SUM(${bitrixLeadLogic.refusal}) AS refusal,
            SUM(CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END) AS paid_deals,
            SUM(CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN COALESCE(revenue_amount, 0) ELSE 0 END) AS revenue
          FROM mart_deals_enriched
@@ -595,32 +529,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          SELECT
            lower(trim(COALESCE("UTM Campaign", ''))) AS utm_campaign_key,
            COUNT(*) AS leads,
-           SUM(CASE
-                 WHEN COALESCE("Воронка", '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                      AND COALESCE("Стадия сделки", '') = 'Получившие демо-доступ' THEN 1
-                 WHEN COALESCE("Воронка", '') IN ('B2B', 'B2C') AND COALESCE("Стадия сделки", '') <> 'Сделка не заключена' THEN 1
-                 ELSE 0
-               END) AS qual,
-           SUM(CASE
-                 WHEN COALESCE("Воронка", '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                      AND COALESCE("Стадия сделки", '') <> 'Некачественный лид'
-                      AND COALESCE("Стадия сделки", '') <> 'Получившие демо-доступ' THEN 1
-                 WHEN COALESCE("Воронка", '') = 'Реактивация' AND COALESCE("Стадия сделки", '') <> 'Некачественный лид' THEN 1
-                 WHEN lower(COALESCE("Стадия сделки", '')) LIKE '%неквал%'
-                      OR lower(COALESCE("Стадия сделки", '')) LIKE '%некачеств%'
-                      OR lower(COALESCE("Стадия сделки", '')) LIKE '%дубл%'
-                      OR lower(COALESCE("Стадия сделки", '')) LIKE '%спам%'
-                      OR lower(COALESCE("Стадия сделки", '')) LIKE '%чс%'
-                      OR lower(COALESCE("Стадия сделки", '')) LIKE '%тест%'
-                      OR lower(COALESCE("Стадия сделки", '')) LIKE '%неправильн%данн%'
-                 THEN 1
-                 ELSE 0
-               END) AS unqual,
-           SUM(CASE
-                 WHEN COALESCE("Воронка", '') IN ('B2B', 'B2C') AND COALESCE("Стадия сделки", '') = 'Сделка не заключена' THEN 1
-                 WHEN lower(COALESCE("Стадия сделки", '')) LIKE '%отказ%' THEN 1
-                 ELSE 0
-               END) AS refusal,
+         SUM(${bitrixLeadLogic.qual}) AS qual,
+         SUM(${bitrixLeadLogic.unqual}) AS unqual,
+         SUM(${bitrixLeadLogic.refusal}) AS refusal,
            SUBSTR(GROUP_CONCAT(COALESCE("ID", '')), 1, 50000) AS fl_ids,
            SUM(CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END) AS paid_deals,
            SUM(CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN COALESCE(revenue_amount, 0) ELSE 0 END) AS revenue
@@ -861,70 +772,11 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            month,
            COALESCE(NULLIF(trim(course_code_norm), ''), '—') AS course_code,
            COALESCE(revenue_amount, 0) AS revenue_amount,
-           CASE
-             -- Холодная воронка: Получившие демо-доступ квал с 09.02.26 (month proxy >= 2026-02)
-             WHEN COALESCE("Воронка", '') = 'Холодная воронка'
-                  AND COALESCE("Стадия сделки", '') = 'Получившие демо-доступ'
-                  AND COALESCE(month, '') >= '2026-02' THEN 1
-             -- B2B/B2C: всё кроме Сделка не заключена — квал
-             WHEN COALESCE("Воронка", '') IN ('B2B', 'B2C')
-                  AND COALESCE("Стадия сделки", '') <> 'Сделка не заключена'
-                  AND COALESCE("Стадия сделки", '') <> '' THEN 1
-             -- Реактивация: B2B отказ квал с 18.03.26 (month proxy >= 2026-03)
-             WHEN COALESCE("Воронка", '') = 'Реактивация'
-                  AND COALESCE("Стадия сделки", '') = 'B2B отказ'
-                  AND COALESCE(month, '') >= '2026-03' THEN 1
-             ELSE 0
-           END AS is_qual,
-           CASE
-             WHEN COALESCE("Воронка", '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE("Стадия сделки", '') <> 'Некачественный лид'
-                  AND COALESCE("Стадия сделки", '') <> 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE("Воронка", '') = 'Реактивация' AND COALESCE("Стадия сделки", '') <> 'Некачественный лид' THEN 1
-             WHEN lower(COALESCE("Стадия сделки", '')) LIKE '%неквал%'
-                  OR lower(COALESCE("Стадия сделки", '')) LIKE '%некачеств%'
-                  OR lower(COALESCE("Стадия сделки", '')) LIKE '%дубл%'
-                  OR lower(COALESCE("Стадия сделки", '')) LIKE '%спам%'
-                  OR lower(COALESCE("Стадия сделки", '')) LIKE '%чс%'
-                  OR lower(COALESCE("Стадия сделки", '')) LIKE '%тест%'
-                  OR lower(COALESCE("Стадия сделки", '')) LIKE '%неправильн%данн%'
-             THEN 1
-             ELSE 0
-           END AS is_unqual,
-           CASE
-             WHEN COALESCE("Воронка", '') IN ('B2B', 'B2C') AND COALESCE("Стадия сделки", '') = 'Сделка не заключена' THEN 1
-             WHEN lower(COALESCE("Стадия сделки", '')) LIKE '%отказ%' THEN 1
-             ELSE 0
-           END AS is_refusal,
-           CASE
-             WHEN lower(COALESCE("Стадия сделки", '')) LIKE '%неквал%'
-               OR lower(COALESCE("Стадия сделки", '')) LIKE '%некачеств%'
-               OR lower(COALESCE("Стадия сделки", '')) LIKE '%дубл%'
-               OR lower(COALESCE("Стадия сделки", '')) LIKE '%спам%'
-               OR lower(COALESCE("Стадия сделки", '')) LIKE '%чс%'
-               OR lower(COALESCE("Стадия сделки", '')) LIKE '%тест%'
-               OR lower(COALESCE("Стадия сделки", '')) LIKE '%неправильн%данн%'
-             THEN 1
-             ELSE 0
-           END AS is_invalid,
-           CASE
-             -- Горячая воронка: в работе = Взято в работу / Нет ответа / Перезвонить
-             WHEN COALESCE("Воронка", '') = 'Горячая воронка'
-                  AND COALESCE("Стадия сделки", '') IN ('Взято в работу', 'Нет ответа', 'Перезвонить') THEN 1
-             -- Холодная воронка: в работе = Взято в работу / Нет ответа / Перезвонить / Получившие демо-доступ
-             WHEN COALESCE("Воронка", '') = 'Холодная воронка'
-                  AND COALESCE("Стадия сделки", '') IN ('Взято в работу', 'Нет ответа', 'Перезвонить', 'Получившие демо-доступ') THEN 1
-             -- B2B: активные стадии сделки
-             WHEN COALESCE("Воронка", '') = 'B2B'
-                  AND COALESCE("Стадия сделки", '') IN ('Новая сделка', 'Потенциал 01', 'Выбор 03', 'Кастомный запрос', 'Согласование КП', 'Тендер', 'Согласование договора', 'Счет выставлен', 'Постоплата') THEN 1
-             -- B2C: активные стадии сделки
-             WHEN COALESCE("Воронка", '') = 'B2C'
-                  AND COALESCE("Стадия сделки", '') IN ('Новая заявка', 'Взято в работу', 'Консультация с экспертом', 'Консультация назначена', 'Потенциал 01', 'Выбор 03', 'Готов к покупке') THEN 1
-             -- Реактивация: только В проработке, нет ответа
-             WHEN COALESCE("Воронка", '') = 'Реактивация'
-                  AND COALESCE("Стадия сделки", '') = 'В проработке, нет ответа' THEN 1
-             ELSE 0
-           END AS is_in_work,
+           ${bitrixLeadLogic.qual} AS is_qual,
+           ${bitrixLeadLogic.unqual} AS is_unqual,
+           ${bitrixLeadLogic.refusal} AS is_refusal,
+           ${bitrixLeadLogic.invalid} AS is_invalid,
+           ${bitrixLeadLogic.inWork} AS is_in_work,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched
          WHERE COALESCE(month, '') <> ''
@@ -977,55 +829,11 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
            COALESCE(m."ID", '') AS deal_id,
            COALESCE(m.revenue_amount, 0) AS revenue_amount,
-           CASE
-             WHEN COALESCE(m."Воронка", '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE(m."Стадия сделки", '') = 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE(m."Воронка", '') IN ('B2B', 'B2C') AND COALESCE(m."Стадия сделки", '') <> 'Сделка не заключена' THEN 1
-             ELSE 0
-           END AS is_qual,
-           CASE
-             WHEN COALESCE(m."Воронка", '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE(m."Стадия сделки", '') <> 'Некачественный лид'
-                  AND COALESCE(m."Стадия сделки", '') <> 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE(m."Воронка", '') = 'Реактивация' AND COALESCE(m."Стадия сделки", '') <> 'Некачественный лид' THEN 1
-             WHEN lower(COALESCE(m."Стадия сделки", '')) LIKE '%неквал%'
-                  OR lower(COALESCE(m."Стадия сделки", '')) LIKE '%некачеств%'
-                  OR lower(COALESCE(m."Стадия сделки", '')) LIKE '%дубл%'
-                  OR lower(COALESCE(m."Стадия сделки", '')) LIKE '%спам%'
-                  OR lower(COALESCE(m."Стадия сделки", '')) LIKE '%чс%'
-                  OR lower(COALESCE(m."Стадия сделки", '')) LIKE '%тест%'
-                  OR lower(COALESCE(m."Стадия сделки", '')) LIKE '%неправильн%данн%'
-             THEN 1
-             ELSE 0
-           END AS is_unqual,
-           CASE
-             WHEN COALESCE(m."Воронка", '') IN ('B2B', 'B2C') AND COALESCE(m."Стадия сделки", '') = 'Сделка не заключена' THEN 1
-             WHEN lower(COALESCE(m."Стадия сделки", '')) LIKE '%отказ%' THEN 1
-             ELSE 0
-           END AS is_refusal,
-           CASE
-             WHEN lower(COALESCE(m."Стадия сделки", '')) LIKE '%неквал%'
-               OR lower(COALESCE(m."Стадия сделки", '')) LIKE '%некачеств%'
-               OR lower(COALESCE(m."Стадия сделки", '')) LIKE '%дубл%'
-               OR lower(COALESCE(m."Стадия сделки", '')) LIKE '%спам%'
-               OR lower(COALESCE(m."Стадия сделки", '')) LIKE '%чс%'
-               OR lower(COALESCE(m."Стадия сделки", '')) LIKE '%тест%'
-               OR lower(COALESCE(m."Стадия сделки", '')) LIKE '%неправильн%данн%'
-             THEN 1
-             ELSE 0
-           END AS is_invalid,
-           CASE
-             WHEN COALESCE(m."Стадия сделки", '') <> ''
-              AND lower(COALESCE(m."Стадия сделки", '')) NOT LIKE '%сделка заключена%'
-              AND lower(COALESCE(m."Стадия сделки", '')) NOT LIKE '%сделка закрыта%'
-              AND lower(COALESCE(m."Стадия сделки", '')) NOT LIKE '%отказ%'
-              AND lower(COALESCE(m."Стадия сделки", '')) NOT LIKE '%неквал%'
-              AND lower(COALESCE(m."Стадия сделки", '')) NOT LIKE '%спам%'
-              AND lower(COALESCE(m."Стадия сделки", '')) NOT LIKE '%дубл%'
-              AND lower(COALESCE(m."Стадия сделки", '')) NOT LIKE '%чс%'
-             THEN 1
-             ELSE 0
-           END AS is_in_work,
+           ${managerLeadLogic.qual} AS is_qual,
+           ${managerLeadLogic.unqual} AS is_unqual,
+           ${managerLeadLogic.refusal} AS is_refusal,
+           ${managerLeadLogic.invalid} AS is_invalid,
+           ${managerLeadLogic.inWork} AS is_in_work,
            CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched m
          LEFT JOIN raw_bitrix_deals_p01 p ON p."ID" = m."ID"
@@ -1414,32 +1222,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        mflags AS (
          SELECT
            COALESCE(yandex_month, '') AS month,
-           CASE
-             WHEN COALESCE(funnel, '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE(stage, '') = 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE(funnel, '') IN ('B2B', 'B2C') AND COALESCE(stage, '') <> 'Сделка не заключена' THEN 1
-             ELSE 0
-           END AS qual,
-           CASE
-             WHEN COALESCE(funnel, '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE(stage, '') <> 'Некачественный лид'
-                  AND COALESCE(stage, '') <> 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE(funnel, '') = 'Реактивация' AND COALESCE(stage, '') <> 'Некачественный лид' THEN 1
-             WHEN lower(COALESCE(stage, '')) LIKE '%неквал%'
-                  OR lower(COALESCE(stage, '')) LIKE '%некачеств%'
-                  OR lower(COALESCE(stage, '')) LIKE '%дубл%'
-                  OR lower(COALESCE(stage, '')) LIKE '%спам%'
-                  OR lower(COALESCE(stage, '')) LIKE '%чс%'
-                  OR lower(COALESCE(stage, '')) LIKE '%тест%'
-                  OR lower(COALESCE(stage, '')) LIKE '%неправильн%данн%'
-             THEN 1
-             ELSE 0
-           END AS unqual,
-           CASE
-             WHEN COALESCE(funnel, '') IN ('B2B', 'B2C') AND COALESCE(stage, '') = 'Сделка не заключена' THEN 1
-             WHEN lower(COALESCE(stage, '')) LIKE '%отказ%' THEN 1
-             ELSE 0
-           END AS refusal,
+           ${yandexLeadLogic.qual} AS qual,
+           ${yandexLeadLogic.unqual} AS unqual,
+           ${yandexLeadLogic.refusal} AS refusal,
            1 AS leads
          FROM mart_yandex_leads_raw
          WHERE COALESCE(yandex_month, '') <> ''
@@ -1493,32 +1278,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE(project_name, '') AS campaign_name,
            COALESCE(campaign_id, '') AS campaign_id,
            COALESCE(yandex_month, '') AS month,
-           CASE
-             WHEN COALESCE(funnel, '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE(stage, '') = 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE(funnel, '') IN ('B2B', 'B2C') AND COALESCE(stage, '') <> 'Сделка не заключена' THEN 1
-             ELSE 0
-           END AS qual,
-           CASE
-             WHEN COALESCE(funnel, '') IN ('Входящие лиды', 'Горячая воронка', 'Холодная воронка', 'Карьерная консультация')
-                  AND COALESCE(stage, '') <> 'Некачественный лид'
-                  AND COALESCE(stage, '') <> 'Получившие демо-доступ' THEN 1
-             WHEN COALESCE(funnel, '') = 'Реактивация' AND COALESCE(stage, '') <> 'Некачественный лид' THEN 1
-             WHEN lower(COALESCE(stage, '')) LIKE '%неквал%'
-                  OR lower(COALESCE(stage, '')) LIKE '%некачеств%'
-                  OR lower(COALESCE(stage, '')) LIKE '%дубл%'
-                  OR lower(COALESCE(stage, '')) LIKE '%спам%'
-                  OR lower(COALESCE(stage, '')) LIKE '%чс%'
-                  OR lower(COALESCE(stage, '')) LIKE '%тест%'
-                  OR lower(COALESCE(stage, '')) LIKE '%неправильн%данн%'
-             THEN 1
-             ELSE 0
-           END AS unqual,
-           CASE
-             WHEN COALESCE(funnel, '') IN ('B2B', 'B2C') AND COALESCE(stage, '') = 'Сделка не заключена' THEN 1
-             WHEN lower(COALESCE(stage, '')) LIKE '%отказ%' THEN 1
-             ELSE 0
-           END AS refusal,
+           ${yandexLeadLogic.qual} AS qual,
+           ${yandexLeadLogic.unqual} AS unqual,
+           ${yandexLeadLogic.refusal} AS refusal,
            1 AS leads
          FROM mart_yandex_leads_raw
          WHERE COALESCE(yandex_month, '') <> ''

@@ -1,7 +1,27 @@
 {
   "schema_version": "2026-03-19",
   "source_document": "documents/Логика квал_не квал в битриксе (19.03.26).docx",
+  "source_pdf": "bitrix_logic.pdf",
   "refusal_tracking_from": "2026-03-01",
+  "notes": [
+    "Extracted and cross-checked against bitrix_logic.pdf (9 pages)",
+    "B2B отказ in Реактивация becomes qual from 2026-03-18",
+    "Холодная воронка / Получившие демо-доступ becomes qual from 2026-02-09"
+  ],
+  "normalization": {
+    "funnel_aliases": {
+      "B2B": "Воронка B2B",
+      "Воронка B2B": "Воронка B2B",
+      "B2C": "Воронка B2C",
+      "Воронка B2C": "Воронка B2C"
+    },
+    "stage_aliases": {
+      "Бесплатники": "Беплатники",
+      "В проработке нет ответа": "В проработке, нет ответа",
+      "Консультация назначена ": "Консультация назначена",
+      "Новая сделка ": "Новая сделка"
+    }
+  },
   "value_legend": {
     "qual_state": [
       "qual",
