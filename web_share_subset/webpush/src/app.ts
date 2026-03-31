@@ -1025,6 +1025,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const isYandexProjectHierarchy = (view === "media_yandex" || view === "media_yandex_assoc_qa") && viewRows.some((r) => num(r["__yandex_project_detail"]) > 0);
   const isManagerHierarchy = view.startsWith("managers_");
   const isFunnelHierarchy = view === "funnels_hierarchy";
+  const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let visibleRows: Record<string, unknown>[] = [];
   const postJson = async (url: string, body: unknown): Promise<{ ok: boolean; rows?: number; error?: string }> => {
     try {
@@ -1053,6 +1054,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
   };
   const saveViewJson = async (): Promise<void> => {
+    if (!canSaveViewJson) return;
     const aliases = columnAliasesByView.get(view) || {};
     const rowsToSave: Record<string, unknown>[] = Object.keys(aliases).length > 0
       ? [{ __type: "column_aliases", ...aliases }, ...viewRows]
@@ -1187,7 +1189,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
 
     const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isYandexProjectHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy || isAssocYandexHierarchy;
     visibleRows = data;
-    const th = `${showCtrl ? '<th class="ctrl-col">#</th>' : ""}${cols.map((c) => `<th data-col="${escapeHtml(c)}" title="клик: сортировка · Ctrl+клик: переименовать">${escapeHtml(displayColName(view, c))}</th>`).join("")}`;
+    const th = `${showCtrl ? '<th class="ctrl-col">#</th>' : ""}${cols.map((c) => `<th data-col="${escapeHtml(c)}" title="${escapeHtml(canSaveViewJson ? "клик: сортировка · Ctrl+клик: переименовать" : "клик: сортировка")}">${escapeHtml(displayColName(view, c))}</th>`).join("")}`;
     const rendered = data.slice(0, 5000);
     visibleRows = rendered;
     const body = rendered.map((r, idx) => {
@@ -1261,7 +1263,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           : "";
       const row = `<tr>${showCtrl ? `<td class="ctrl-col">${emailBtn || emailOtherBtn || managerBtn || funnelBtn || yandexBtn || assocOtherBtn || assocEventBtn || assocYandexBtn || yProjectBtn}</td>` : ""}${cols
         .map((c) => {
-          const editable = isEditableDataColumn(c) ? "1" : "0";
+          const editable = canSaveViewJson && isEditableDataColumn(c) ? "1" : "0";
           return `<td data-row="${idx}" data-col="${escapeHtml(c)}" data-editable="${editable}">${escapeHtml(formatCell(c, r[c]))}</td>`;
         })
         .join("")}</tr>`;
@@ -1277,7 +1279,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         const c = h.getAttribute("data-col") || "";
         if (!c) return;
         const me = ev as MouseEvent;
-        if (me.metaKey || me.ctrlKey) {
+        if ((me.metaKey || me.ctrlKey) && canSaveViewJson) {
           if (h.querySelector("input")) return;
           const currentName = displayColName(view, c);
           const input = document.createElement("input");
@@ -1492,7 +1494,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       <input type="search" placeholder="Фильтр по строке…" class="filter-input" />
       <span class="row-note"></span>
     </div>
-    <div class="push-status muted"></div>
+    ${canSaveViewJson ? '<div class="push-status muted"></div>' : ""}
     <div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
     </main>
   </div>`;
@@ -1501,7 +1503,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const contactsFullBtn = app.querySelector<HTMLButtonElement>(".contacts-full-btn");
   const copyTableBtn = app.querySelector<HTMLButtonElement>(".copy-table-btn")!;
   const downloadTableBtn = app.querySelector<HTMLButtonElement>(".download-table-btn")!;
-  const status = app.querySelector<HTMLDivElement>(".push-status")!;
+  const status = app.querySelector<HTMLDivElement>(".push-status");
 
   app.querySelectorAll<HTMLButtonElement>(".top-tabs .tab-btn").forEach((btn) => {
     btn.onclick = async () => {
@@ -1513,7 +1515,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         const r = await fetchJson<Record<string, unknown>[]>(viewPath(first));
         void renderTable(first, r, dealsIndex);
       } catch (e) {
-        status.textContent = `Ошибка загрузки: ${String(e)}`;
+        if (status) status.textContent = `Ошибка загрузки: ${String(e)}`;
       }
     };
   });
@@ -1584,9 +1586,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
     try {
       await navigator.clipboard.writeText(lines.join("\n"));
-      status.textContent = `Скопировано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
+      if (status) status.textContent = `Скопировано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
     } catch (e) {
-      status.textContent = `Ошибка копирования: ${String(e)}`;
+      if (status) status.textContent = `Ошибка копирования: ${String(e)}`;
     }
   };
   downloadTableBtn.onclick = () => {
@@ -1604,7 +1606,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     a.click();
     a.remove();
     URL.revokeObjectURL(a.href);
-    status.textContent = `Скачано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
+    if (status) status.textContent = `Скачано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
   };
   draw();
 }
