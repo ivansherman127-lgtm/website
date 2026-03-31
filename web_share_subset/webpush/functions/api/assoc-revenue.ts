@@ -387,14 +387,7 @@ export async function onRequestGet(context: {
   const table = cohort === "attacking_january" ? "mart_attacking_january_cohort_deals" : "mart_deals_enriched";
   const specs = dims.map((d) => DIMENSIONS[d]);
 
-  const selectParts = specs.map((d, i) => {
-    // Apply yandex project group mapping if this dimension is yandex_campaign
-    if (d.key === "yandex_campaign") {
-      const mappedExpr = buildYandexProjectGroupSqlExpr(`NULLIF(TRIM(COALESCE(yandex_campaign_group, '')), '')`);
-      return `COALESCE(${mappedExpr}, '(пусто)') AS d${i + 1}`;
-    }
-    return `${d.expr} AS d${i + 1}`;
-  });
+  const selectParts = specs.map((d, i) => `${d.expr} AS d${i + 1}`);
   const dimColumns = specs.map((_, i) => `d${i + 1}`).join(", ");
   const dimColumnsQualified = specs.map((_, i) => `s.d${i + 1}`).join(", ");
   const emailSourceExpr = "LOWER(TRIM(COALESCE(\"UTM Source\", ''))) = 'sendsay'";
@@ -458,7 +451,12 @@ export async function onRequestGet(context: {
     let emailCampaignExpr = "'(без маппинга в email raw)'";
 
     if (hasYandexStats && (dims.includes("yandex_campaign") || dims.includes("yandex_ad"))) {
-      yandexCampaignExpr = buildYandexProjectGroupSqlExpr("ym.project_name");
+      const hasSourceUtmCampaign = await columnExists(context.env.DB, table, "UTM Campaign");
+      if (hasSourceUtmCampaign) {
+        yandexCampaignExpr = buildYandexProjectGroupSqlExpr(`src."UTM Campaign"`);
+      } else {
+        yandexCampaignExpr = buildYandexProjectGroupSqlExpr("ym.project_name");
+      }
     }
 
     if (hasEmailSends && dims.includes("email_campaign")) {
