@@ -32,14 +32,20 @@ function rowsToJson(rows: Record<string, unknown>[]): string {
   return JSON.stringify(cleaned);
 }
 
+// D1 has a ~1 MB per-row limit. Split large JSON bodies into chunks of this size.
+const CHUNK_SIZE = 900_000; // bytes (safe margin under 1 MB)
+
 async function upsertDataset(db: D1Database, path: string, body: string): Promise<void> {
   await db.prepare(`DELETE FROM dataset_json WHERE path = ?`).bind(path).run();
-  await db
-    .prepare(
-      `INSERT INTO dataset_json (path, chunk, body, updated_at) VALUES (?, 0, ?, datetime('now'))`,
-    )
-    .bind(path, body)
-    .run();
+  const chunks: string[] = [];
+  for (let i = 0; i < body.length; i += CHUNK_SIZE) {
+    chunks.push(body.slice(i, i + CHUNK_SIZE));
+  }
+  const stmt = db.prepare(
+    `INSERT INTO dataset_json (path, chunk, body, updated_at) VALUES (?, ?, ?, datetime('now'))`,
+  );
+  // D1 batch max is 100 statements; chunks per dataset will be far fewer than that
+  await db.batch(chunks.map((chunk, idx) => stmt.bind(path, idx, chunk)));
 }
 
 function sqlQuote(value: string): string {
