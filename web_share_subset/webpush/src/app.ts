@@ -6,24 +6,6 @@ import { mapYandexProjectGroup } from "./yandexProjectGroups";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const columnAliasesByView = new Map<string, Record<string, string>>();
 
-function monthLabelToIso(v: unknown): string {
-  const s = String(v ?? "").trim();
-  if (!s) return "";
-  const ym = /^(\d{4})-(\d{2})$/.exec(s);
-  if (ym) return `${ym[1]}-${ym[2]}`;
-  const ru = /^([А-Яа-яA-Za-z]+),\s*(\d{4})$/.exec(s);
-  if (!ru) return "";
-  const mon = monthNameToNumber(ru[1]);
-  if (!mon) return "";
-  return `${ru[2]}-${String(mon).padStart(2, "0")}`;
-}
-
-function inMonthRange(monthIso: string, fromIso: string, toIso: string): boolean {
-  if (!monthIso) return true;
-  if (fromIso && monthIso < fromIso) return false;
-  if (toIso && monthIso > toIso) return false;
-  return true;
-}
 
 async function fetchJson<T>(path: string): Promise<T> {
   const parseBody = (urlLabel: string, ct: string, txt: string): T => {
@@ -347,11 +329,6 @@ function managerFormulaNote(view: ViewKey): string {
   `;
 }
 
-const DEFAULT_WORKSHEET = "AJ associative revenue";
-const REVENUE_FLAG_COL = "Выручка_учитывается";
-const EVENT_COL = "Мероприятие";
-const PAY_DATE_COL = "Дата оплаты";
-const INVALID_MONTH_KEY = "Невалидная дата оплаты";
 
 type DealRow = Record<string, unknown>;
 type DealsIndex = { month: Map<string, DealRow[]>; event: Map<string, DealRow[]>; course: Map<string, DealRow[]> };
@@ -580,7 +557,7 @@ function regroupAssocEmailRows(rows: Record<string, unknown>[]): Record<string, 
     const labels = rowOrder.get(ctxKey)!;
     if (!labels.includes(group)) labels.push(group);
 
-    const groupedSeed = { ...row, "Email кампания": group };
+    const groupedSeed: Record<string, unknown> = { ...row, "Email кампания": group };
     if (group === EMAIL_OTHER_GROUP) groupedSeed["__assoc_email_other_group"] = 1;
     addAssoc(grouped, groupedKey, groupedSeed, row);
 
@@ -714,25 +691,6 @@ function toYandexMetrics(row: Record<string, unknown>): YandexLeadMetrics {
   };
 }
 
-function enrichYandexRow(row: Record<string, unknown>): Record<string, unknown> {
-  const ids = parseFlIds(row["fl_IDs"]);
-  let deals = 0;
-  let revenue = 0;
-  for (const id of ids) {
-    const m = dealRevenueById.get(id);
-    if (!m || !m.isRevenue) continue;
-    deals += 1;
-    revenue += m.revenue;
-  }
-  const spend = num(row["Расход, ₽"]);
-  const out = { ...row };
-  out["Сделок_с_выручкой"] = deals;
-  out["Выручка"] = revenue;
-  out["Прибыль"] = revenue - spend;
-  out["Средний_чек"] = deals > 0 ? revenue / deals : 0;
-  return out;
-}
-
 function addKpi(row: Record<string, unknown>): Record<string, unknown> {
   const leads = num(row["Лиды"]);
   const qual = num(row["Квал"]);
@@ -758,37 +716,7 @@ function pickNum(row: Record<string, unknown>, keys: string[]): number {
   return 0;
 }
 
-function parseMonthKey(v: unknown): string {
-  const s = String(v ?? "").trim();
-  if (!s) return "";
-  if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);
-  const m = s.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})/);
-  if (!m) return INVALID_MONTH_KEY;
-  return `${m[3]}-${m[2].padStart(2, "0")}`;
-}
-
-function toBool(v: unknown): boolean {
-  const s = String(v ?? "").trim().toLowerCase();
-  return s === "true" || s === "1" || s === "yes";
-}
-
-function buildDealsIndex(allDeals: DealRow[]): DealsIndex {
-  const month = new Map<string, DealRow[]>();
-  const event = new Map<string, DealRow[]>();
-  const course = new Map<string, DealRow[]>();
-  for (const d of allDeals) {
-    if (!toBool(d[REVENUE_FLAG_COL])) continue;
-    const mk = parseMonthKey(d[PAY_DATE_COL]);
-    const ev = String(d[EVENT_COL] ?? "").trim();
-    const cc = String(d["Нормализованный_код_курса"] ?? d["Код_курса_норм"] ?? d["Код_курса_сайт"] ?? "").trim();
-    if (mk) (month.get(mk) ?? (month.set(mk, []), month.get(mk)!)).push(d);
-    if (ev) (event.get(ev) ?? (event.set(ev, []), event.get(ev)!)).push(d);
-    if (cc) (course.get(cc) ?? (course.set(cc, []), course.get(cc)!)).push(d);
-  }
-  return { month, event, course };
-}
-
-function rowKey(view: ViewKey, row: Record<string, unknown>): string {
+function rowKey(_view: ViewKey, row: Record<string, unknown>): string {
   return [String(row["Level"] ?? ""), String(row["Месяц"] ?? ""), String(row["Название выпуска"] ?? ""), String(row["utm_campaign"] ?? "")].join("::");
 }
 
@@ -1095,8 +1023,6 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const isYandexHierarchy = false;
   const isYandexProjectHierarchy = (view === "media_yandex" || view === "media_yandex_assoc_qa") && viewRows.some((r) => num(r["__yandex_project_detail"]) > 0);
   const isManagerHierarchy = view.startsWith("managers_");
-  const isFunnelSourceHierarchy = false;
-  const isFunnelMediumHierarchy = false;
   const isFunnelHierarchy = view === "funnels_hierarchy";
   let visibleRows: Record<string, unknown>[] = [];
   const postJson = async (url: string, body: unknown): Promise<{ ok: boolean; rows?: number; error?: string }> => {
@@ -1119,18 +1045,12 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       ? [{ __type: "column_aliases", ...aliases }, ...viewRows]
       : [...viewRows];
     const local = await postJson("/api/save-view-json", { path: resolvedPath, rows: rowsToSave });
+    const s = app.querySelector<HTMLDivElement>(".push-status");
     if (local.ok) {
-      const s = app.querySelector<HTMLDivElement>(".push-status");
       if (s) s.textContent = `JSON обновлен локально (${(local.rows ?? viewRows.length).toLocaleString("ru-RU")} строк)`;
       return;
     }
-    const cloud = await postJson("/api/save-to-github", { path: resolvedPath, rows: rowsToSave });
-    const s = app.querySelector<HTMLDivElement>(".push-status");
-    if (cloud.ok) {
-      if (s) s.textContent = `JSON закоммичен в GitHub (${(cloud.rows ?? viewRows.length).toLocaleString("ru-RU")} строк)`;
-      return;
-    }
-    if (s) s.textContent = `Ошибка сохранения JSON: ${cloud.error || local.error || "unknown"}`;
+    if (s) s.textContent = `Ошибка сохранения JSON: ${local.error || "unknown"}`;
   };
 
   const draw = (): void => {
@@ -1271,11 +1191,6 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
                   : expandedManagerCodes.has(mmc) ? "−" : "+"
             }</button>`
           : "";
-      const fMonth = String(r["Месяц"] ?? "");
-      const fMedium = String(r["UTM Medium"] ?? "");
-      const fSource = String(r["UTM Source"] ?? "");
-      const fmm = `${fMonth}||${fMedium}`;
-      const fmms = `${fMonth}||${fMedium}||${fSource}`;
       const fNode = String(r["__node"] ?? "").trim();
       const fFunnel = String(r["__funnel"] ?? r["Воронка"] ?? "").trim();
       const fMonth2 = String(r["__month"] ?? r["Месяц"] ?? "").trim();
