@@ -78,6 +78,7 @@ function isMoneyColumn(col: string): boolean {
     c.includes("выруч") ||
     c === "средний_чек" ||
     c === "средний чек" ||
+    c.startsWith("средняя") ||
     c === "sum" ||
     c === "profit" ||
     c.includes("прибыл") ||
