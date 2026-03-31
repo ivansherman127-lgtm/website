@@ -1988,7 +1988,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        FROM dims d
        LEFT JOIN ystats ys ON ys.project_name = d.project_name AND ys.ad_id = d.ad_id
        LEFT JOIN ydeal yd ON yd.project_name = d.project_name AND yd.ad_id = d.ad_id
-       ORDER BY spend DESC, ad_id`;
+       ORDER BY spend DESC, d.ad_id`;
 
   const q11assocQa = await db.prepare(assocQaSql).all<Record<string, unknown>>();
   const assocQaRows = groupAssocQaRows(q11assocQa.results ?? []);
