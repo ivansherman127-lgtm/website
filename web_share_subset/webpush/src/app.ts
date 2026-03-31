@@ -1932,9 +1932,16 @@ async function boot(): Promise<void> {
     yandexMonthLeadMetrics.clear();
     // Regenerate all table JSONs fresh from D1 using the current campaign-group mapping.
     // Rate-limited server-side to 90 s so rapid reloads don't spam SQL.
-    try {
-      await fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" });
-    } catch { /* non-fatal: continue with last-materialized data */ }
+    // This must succeed before we fetch any table data, otherwise we'd read stale/missing rows.
+    const matRes = await fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" });
+    if (!matRes.ok) {
+      const errText = await matRes.text().catch(() => matRes.status.toString());
+      throw new Error(`Materialize failed (${matRes.status}): ${errText}`);
+    }
+    const matJson = await matRes.json() as { ok?: boolean; error?: string; skipped?: boolean };
+    if (!matJson.ok) {
+      throw new Error(`Materialize error: ${matJson.error ?? "unknown"}`);
+    }
     loadEmailOverridesMap(await fetch(staticUrl("data/email_group_overrides.json")).then(r => r.json() as Promise<EmailOverridesFile>));
     const yandexHierarchy = await fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
     for (const r of yandexHierarchy) {

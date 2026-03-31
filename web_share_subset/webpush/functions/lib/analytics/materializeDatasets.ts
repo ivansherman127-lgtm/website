@@ -185,7 +185,7 @@ function buildYandexAssocQaHierarchyRows(
   return out;
 }
 
-export async function materializeSliceDatasets(db: D1Database): Promise<{ paths: number }> {
+export async function materializeSliceDatasets(db: D1Database): Promise<{ paths: string[] }> {
   const paths: string[] = [];
   const hasRawP01 = await tableExists(db, "raw_bitrix_deals_p01");
   const hasSendsayContacts = await tableExists(db, "stg_sendsay_contacts");
@@ -2184,5 +2184,5 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   );
   paths.push("qa/yandex_campaign_mapping_seed.json");
 
-  return { paths: paths.length };
+  return { paths };
 }

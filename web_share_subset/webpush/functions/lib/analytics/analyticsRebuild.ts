@@ -54,6 +54,6 @@ export async function runAnalyticsRebuild(
     mart_deals_rows: mart.rows,
     yandex_raw_rows: yx.raw_rows,
     yandex_dedup_rows: yx.dedup_rows,
-    dataset_paths: ds.paths,
+    dataset_paths: ds.paths.length,
   };
 }

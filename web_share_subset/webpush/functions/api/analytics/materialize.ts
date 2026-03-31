@@ -40,18 +40,28 @@ export async function onRequestPost(context: {
   }
 
   try {
-    // Clear ALL dataset_json rows before regenerating so stale paths from old
-    // code/mapping versions don't remain in D1.
-    await db.prepare(`DELETE FROM dataset_json`).run();
-
+    // Run materialization FIRST — only delete stale paths after success.
+    // Never delete upfront: if materialization fails mid-way, old data is
+    // still readable instead of returning 404 for every path.
     const result = await materializeSliceDatasets(db);
+
+    // Delete paths that were NOT written in this run (cleanup stale entries).
+    const written = result.paths;
+    if (written.length) {
+      const placeholders = written.map(() => "?").join(", ");
+      await db
+        .prepare(`DELETE FROM dataset_json WHERE path NOT IN (${placeholders})`)
+        .bind(...written)
+        .run();
+    }
+
     await db
       .prepare(
         `INSERT OR REPLACE INTO analytics_build_meta (k, v, updated_at) VALUES (?, ?, datetime('now'))`,
       )
       .bind(RATE_LIMIT_KEY, new Date().toISOString())
       .run();
-    return new Response(JSON.stringify({ ok: true, datasets: result.paths }), {
+    return new Response(JSON.stringify({ ok: true, datasets: written.length }), {
       status: 200,
       headers: { "content-type": "application/json; charset=utf-8" },
     });
