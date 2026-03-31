@@ -5,7 +5,7 @@ import { groupYandexProjectsNoMonth } from "./yandexProjectsNoMonth";
 import { sqlExtractYandexAdId } from "./yandexAdId";
 import { buildYdHierarchyRows } from "./ydHierarchy";
 import { buildBitrixContactsUidRows } from "./bitrixContactsUid";
-import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS, mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
+import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS, YANDEX_KNOWN_GROUPS, mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
 
 async function tableExists(db: D1Database, tableName: string): Promise<boolean> {
   const row = await db
@@ -49,9 +49,19 @@ function sqlQuote(value: string): string {
 function buildYandexProjectGroupSqlExpr(rawExpr: string): string {
   const trimmed = `NULLIF(TRIM(COALESCE(${rawExpr}, '')), '')`;
   if (!YANDEX_PROJECT_GROUP_ALIAS_PAIRS.length) return `COALESCE(${trimmed}, 'UNMAPPED')`;
+  // Use 'UNMAPPED' as the ELSE fallback so only JSON-defined group names ever appear in the output.
   return `COALESCE(CASE ${trimmed} ${YANDEX_PROJECT_GROUP_ALIAS_PAIRS
     .map(([alias, group]) => `WHEN ${sqlQuote(alias)} THEN ${sqlQuote(group)}`)
-    .join(" ")} ELSE ${trimmed} END, 'UNMAPPED')`;
+    .join(" ")} ELSE 'UNMAPPED' END, 'UNMAPPED')`;
+}
+
+/** Map a raw or already-mapped project name to a known JSON group, falling back to 'UNMAPPED'. */
+function toKnownGroup(rawOrMapped: unknown): string {
+  const mapped = mapYandexProjectGroup(rawOrMapped);
+  if (YANDEX_KNOWN_GROUPS.has(mapped)) return mapped;
+  // Already a known group name passed through (SQL pre-mapped) or a raw alias that maps to a group.
+  if (YANDEX_KNOWN_GROUPS.has(String(rawOrMapped ?? "").trim())) return String(rawOrMapped ?? "").trim();
+  return "UNMAPPED";
 }
 
 function isValidYandexAdId(value: unknown): boolean {
@@ -61,7 +71,7 @@ function isValidYandexAdId(value: unknown): boolean {
 function groupAssocQaRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
   const agg = new Map<string, Record<string, unknown>>();
   for (const row of rows) {
-    const project = mapYandexProjectGroup(row.project_name);
+    const project = toKnownGroup(row.project_name);
     const current = agg.get(project);
     if (!current) {
       agg.set(project, {
@@ -87,7 +97,7 @@ function buildYandexNoMonthHierarchyRows(
 ): Record<string, unknown>[] {
   const byProject = new Map<string, Record<string, unknown>[]>();
   for (const raw of adRows) {
-    const project = mapYandexProjectGroup(raw.project_name);
+    const project = toKnownGroup(raw.project_name);
     const adId = String(raw.ad_id ?? "").trim();
     if (!project || !isValidYandexAdId(adId)) continue;
     const child = {
@@ -1996,13 +2006,13 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   paths.push("qa/yandex_assoc_revenue_qa.json");
 
   const q11rows = (q11.results ?? []).map((r) => ({
-    project_name: mapYandexProjectGroup(r.project_name),
+    project_name: toKnownGroup(r.project_name),
     leads_raw: Number(r.leads_raw ?? 0) || 0,
     payments_count: Number(r.payments_count ?? 0) || 0,
     paid_deals_raw: Number(r.paid_deals_raw ?? 0) || 0,
     revenue_raw: Number(r.revenue_raw ?? 0) || 0,
     spend: Number(r.spend ?? 0) || 0,
-    assoc_revenue: assocRevenueByProject.get(mapYandexProjectGroup(r.project_name)) ?? 0,
+    assoc_revenue: assocRevenueByProject.get(toKnownGroup(r.project_name)) ?? 0,
   }));
 
   const grouped = groupYandexProjectsNoMonth(q11rows);

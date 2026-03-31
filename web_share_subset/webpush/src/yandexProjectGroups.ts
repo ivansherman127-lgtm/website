@@ -42,6 +42,13 @@ for (const [groupLabel, aliases] of Object.entries(YANDEX_PROJECT_GROUPS.groups)
 
 export const YANDEX_PROJECT_GROUP_ALIAS_PAIRS: Array<[string, string]> = [...aliasToGroup.entries()];
 
+/** Set of canonical group labels defined in yandex_campaign_groups.json (trimmed). */
+export const YANDEX_KNOWN_GROUPS = new Set<string>(
+  Object.keys(YANDEX_PROJECT_GROUPS.groups)
+    .map((label) => String(label ?? "").trim())
+    .filter(Boolean),
+);
+
 export function mapYandexProjectGroup(projectName: unknown): string {
   const project = String(projectName ?? "").trim();
   if (!project) return "UNMAPPED";

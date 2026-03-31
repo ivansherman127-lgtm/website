@@ -20,7 +20,7 @@ async function fetchJson<T>(path: string): Promise<T> {
   };
 
   const url1 = dataUrl(path);
-  const r1 = await fetch(url1);
+  const r1 = await fetch(url1, { cache: "no-store" });
   if (!r1.ok) {
     if (path.startsWith("/api/assoc-revenue") && r1.status === 404) {
       return [] as T;
@@ -36,7 +36,7 @@ async function fetchJson<T>(path: string): Promise<T> {
     const base = import.meta.env.BASE_URL || "/";
     const altUrl = url1.startsWith("/api/") ? `${base}${path.slice(1)}` : path;
     if (altUrl !== url1) {
-      const r2 = await fetch(altUrl);
+      const r2 = await fetch(altUrl, { cache: "no-store" });
       if (r2.ok) {
         const ct2 = (r2.headers.get("content-type") || "").toLowerCase();
         const txt2 = await r2.text();
@@ -1930,6 +1930,11 @@ async function boot(): Promise<void> {
     dealRevenueById.clear();
     yandexProjectLeadMetrics.clear();
     yandexMonthLeadMetrics.clear();
+    // Regenerate all table JSONs fresh from D1 using the current campaign-group mapping.
+    // Rate-limited server-side to 90 s so rapid reloads don't spam SQL.
+    try {
+      await fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" });
+    } catch { /* non-fatal: continue with last-materialized data */ }
     loadEmailOverridesMap(await fetch(staticUrl("data/email_group_overrides.json")).then(r => r.json() as Promise<EmailOverridesFile>));
     const yandexHierarchy = await fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
     for (const r of yandexHierarchy) {

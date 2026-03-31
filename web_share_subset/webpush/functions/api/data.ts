@@ -29,7 +29,7 @@ export async function onRequestGet(context: {
       status: 200,
       headers: {
         "content-type": "application/json; charset=utf-8",
-        "cache-control": "public, max-age=60",
+        "cache-control": "no-store, no-cache",
       },
     });
   }
@@ -52,7 +52,7 @@ export async function onRequestGet(context: {
         status: 200,
         headers: {
           "content-type": "application/json; charset=utf-8",
-          "cache-control": "public, max-age=60",
+          "cache-control": "no-store, no-cache",
         },
       });
     }
@@ -62,7 +62,7 @@ export async function onRequestGet(context: {
         status: 200,
         headers: {
           "content-type": "application/json; charset=utf-8",
-          "cache-control": "public, max-age=60",
+          "cache-control": "no-store, no-cache",
         },
       });
     }
@@ -76,7 +76,7 @@ export async function onRequestGet(context: {
     status: 200,
     headers: {
       "content-type": "application/json; charset=utf-8",
-      "cache-control": "public, max-age=60",
+      "cache-control": "no-store, no-cache",
     },
   });
 }

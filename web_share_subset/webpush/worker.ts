@@ -3,6 +3,7 @@ import { onRequestGet as dataGet } from "./functions/api/data";
 import { onRequestGet as cohortDealsGet } from "./functions/api/cohort-deals";
 import { onRequestGet as protectedTableGet } from "./functions/api/protected-table";
 import { onRequestPost as analyticsRebuildPost } from "./functions/api/analytics/rebuild";
+import { onRequestPost as analyticsMaterializePost } from "./functions/api/analytics/materialize";
 
 interface Env {
   DB: D1Database;
@@ -65,6 +66,11 @@ export default {
     if (pathname === "/api/analytics/rebuild") {
       if (request.method !== "POST") return methodNotAllowed();
       return analyticsRebuildPost({ request, env });
+    }
+
+    if (pathname === "/api/analytics/materialize") {
+      if (request.method !== "POST") return methodNotAllowed();
+      return analyticsMaterializePost({ request, env });
     }
 
     return env.ASSETS.fetch(request);
