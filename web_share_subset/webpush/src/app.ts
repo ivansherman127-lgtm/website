@@ -530,7 +530,7 @@ function writeUrlState(menu: MenuMode, view?: ViewKey): void {
 
 function viewPath(view: ViewKey): string {
   if (view === "assoc_dynamic") {
-    return "/api/assoc-revenue?dims=event,month";
+    return "/api/assoc-revenue?dims=event";
   }
   return VIEW_META[view].path;
 }
@@ -968,6 +968,10 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
     for (const [k, v] of Object.entries(r)) {
       const lk = k.trim().toLowerCase();
       if (!k.startsWith("Unnamed:") && !lk.includes("остаток")) out[k] = v;
+    }
+    if (!("Неизвестно" in out)) {
+      if ("Unknown" in out) out["Неизвестно"] = out["Unknown"];
+      else if ("unknown" in out) out["Неизвестно"] = out["unknown"];
     }
     return out;
   });
