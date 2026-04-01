@@ -2189,7 +2189,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       }
       <span class="row-note"></span>
     </div>
-    <div class="table-filter-row"><input type="search" placeholder="Фильтр по строке…" class="filter-input" /></div>
+    ${isUtmConstructor ? "" : '<div class="table-filter-row"><input type="search" placeholder="Фильтр по строке…" class="filter-input" /></div>'}
     ${canSaveViewJson ? '<div class="push-status muted"></div>' : ""}
     ${
       isUtmConstructor
@@ -2206,8 +2206,10 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         <label>Name (Campaign)
           <span class="utm-campaign-row">
             <input class="utm-campaign-input" type="text" placeholder="Например, spring_sale_2026" />
-            <label class="utm-partner-toggle-wrap" style="display:none"><input type="checkbox" class="utm-partner-toggle" /> Partner</label>
-            <input class="utm-partner-input" type="text" placeholder="Partner" style="display:none" />
+            <span class="utm-partner-field">
+              <label class="utm-partner-toggle-wrap" style="display:none" title="Partner"><input type="checkbox" class="utm-partner-toggle" aria-label="Partner" /></label>
+              <input class="utm-partner-input" type="text" placeholder="Partner" style="display:none" />
+            </span>
           </span>
         </label>
         <label>Link

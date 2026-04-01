@@ -564,6 +564,34 @@ tbody tr:hover {
   font-size: 0.82rem;
 }
 
+.utm-campaign-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.utm-partner-field {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.utm-partner-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.utm-grid input.utm-partner-toggle {
+  width: 12px;
+  height: 12px;
+  min-height: 12px;
+  padding: 0;
+  margin: 0;
+  border-radius: 3px;
+}
+
 .utm-grid input,
 .utm-grid select,
 .utm-actions button,
