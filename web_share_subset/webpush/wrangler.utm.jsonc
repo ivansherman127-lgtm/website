@@ -14,6 +14,9 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "routes": [
+    "new.cyber-ed.ru/*"
+  ],
   "d1_databases": [
     {
       "binding": "UTM",
