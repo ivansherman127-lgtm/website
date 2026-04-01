@@ -40,6 +40,22 @@ Deploy UTM-only:
 npm run worker:deploy:utm
 ```
 
+Cloudflare Git deploy settings (repo root = `website`):
+
+- Build/deploy command for UTM-only service:
+
+```bash
+npm run cf:deploy:utm
+```
+
+- Build/deploy command for analytics service:
+
+```bash
+npm run cf:deploy:analytics
+```
+
+Why this matters: if Cloudflare runs `wrangler deploy` with the default/root config, it expects `web_share_subset/webpush/dist`. UTM-only builds output `web_share_subset/webpush/dist-utm`, so you must deploy with `--config web_share_subset/webpush/wrangler.utm.jsonc`.
+
 The UTM worker serves only `/api/utm` and static UTM page assets. Other `/api/*` paths return `404`.
 
 ## D1 sync from local SQLite
