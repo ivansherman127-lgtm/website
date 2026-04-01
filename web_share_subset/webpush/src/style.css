@@ -189,6 +189,57 @@ header .sub {
   font-size: 0.95rem;
 }
 
+.date-window-control {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.date-window-control label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.date-window-control input[type="range"] {
+  width: min(340px, 100%);
+}
+
+.date-window-control .date-window-value {
+  min-width: 70px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.week-expand-btn {
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #cbd5e1;
+  cursor: pointer;
+  margin-right: 0.4rem;
+}
+
+.yweek-expand-btn {
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #cbd5e1;
+  cursor: pointer;
+  margin-right: 0.4rem;
+}
+
+.week-row td {
+  font-weight: 600;
+  background: #141b29;
+}
+
+.week-child-row td {
+  background: #101624;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -233,6 +284,18 @@ header .sub {
   background: var(--bg);
   color: var(--text);
   font: inherit;
+}
+
+.toolbar .date-window-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.toolbar .date-window-slider {
+  width: 150px;
 }
 
 .toolbar .view-select {

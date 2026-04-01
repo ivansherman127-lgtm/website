@@ -112,6 +112,8 @@ function buildYandexNoMonthHierarchyRows(
       project_name: project,
       ad_id: adId,
       ad_title: String(raw.ad_title ?? "").trim(),
+      first_month: String(raw.first_month ?? "").trim(),
+      last_month: String(raw.last_month ?? "").trim(),
       leads_raw: Number(raw.leads_raw ?? 0) || 0,
       payments_count: Number(raw.payments_count ?? raw.paid_deals_raw ?? 0) || 0,
       paid_deals_raw: Number(raw.paid_deals_raw ?? raw.payments_count ?? 0) || 0,
@@ -302,7 +304,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          UNION
          SELECT spend_month AS month FROM spend_by_month WHERE COALESCE(spend_month, '') <> ''
        )
-       SELECT "Level", "Период", "Сделок_с_выручкой", "Выручка", "Расход, ₽", "Прибыль", month, "__pay_month"
+      SELECT "Level", "Период", "Сделок_с_выручкой", "Выручка", "Расход, ₽", "Прибыль", month, "__pay_month"
        FROM (
          -- Month header rows
          SELECT
@@ -315,7 +317,6 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            month,
            month AS "__pay_month",
            0 AS _sort_level,
-           0 AS _sort_total,
            '' AS _sort_lead_month
          FROM all_months am
          LEFT JOIN paid_revenue pr ON pr.pay_month = am.month
@@ -332,26 +333,11 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            pbc.pay_month AS month,
            pbc.pay_month AS "__pay_month",
            1 AS _sort_level,
-           0 AS _sort_total,
            COALESCE(pbc.lead_month, '') AS _sort_lead_month
          FROM paid_revenue_by_creation pbc
          WHERE COALESCE(pbc.pay_month, '') <> ''
-         UNION ALL
-         -- Total row
-         SELECT
-           'Total' AS "Level",
-           'Итого' AS "Период",
-           (SELECT COALESCE(SUM(paid_deals), 0) FROM paid_revenue) AS "Сделок_с_выручкой",
-           (SELECT COALESCE(SUM(revenue), 0) FROM paid_revenue) AS "Выручка",
-           (SELECT COALESCE(SUM(spend), 0) FROM spend_by_month) AS "Расход, ₽",
-           (SELECT COALESCE(SUM(revenue), 0) FROM paid_revenue) - (SELECT COALESCE(SUM(spend), 0) FROM spend_by_month) AS "Прибыль",
-           '' AS month,
-           '' AS "__pay_month",
-           0 AS _sort_level,
-           1 AS _sort_total,
-           '' AS _sort_lead_month
        ) q
-       ORDER BY month DESC, _sort_total ASC, _sort_level ASC, _sort_lead_month DESC`,
+       ORDER BY month DESC, _sort_level ASC, _sort_lead_month DESC`,
     )
     .all<Record<string, unknown>>();
   await upsertDataset(db, "global/budget_monthly.json", rowsToJson((budgetMonthly.results ?? []) as Record<string, unknown>[]));
@@ -380,6 +366,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          COUNT(*) AS "Лиды",
          SUM(is_qual) AS "Квал",
          SUM(is_unqual) AS "Неквал",
+         SUM(CASE WHEN is_qual = 0 AND is_unqual = 0 THEN 1 ELSE 0 END) AS "Неизвестно",
          SUM(is_refusal) AS "Отказы",
          SUM(is_in_work) AS "В работе",
          SUM(is_invalid) AS "Невалидные_лиды",
@@ -397,6 +384,220 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     .all<Record<string, unknown>>();
   await upsertDataset(db, "bitrix_month_total_full.json", rowsToJson((bitrixMonthTotal.results ?? []) as Record<string, unknown>[]));
   paths.push("bitrix_month_total_full.json");
+
+  const bitrixWeekFunnelTotal = await db
+    .prepare(
+      `WITH src AS (
+         SELECT
+           CASE
+             WHEN COALESCE("Дата создания", '') LIKE '____-__-__%' THEN SUBSTR("Дата создания", 1, 10)
+             WHEN COALESCE("Дата создания", '') LIKE '__.__.____%' THEN SUBSTR("Дата создания", 7, 4) || '-' || SUBSTR("Дата создания", 4, 2) || '-' || SUBSTR("Дата создания", 1, 2)
+             ELSE ''
+           END AS created_date,
+           CASE
+             WHEN COALESCE("Дата оплаты", '') LIKE '____-__-__%' THEN SUBSTR("Дата оплаты", 1, 10)
+             WHEN COALESCE("Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR("Дата оплаты", 7, 4) || '-' || SUBSTR("Дата оплаты", 4, 2) || '-' || SUBSTR("Дата оплаты", 1, 2)
+             ELSE ''
+           END AS paid_date,
+           COALESCE(NULLIF(trim(funnel_group), ''), 'Другое') AS funnel_group,
+           COALESCE(revenue_amount, 0) AS revenue_amount,
+           ${bitrixLeadLogic.qual} AS is_qual,
+           ${bitrixLeadLogic.unqual} AS is_unqual,
+           ${bitrixLeadLogic.refusal} AS is_refusal,
+           ${bitrixLeadLogic.invalid} AS is_invalid,
+           ${bitrixLeadLogic.inWork} AS is_in_work,
+           CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
+         FROM mart_deals_enriched
+       ),
+       base AS (
+         SELECT
+           date(created_date) AS created_dt,
+           CASE WHEN paid_date <> '' THEN date(paid_date) ELSE NULL END AS paid_dt,
+           date(created_date, printf('-%d days', (CAST(strftime('%w', date(created_date)) AS INTEGER) + 6) % 7)) AS week_start,
+           CASE
+             WHEN paid_date <> '' THEN date(paid_date, printf('-%d days', (CAST(strftime('%w', date(paid_date)) AS INTEGER) + 6) % 7))
+             ELSE NULL
+           END AS paid_week_start,
+           funnel_group,
+           revenue_amount,
+           is_qual,
+           is_unqual,
+           is_refusal,
+           is_invalid,
+           is_in_work,
+           is_revenue
+         FROM src
+         WHERE created_date <> ''
+       ),
+       latest AS (
+         SELECT MAX(created_dt) AS latest_created_dt FROM base WHERE created_dt IS NOT NULL
+       )
+       SELECT
+         week_start AS "Неделя",
+         funnel_group AS "Воронка",
+         COUNT(*) AS "Лиды",
+         SUM(is_qual) AS "Квал",
+         SUM(is_unqual) AS "Неквал",
+         SUM(CASE WHEN is_qual = 0 AND is_unqual = 0 THEN 1 ELSE 0 END) AS "Неизвестно",
+         SUM(is_refusal) AS "Отказы",
+         SUM(is_in_work) AS "В работе",
+         SUM(is_invalid) AS "Невалидные_лиды",
+         SUM(is_revenue) AS "Сделок_с_выручкой",
+         SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка_сделки_недели",
+         SUM(CASE WHEN is_revenue = 1 AND paid_week_start = week_start THEN revenue_amount ELSE 0 END) AS "Выручка_получена_на_неделе",
+         MAX(created_dt) AS "Макс_дата_в_строке",
+         (SELECT latest_created_dt FROM latest) AS "Дата_последней_записи_Bitrix",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе"
+       FROM base
+       WHERE created_dt IS NOT NULL
+         AND week_start IS NOT NULL
+         AND created_dt >= date((SELECT latest_created_dt FROM latest), '-6 day')
+       GROUP BY week_start, funnel_group
+       ORDER BY week_start, funnel_group`,
+    )
+    .all<Record<string, unknown>>();
+  await upsertDataset(db, "bitrix_week_funnel_total.json", rowsToJson((bitrixWeekFunnelTotal.results ?? []) as Record<string, unknown>[]));
+  paths.push("bitrix_week_funnel_total.json");
+
+  const yandexWeekCampaignTotal = await db
+    .prepare(
+      `WITH ysrc AS (
+         SELECT
+           ${buildYandexProjectGroupSqlExpr("l.project_name")} AS campaign_name,
+           COALESCE(NULLIF(TRIM(l.campaign_id), ''), '(пусто)') AS campaign_id,
+           COALESCE(NULLIF(TRIM(l.yandex_month), ''), '') AS month,
+           CASE
+             WHEN COALESCE(m."Дата создания", '') LIKE '____-__-__%' THEN SUBSTR(m."Дата создания", 1, 10)
+             WHEN COALESCE(m."Дата создания", '') LIKE '__.__.____%' THEN SUBSTR(m."Дата создания", 7, 4) || '-' || SUBSTR(m."Дата создания", 4, 2) || '-' || SUBSTR(m."Дата создания", 1, 2)
+             ELSE ''
+           END AS created_date,
+           COALESCE(l.revenue_amount, 0) AS revenue_amount,
+           ${yandexLeadLogic.qual} AS is_qual,
+           ${yandexLeadLogic.unqual} AS is_unqual,
+           ${yandexLeadLogic.refusal} AS is_refusal,
+           ${yandexLeadLogic.invalid} AS is_invalid,
+           CASE WHEN COALESCE(l.is_paid_deal, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
+         FROM mart_yandex_leads_raw l
+         LEFT JOIN mart_deals_enriched m ON m."ID" = l."ID"
+         WHERE COALESCE(NULLIF(TRIM(l.yandex_month), ''), '') <> ''
+       ),
+       base AS (
+         SELECT
+           campaign_name,
+           campaign_id,
+           month,
+           date(created_date) AS created_dt,
+           date(created_date, printf('-%d days', (CAST(strftime('%w', date(created_date)) AS INTEGER) + 6) % 7)) AS week_start,
+           revenue_amount,
+           is_qual,
+           is_unqual,
+           is_refusal,
+           is_invalid,
+           is_revenue
+         FROM ysrc
+         WHERE created_date <> ''
+       ),
+       latest AS (
+         SELECT MAX(created_dt) AS latest_created_dt FROM base WHERE created_dt IS NOT NULL
+       ),
+       latest_spend AS (
+         SELECT MAX(date(NULLIF(TRIM(COALESCE("День", '')), ''))) AS latest_spend_dt
+         FROM stg_yandex_stats
+         WHERE COALESCE(NULLIF(TRIM(COALESCE("День", '')), ''), '') <> ''
+       ),
+       latest_yandex AS (
+         SELECT
+           CASE
+             WHEN (SELECT latest_spend_dt FROM latest_spend) IS NULL THEN (SELECT latest_created_dt FROM latest)
+             WHEN (SELECT latest_created_dt FROM latest) IS NULL THEN (SELECT latest_spend_dt FROM latest_spend)
+             WHEN date((SELECT latest_spend_dt FROM latest_spend)) >= date((SELECT latest_created_dt FROM latest)) THEN (SELECT latest_spend_dt FROM latest_spend)
+             ELSE (SELECT latest_created_dt FROM latest)
+           END AS latest_yandex_dt
+       ),
+       campaign_month_spend AS (
+         SELECT
+           COALESCE(NULLIF(TRIM("Название кампании"), ''), '(пусто)') AS campaign_name,
+           COALESCE(NULLIF(REPLACE(TRIM(CAST("№ Кампании" AS TEXT)), '.0', ''), ''), '(пусто)') AS campaign_id,
+           COALESCE(NULLIF(TRIM(COALESCE(month, "Месяц")), ''), '') AS month,
+           SUM(COALESCE("Расход, ₽", 0)) AS spend
+         FROM stg_yandex_stats
+         WHERE COALESCE(NULLIF(TRIM(COALESCE(month, "Месяц")), ''), '') <> ''
+         GROUP BY campaign_name, campaign_id, month
+       ),
+       campaign_month_leads AS (
+         SELECT
+           campaign_name,
+           campaign_id,
+           month,
+           COUNT(*) AS month_leads
+         FROM base
+         WHERE created_dt IS NOT NULL
+         GROUP BY campaign_name, campaign_id, month
+       ),
+       campaign_week_leads AS (
+         SELECT
+           week_start,
+           campaign_name,
+           campaign_id,
+           month,
+           COUNT(*) AS week_leads
+         FROM base
+         WHERE created_dt IS NOT NULL
+         GROUP BY week_start, campaign_name, campaign_id, month
+       ),
+       spend_alloc AS (
+         SELECT
+           wl.week_start,
+           wl.campaign_name,
+           wl.campaign_id,
+           SUM(
+             CASE
+               WHEN COALESCE(ml.month_leads, 0) = 0 THEN COALESCE(ms.spend, 0)
+               ELSE COALESCE(ms.spend, 0) * wl.week_leads * 1.0 / ml.month_leads
+             END
+           ) AS spend_alloc
+         FROM campaign_week_leads wl
+         LEFT JOIN campaign_month_leads ml
+             ON ml.campaign_id = wl.campaign_id
+          AND ml.month = wl.month
+         LEFT JOIN campaign_month_spend ms
+             ON ms.campaign_id = wl.campaign_id
+          AND ms.month = wl.month
+         GROUP BY wl.week_start, wl.campaign_name, wl.campaign_id
+       )
+       SELECT
+         b.week_start AS "Неделя",
+         b.campaign_name AS "Кампания",
+         b.campaign_id AS "ID кампании",
+         COUNT(*) AS "Лиды",
+         SUM(b.is_qual) AS "Квал",
+         SUM(b.is_unqual) AS "Неквал",
+         SUM(CASE WHEN b.is_qual = 0 AND b.is_unqual = 0 THEN 1 ELSE 0 END) AS "Неизвестно",
+         SUM(b.is_refusal) AS "Отказы",
+         SUM(b.is_invalid) AS "Невалидные_лиды",
+         SUM(b.is_revenue) AS "Сделок_с_выручкой",
+         SUM(CASE WHEN b.is_revenue = 1 THEN b.revenue_amount ELSE 0 END) AS "Ассоц_выручка",
+         COALESCE(sa.spend_alloc, 0) AS "Расход, ₽",
+         SUM(CASE WHEN b.is_revenue = 1 THEN b.revenue_amount ELSE 0 END) - COALESCE(sa.spend_alloc, 0) AS "Прибыль",
+         MAX(b.created_dt) AS "Макс_дата_в_строке",
+         (SELECT latest_yandex_dt FROM latest_yandex) AS "Дата_последней_записи_Yandex"
+       FROM base b
+       LEFT JOIN spend_alloc sa
+         ON sa.week_start = b.week_start
+        AND sa.campaign_name = b.campaign_name
+        AND sa.campaign_id = b.campaign_id
+       WHERE b.created_dt IS NOT NULL
+         AND b.week_start IS NOT NULL
+         AND b.created_dt >= date((SELECT latest_created_dt FROM latest), '-6 day')
+       GROUP BY b.week_start, b.campaign_name, b.campaign_id, sa.spend_alloc
+       ORDER BY b.week_start, b.campaign_name, b.campaign_id`,
+    )
+    .all<Record<string, unknown>>();
+  await upsertDataset(db, "yandex_week_campaign_total.json", rowsToJson((yandexWeekCampaignTotal.results ?? []) as Record<string, unknown>[]));
+  paths.push("yandex_week_campaign_total.json");
 
   const emailOperationalSummary = await db
     .prepare(
@@ -465,39 +666,15 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        )
        SELECT
          "Период",
-         "Актуальная база email",
-         "Контактов email (DB)",
-         "Рассылок за месяц",
-         "Лиды",
-         "Сделок с выручкой",
-         "Выручка",
+         ${goodEmailContactsExpr} AS "Актуальная база email",
+         ${totalEmailContactsExpr} AS "Контактов email (DB)",
+         sends AS "Рассылок за месяц",
+         leads AS "Лиды",
+         paid_deals AS "Сделок с выручкой",
+         revenue AS "Выручка",
          month
-       FROM (
-         SELECT
-           "Период",
-           ${goodEmailContactsExpr} AS "Актуальная база email",
-           ${totalEmailContactsExpr} AS "Контактов email (DB)",
-           sends AS "Рассылок за месяц",
-           leads AS "Лиды",
-           paid_deals AS "Сделок с выручкой",
-           revenue AS "Выручка",
-           month,
-           0 AS _sort_total
-         FROM month_rows
-         UNION ALL
-         SELECT
-           'Итого' AS "Период",
-           ${goodEmailContactsExpr} AS "Актуальная база email",
-           ${totalEmailContactsExpr} AS "Контактов email (DB)",
-           SUM(sends) AS "Рассылок за месяц",
-           SUM(leads) AS "Лиды",
-           SUM(paid_deals) AS "Сделок с выручкой",
-           SUM(revenue) AS "Выручка",
-           '' AS month,
-           1 AS _sort_total
-         FROM month_rows
-       ) q
-       ORDER BY month DESC, _sort_total ASC`,
+       FROM month_rows
+       ORDER BY month DESC`,
     )
     .all<Record<string, unknown>>();
   await upsertDataset(db, "email_operational_summary.json", rowsToJson((emailOperationalSummary.results ?? []) as Record<string, unknown>[]));
@@ -763,6 +940,20 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   const bitrixContactsUid = await buildBitrixContactsUidRows(db);
   await upsertDataset(db, "bitrix_contacts_uid.json", rowsToJson(bitrixContactsUid as Record<string, unknown>[]));
   paths.push("bitrix_contacts_uid.json");
+
+  const dashboardContactsTotalRows: Record<string, unknown>[] = [{
+    bitrix_contacts_actual: bitrixContactsUid.length,
+    email_contacts_actual: 0,
+    contacts_actual_total: bitrixContactsUid.length,
+  }];
+  const dashboardContactsTotal = await db
+    .prepare(`SELECT ${goodEmailContactsExpr} AS email_contacts_actual`)
+    .first<{ email_contacts_actual: number }>();
+  const emailContactsActual = Number(dashboardContactsTotal?.email_contacts_actual ?? 0) || 0;
+  dashboardContactsTotalRows[0].email_contacts_actual = emailContactsActual;
+  dashboardContactsTotalRows[0].contacts_actual_total = dashboardContactsTotalRows[0].bitrix_contacts_actual + emailContactsActual;
+  await upsertDataset(db, "dashboard_contacts_total.json", rowsToJson(dashboardContactsTotalRows));
+  paths.push("dashboard_contacts_total.json");
 
   const bitrixFunnelMonthCode = await db
     .prepare(
@@ -1042,6 +1233,39 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   await upsertDataset(db, "manager_firstline_by_course.json", rowsToJson((managerFirstlineByCourse.results ?? []) as Record<string, unknown>[]));
   paths.push("manager_firstline_by_course.json");
 
+  const managerFirstlineByCourseMonth = await db
+    .prepare(
+      `${managerBaseSql},
+       filtered AS (
+         SELECT * FROM base WHERE ${firstlineFilter}
+       )
+       SELECT
+         'Код курса' AS "Level",
+         manager AS "Менеджер",
+         month_label AS "Месяц",
+         course_code AS "Код курса",
+         COUNT(*) AS "Лиды",
+         SUM(is_qual) AS "Квал",
+         SUM(is_unqual) AS "Неквал",
+         SUM(is_refusal) AS "Отказы",
+         SUM(is_in_work) AS "В работе",
+         SUM(is_invalid) AS "Невалидные_лиды",
+         SUM(is_revenue) AS "Сделок_с_выручкой",
+         SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
+         SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS "fl_IDs",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
+         CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
+       FROM filtered
+       GROUP BY manager, month_label, course_code
+       ORDER BY manager, month_label DESC, course_code`,
+    )
+    .all<Record<string, unknown>>();
+  await upsertDataset(db, "manager_firstline_by_course_month.json", rowsToJson((managerFirstlineByCourseMonth.results ?? []) as Record<string, unknown>[]));
+  paths.push("manager_firstline_by_course_month.json");
+
   const managerSalesByMonth = await db
     .prepare(
       `${managerBaseSql},
@@ -1207,6 +1431,39 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     .all<Record<string, unknown>>();
   await upsertDataset(db, "manager_sales_by_course.json", rowsToJson((managerSalesByCourse.results ?? []) as Record<string, unknown>[]));
   paths.push("manager_sales_by_course.json");
+
+  const managerSalesByCourseMonth = await db
+    .prepare(
+      `${managerBaseSql},
+       filtered AS (
+         SELECT * FROM base WHERE ${salesFilter}
+       )
+       SELECT
+         'Код курса' AS "Level",
+         manager AS "Менеджер",
+         month_label AS "Месяц",
+         course_code AS "Код курса",
+         COUNT(*) AS "Лиды",
+         SUM(is_qual) AS "Квал",
+         SUM(is_unqual) AS "Неквал",
+         SUM(is_refusal) AS "Отказы",
+         SUM(is_in_work) AS "В работе",
+         SUM(is_invalid) AS "Невалидные_лиды",
+         SUM(is_revenue) AS "Сделок_с_выручкой",
+         SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
+         SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS "fl_IDs",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
+         CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
+       FROM filtered
+       GROUP BY manager, month_label, course_code
+       ORDER BY manager, month_label DESC, course_code`,
+    )
+    .all<Record<string, unknown>>();
+  await upsertDataset(db, "manager_sales_by_course_month.json", rowsToJson((managerSalesByCourseMonth.results ?? []) as Record<string, unknown>[]));
+  paths.push("manager_sales_by_course_month.json");
 
   const yandexMonthKpis = await db
     .prepare(
@@ -1808,6 +2065,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${groupedStatsProjectExpr} AS project_name,
            REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
            MIN(NULLIF(TRIM(COALESCE("Заголовок", '')), '')) AS ad_title,
+           MIN(COALESCE(NULLIF(TRIM(COALESCE(month, "Месяц")), ''), '')) AS first_spend_month,
+           MAX(COALESCE(NULLIF(TRIM(COALESCE(month, "Месяц")), ''), '')) AS last_spend_month,
            SUM(COALESCE("Клики", 0)) AS clicks,
            SUM(COALESCE("Расход, ₽", 0)) AS spend
          FROM stg_yandex_stats
@@ -1818,6 +2077,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          SELECT
            COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name,
            ${sourceYandexAdExpr} AS ad_id,
+           MIN(COALESCE(NULLIF(TRIM(COALESCE(src.month, '')), ''), '')) AS first_lead_month,
+           MAX(COALESCE(NULLIF(TRIM(COALESCE(src.month, '')), ''), '')) AS last_lead_month,
            COUNT(*) AS leads_raw,
            SUM(CASE WHEN COALESCE(src.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END) AS payments_count,
            SUM(CASE WHEN COALESCE(src.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END) AS paid_deals_raw,
@@ -1839,6 +2100,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          d.project_name,
          d.ad_id,
          COALESCE(ys.ad_title, '') AS ad_title,
+         COALESCE(NULLIF(ys.first_spend_month, ''), NULLIF(yd.first_lead_month, ''), '') AS first_month,
+         COALESCE(NULLIF(ys.last_spend_month, ''), NULLIF(yd.last_lead_month, ''), '') AS last_month,
          COALESCE(yd.leads_raw, 0) AS leads_raw,
          COALESCE(yd.payments_count, 0) AS payments_count,
          COALESCE(yd.paid_deals_raw, 0) AS paid_deals_raw,

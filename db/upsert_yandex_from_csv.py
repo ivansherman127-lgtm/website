@@ -32,6 +32,7 @@ WRANGLER_CONFIG = ROOT / "wrangler.jsonc"
 # Exact D1 schema for stg_yandex_stats (db/d1/migrations/0001_initial.sql)
 STG_YANDEX_D1_SCHEMA: list[tuple[str, str]] = [
     ("Месяц", "TEXT"),
+    ("День", "TEXT"),
     ("№ Кампании", "REAL"),
     ("Название кампании", "TEXT"),
     ("№ Группы", "REAL"),
@@ -121,14 +122,19 @@ def load_and_normalize(csv_path: Path) -> pd.DataFrame:
     df = pd.read_csv(csv_path, encoding="utf-8", low_memory=False)
     print(f"Loaded {len(df)} rows from {csv_path}", flush=True)
 
-    # Detect format: old export has «Месяц», new daily export has «День»
+    # Detect format: old export has «Месяц», new daily export has «День».
+    # Keep «День» as ISO date for downstream max-date metrics.
     if "День" in df.columns and "Месяц" not in df.columns:
         dt = pd.to_datetime(df["День"], dayfirst=True, errors="coerce")
+        df["День"] = dt.dt.strftime("%Y-%m-%d")
         df["Месяц"] = dt.dt.strftime("%Y-%m")
-        df = df.drop(columns=["День"])
-        print("Converted «День» → «Месяц» (monthly bucket)", flush=True)
+        print("Converted «День» → ISO date and derived «Месяц»", flush=True)
     elif "Месяц" not in df.columns:
         raise ValueError(f"Cannot find «Месяц» or «День» column in {csv_path}")
+
+    if "День" in df.columns:
+        day_dt = pd.to_datetime(df["День"], dayfirst=True, errors="coerce")
+        df["День"] = day_dt.dt.strftime("%Y-%m-%d")
 
     df["Месяц"] = df["Месяц"].map(_normalize_yandex_month)
     df = df[df["Месяц"].astype(str).str.fullmatch(r"\d{4}-\d{2}", na=False)]
@@ -170,6 +176,8 @@ def load_and_normalize(csv_path: Path) -> pd.DataFrame:
 
     if id_cols:
         agg: dict[str, str] = {c: "sum" for c in sum_cols}
+        if "День" in df.columns:
+            agg["День"] = "max"
         df = df.groupby(id_cols, dropna=False, as_index=False).agg(agg)
         print(f"Aggregated to {len(df)} monthly rows", flush=True)
 

@@ -34,7 +34,14 @@
     "working_state": [
       "yes",
       "no"
-    ]
+    ],
+    "metric_classification": {
+      "description": "For dashboard metrics: qual + unqual + неизвестно = total leads",
+      "qual_includes": ["qual", "refusal", "qual_from_date"],
+      "unqual_includes": ["not_qual", "not_yet"],
+      "unknown_includes": ["unassigned"],
+      "note_refusal": "Refusals counted in qual because they must start qualified; separate refusal row exists for conversion analysis"
+    }
   },
   "funnels": {
     "Горячая воронка": {

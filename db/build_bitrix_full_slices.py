@@ -79,7 +79,8 @@ def run() -> None:
         .agg(
             Лиды=("ID", "count"),
             Квал=("is_qual", "sum"),
-            Неквал=("is_unqual_reported", "sum"),
+            Неквал=("is_unqual", "sum"),
+            Неизвестно=("is_unknown", "sum"),
             Отказы=("is_refusal", "sum"),
             В_работе=("is_in_work", "sum"),
             Невалидные_лиды=("is_invalid", "sum"),
@@ -98,7 +99,8 @@ def run() -> None:
         .agg(
             Лиды=("ID", "count"),
             Квал=("is_qual", "sum"),
-            Неквал=("is_unqual_reported", "sum"),
+            Неквал=("is_unqual", "sum"),
+            Неизвестно=("is_unknown", "sum"),
             Отказы=("is_refusal", "sum"),
             В_работе=("is_in_work", "sum"),
             Невалидные_лиды=("is_invalid", "sum"),
