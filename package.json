@@ -4,10 +4,14 @@
   "scripts": {
     "prepare:webpush": "npm --prefix web_share_subset/webpush ci --no-audit --no-fund || npm --prefix web_share_subset/webpush install --no-audit --no-fund",
     "dev": "npm run prepare:webpush && npm --prefix web_share_subset/webpush run dev",
+    "dev:utm": "npm run prepare:webpush && npm --prefix web_share_subset/webpush run dev:utm",
     "build": "npm run prepare:webpush && npm --prefix web_share_subset/webpush run build",
+    "build:utm": "npm run prepare:webpush && npm --prefix web_share_subset/webpush run build:utm",
     "preview": "npm run prepare:webpush && npm --prefix web_share_subset/webpush run preview",
     "deploy": "npm run prepare:webpush && npm --prefix web_share_subset/webpush run deploy",
     "worker:dev": "npm run prepare:webpush && npm --prefix web_share_subset/webpush run worker:dev",
-    "worker:deploy": "npm run prepare:webpush && npm --prefix web_share_subset/webpush run worker:deploy"
+    "worker:dev:utm": "npm run prepare:webpush && npm --prefix web_share_subset/webpush run worker:dev:utm",
+    "worker:deploy": "npm run prepare:webpush && npm --prefix web_share_subset/webpush run worker:deploy",
+    "worker:deploy:utm": "npm run prepare:webpush && npm --prefix web_share_subset/webpush run worker:deploy:utm"
   }
 }
