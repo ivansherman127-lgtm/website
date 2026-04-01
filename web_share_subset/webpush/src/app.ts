@@ -1353,7 +1353,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
 
   const draw = (): void => {
     cols = allCols.filter((c) => !isFlIdsColumn(c) && !isHiddenUiColumn(c));
-    if (isBudgetHierarchy) cols = cols.filter((c) => c !== "month" && c !== "Level");
+    if (isBudgetHierarchy) cols = cols.filter((c) => c !== "month" && c !== "Level" && c !== "Расход, ₽" && c !== "Прибыль");
     if (sortCol && !cols.includes(sortCol)) sortCol = cols[0] || "";
 
     let data = [...viewRows];
