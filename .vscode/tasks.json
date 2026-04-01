@@ -4,7 +4,7 @@
 		{
 			"label": "Check live contacts payload",
 			"type": "shell",
-			"command": "curl -s \"https://deved-webpush.ivansherman127.workers.dev/api/data?path=bitrix_contacts_uid.json\" | /usr/bin/python3 -c \"import sys,json; raw=sys.stdin.read(); arr=json.loads(raw); print('rows',len(arr)); print('keys', sorted(arr[0].keys()) if arr else []); print('sample', arr[0] if arr else {})\"",
+			"command": "curl -s \"https://website-webpush.ivansherman127.workers.dev/api/data?path=bitrix_contacts_uid.json\" | /usr/bin/python3 -c \"import sys,json; raw=sys.stdin.read(); arr=json.loads(raw); print('rows',len(arr)); print('keys', sorted(arr[0].keys()) if arr else []); print('sample', arr[0] if arr else {})\"",
 			"isBackground": false
 		}
 	]

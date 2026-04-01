@@ -8,7 +8,7 @@ if [[ -d "$NVM_NODE_DIR" ]]; then
 fi
 
 PYTHON_BIN="${PYTHON_BIN:-python3}"
-DB_PATH="${DEVED_DB_PATH:-$ROOT/deved.db}"
+DB_PATH="${WEBSITE_DB_PATH:-$ROOT/website.db}"
 WRANGLER_CONFIG="$ROOT/wrangler.jsonc"
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "help" ]]; then

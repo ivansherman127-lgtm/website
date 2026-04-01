@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
-DB_PATH="${DEVED_DB_PATH:-$ROOT/deved.db}"
+DB_PATH="${WEBSITE_DB_PATH:-$ROOT/website.db}"
 
 if [[ $# -lt 1 ]]; then
   echo "Usage: ./scripts/update_yandex_local_from_upd.sh <path/to/yandex_upd.csv> [db_path]" >&2

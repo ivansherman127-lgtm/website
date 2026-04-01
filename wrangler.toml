@@ -1,4 +1,4 @@
-name = "deved-webpush"
+name = "website-webpush"
 compatibility_date = "2025-09-27"
 main = "./web_share_subset/webpush/worker.ts"
 

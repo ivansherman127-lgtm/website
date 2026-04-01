@@ -1,8 +1,8 @@
-# Cloudflare D1 sync for `deved.db`
+# Cloudflare D1 sync for `website.db`
 
 ## You need SQL tables in D1, not only `dataset_json`
 
-The dashboard can read **pre-baked JSON** from `dataset_json` (`/api/data?path=...`), but **deal-level metrics** come from relational tables such as `mart_deals_enriched`, `stg_deals_analytics`, Yandex marts, etc. Those are copied from your **local** `deved.db` by `push_from_sqlite.py`.
+The dashboard can read **pre-baked JSON** from `dataset_json` (`/api/data?path=...`), but **deal-level metrics** come from relational tables such as `mart_deals_enriched`, `stg_deals_analytics`, Yandex marts, etc. Those are copied from your **local** `website.db` by `push_from_sqlite.py`.
 
 1. **Populate SQLite locally** (creates `mart_*`, `stg_*`, etc.):
 
@@ -38,7 +38,7 @@ The dashboard can read **pre-baked JSON** from `dataset_json` (`/api/data?path=.
 
 If you skip step 1, `push_from_sqlite` **skips** missing tables and you may only see rows in `dataset_json` from local `web/public/data/*.json`.
 
-## Inventory (local `deved.db`)
+## Inventory (local `website.db`)
 
 | Table | Rows (typical) | Sync to D1 |
 |-------|----------------|------------|
@@ -98,7 +98,7 @@ Single-command option: `python3 db/refresh_analytics_pipeline.py --upsert-raw-bi
 
 ## One-command pipeline (local DB → D1 → cloud rebuild)
 
-From repo root, after `run_all_slices` has filled `deved.db`:
+From repo root, after `run_all_slices` has filled `website.db`:
 
 ```bash
 export D1_ANALYTICS_REBUILD_URL="https://<your-pages-host>/api/analytics/rebuild"
@@ -119,7 +119,7 @@ From [`push_from_sqlite.py`](push_from_sqlite.py):
 Options:
 
 - `--strict` — exit with error unless `raw_bitrix_deals`, `mart_deals_enriched`, and `stg_deals_analytics` exist and have rows (recommended for remote sync).
-- `--preflight` — print per-table row counts in local `deved.db` and exit (no push).
+- `--preflight` — print per-table row counts in local `website.db` and exit (no push).
 - `--no-json` — push **only** SQL tables; skip loading `web/public/data` into `dataset_json`.
 - `--json-dir web/public/data` — upsert `dataset_json` (default; skips files over `--max-json-mb` except with `--include-large-json`).
 - `--tables` — override which SQL tables to refresh (default: raw + marts + staging, no `stg_bitrix_deals_wide`).

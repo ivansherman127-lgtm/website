@@ -25,7 +25,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DB_PATH = ROOT / "deved.db"
+DEFAULT_DB_PATH = ROOT / "website.db"
 PUSH_SCRIPT = ROOT / "db" / "d1" / "push_from_sqlite.py"
 WRANGLER_CONFIG = ROOT / "wrangler.jsonc"
 

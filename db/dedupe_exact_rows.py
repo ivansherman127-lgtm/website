@@ -64,7 +64,7 @@ WHERE rowid IN (
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Remove exact duplicate rows from raw/staging SQLite tables.")
-    parser.add_argument("--db-path", default=str(ROOT / "deved.db"), help="Path to SQLite DB")
+        parser.add_argument("--db-path", default=str(ROOT / "website.db"), help="Path to SQLite DB")
     parser.add_argument(
         "--tables",
         default=",".join(DEFAULT_TABLES),
