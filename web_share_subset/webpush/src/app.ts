@@ -2207,7 +2207,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           <span class="utm-campaign-row">
             <input class="utm-campaign-input" type="text" placeholder="Например, spring_sale_2026" />
             <span class="utm-partner-field">
-              <label class="utm-partner-toggle-wrap" style="display:none" title="Partner"><input type="checkbox" class="utm-partner-toggle" aria-label="Partner" /></label>
+              <label class="utm-partner-toggle-wrap" style="display:none" title="Partner"><input type="checkbox" class="utm-partner-toggle" aria-label="Partner" /><span>Partner</span></label>
               <input class="utm-partner-input" type="text" placeholder="Partner" style="display:none" />
             </span>
           </span>
