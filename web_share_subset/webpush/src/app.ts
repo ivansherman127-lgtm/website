@@ -293,6 +293,7 @@ function renderWeeklyBitrixExpandableTable(rows: Record<string, unknown>[], expa
     byWeek.get(week)!.push(r);
   }
   const weeks = [...byWeek.keys()].sort((a, b) => b.localeCompare(a));
+  const allOpen = weeks.length > 0 && weeks.every((w) => expandedWeeks.has(w));
   const cols = [
     "Неделя",
     "Воронка",
@@ -359,6 +360,7 @@ function renderWeeklyBitrixExpandableTable(rows: Record<string, unknown>[], expa
   return `
     <section class="chart-wrap">
       <h3>Bitrix: недели (раскрытие по воронкам)</h3>
+      <button class="week-expand-all-btn">${allOpen ? "Свернуть всё" : "Развернуть всё"}</button>
       <div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody>${bodyRows.join("")}</tbody></table></div>
     </section>
   `;
@@ -382,6 +384,7 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
     byWeek.get(week)!.push(r);
   }
   const weeks = [...byWeek.keys()].sort((a, b) => b.localeCompare(a));
+  const allOpen = weeks.length > 0 && weeks.every((w) => expandedWeeks.has(w));
   const cols = [
     "Неделя",
     "Кампания",
@@ -447,6 +450,7 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
   return `
     <section class="chart-wrap">
       <h3>Yandex: последние 7 дней (раскрытие по кампаниям)</h3>
+      <button class="yweek-expand-all-btn">${allOpen ? "Свернуть всё" : "Развернуть всё"}</button>
       <div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody>${bodyRows.join("")}</tbody></table></div>
     </section>
   `;
@@ -1702,7 +1706,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       const ordered: Record<string, unknown>[] = [];
       for (const r of data) {
         const lvl = String(r["Level"] ?? "").trim();
-        const payMonth = String(r["__pay_month"] ?? "").trim();
+        const payMonth = String(r["__pay_month"] ?? r["month"] ?? r["Период"] ?? "").trim();
         if (lvl === "Month" || lvl === "Total") ordered.push(r);
         else if (lvl === "Detail" && expandedBudget.has(payMonth)) ordered.push(r);
       }
@@ -1786,7 +1790,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         isYandexProjectHierarchy && num(r["__yandex_project_detail"]) === 0 && num(r["__yandex_project_has_details"]) > 0
           ? `<button class="yd-project-expand-btn" data-ctx="${escapeHtml(yProjectCtx)}">${expandedYandexProjectRows.has(`${view}||${yProjectCtx}`) ? "−" : "+"}</button>`
           : "";
-      const budgetPayMonth = String(r["__pay_month"] ?? "").trim();
+      const budgetPayMonth = String(r["__pay_month"] ?? r["month"] ?? r["Период"] ?? "").trim();
       const budgetBtn =
         isBudgetHierarchy && lvl === "Month"
           ? `<button class="budget-expand-btn" data-paymonth="${escapeHtml(budgetPayMonth)}">${expandedBudget.has(budgetPayMonth) ? "−" : "+"}</button>`
@@ -1964,6 +1968,89 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       if (expandedBudget.has(pm)) expandedBudget.delete(pm); else expandedBudget.add(pm);
       draw();
     }));
+
+    const expandAllBtn = app.querySelector<HTMLButtonElement>(".expand-all-toggle-btn");
+    if (expandAllBtn && showCtrl) {
+      const allExpanded = (() => {
+        if (isEmailHierarchy) {
+          const months = [...new Set(data.filter((r) => String(r["Level"] ?? "") === "Month").map((r) => String(r["Месяц"] ?? "").trim()).filter(Boolean))];
+          return months.length > 0 && months.every((m) => expandedEmailMonths.has(m));
+        }
+        if (isManagerHierarchy) {
+          const mgrs = [...new Set(data.filter((r) => String(r["Level"] ?? "") === "Manager").map((r) => String(r["Менеджер"] ?? "").trim()).filter(Boolean))];
+          return mgrs.length > 0 && mgrs.every((m) => expandedManagers.has(m));
+        }
+        if (isFunnelHierarchy) {
+          const funnels = [...new Set(data.filter((r) => String(r["__node"] ?? "").trim() === "funnel").map((r) => String(r["__funnel"] ?? r["Воронка"] ?? "").trim()).filter(Boolean))];
+          return funnels.length > 0 && funnels.every((f) => expandedFunnels.has(f));
+        }
+        if (isYandexHierarchy) {
+          const months = [...new Set(data.filter((r) => String(r["Level"] ?? "").trim() === "Month").map((r) => String(r["Месяц"] ?? "").trim()).filter(Boolean))];
+          return months.length > 0 && months.every((m) => expandedYandexMonths.has(m));
+        }
+        if (isYandexProjectHierarchy) {
+          const keys = [...new Set(data.filter((r) => num(r["__yandex_project_detail"]) === 0 && num(r["__yandex_project_has_details"]) > 0).map((r) => `${view}||${String(r["__yandex_project_ctx"] ?? r["Yandex кампания"] ?? r["Проект"] ?? "").trim()}`).filter((k) => !k.endsWith("||")))];
+          return keys.length > 0 && keys.every((k) => expandedYandexProjectRows.has(k));
+        }
+        if (isAssocEmailHierarchy) {
+          const keys = [...new Set(data.filter((r) => num(r["__assoc_email_other_group"]) > 0 && num(r["__assoc_email_has_details"]) > 0).map((r) => `assoc||${String(r["__assoc_email_ctx"] ?? "__root__")}`))];
+          return keys.length > 0 && keys.every((k) => expandedAssocOtherRows.has(k));
+        }
+        if (isAssocEventHierarchy) {
+          const keys = [...new Set(data.filter((r) => num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0).map((r) => String(r["__assoc_event_ctx"] ?? r["Мероприятие"] ?? "").trim()).filter(Boolean))];
+          return keys.length > 0 && keys.every((k) => expandedAssocEventRows.has(k));
+        }
+        if (isAssocYandexHierarchy) {
+          const keys = [...new Set(data.filter((r) => num(r["__assoc_yandex_detail"]) === 0 && num(r["__assoc_yandex_has_details"]) > 0).map((r) => String(r["__assoc_yandex_ctx"] ?? r["Yandex кампания"] ?? "").trim()).filter(Boolean))];
+          return keys.length > 0 && keys.every((k) => expandedAssocYandexRows.has(k));
+        }
+        if (isBudgetHierarchy) {
+          const keys = [...new Set(data.filter((r) => String(r["Level"] ?? "").trim() === "Month").map((r) => String(r["__pay_month"] ?? r["month"] ?? r["Период"] ?? "").trim()).filter(Boolean))];
+          return keys.length > 0 && keys.every((k) => expandedBudget.has(k));
+        }
+        return false;
+      })();
+
+      expandAllBtn.textContent = allExpanded ? "Свернуть всё" : "Развернуть всё";
+      expandAllBtn.onclick = () => {
+        const expand = !allExpanded;
+        if (isEmailHierarchy) {
+          const months = [...new Set(viewRows.filter((r) => String(r["Level"] ?? "") === "Month").map((r) => String(r["Месяц"] ?? "").trim()).filter(Boolean))];
+          months.forEach((m) => expand ? expandedEmailMonths.add(m) : expandedEmailMonths.delete(m));
+          const otherMonthKeys = [...new Set(viewRows.filter((r) => num(r["__email_other_group"]) > 0).map((r) => `email-month||${String(r["Месяц"] ?? "").trim()}`))];
+          otherMonthKeys.forEach((k) => expand ? expandedAssocOtherRows.add(k) : expandedAssocOtherRows.delete(k));
+        } else if (isManagerHierarchy) {
+          const mgrs = [...new Set(viewRows.filter((r) => String(r["Level"] ?? "") === "Manager").map((r) => String(r["Менеджер"] ?? "").trim()).filter(Boolean))];
+          mgrs.forEach((m) => expand ? expandedManagers.add(m) : expandedManagers.delete(m));
+        } else if (isFunnelHierarchy) {
+          const funnels = [...new Set(viewRows.filter((r) => String(r["__node"] ?? "").trim() === "funnel").map((r) => String(r["__funnel"] ?? r["Воронка"] ?? "").trim()).filter(Boolean))];
+          funnels.forEach((f) => expand ? expandedFunnels.add(f) : expandedFunnels.delete(f));
+          const funnelMonths = [...new Set(viewRows.filter((r) => String(r["__node"] ?? "").trim() === "month").map((r) => `${String(r["__funnel"] ?? r["Воронка"] ?? "").trim()}||${String(r["__month"] ?? r["Месяц"] ?? "").trim()}`).filter((k) => !k.startsWith("||")) )];
+          funnelMonths.forEach((k) => expand ? expandedFunnelMonths.add(k) : expandedFunnelMonths.delete(k));
+        } else if (isYandexHierarchy) {
+          const months = [...new Set(viewRows.filter((r) => String(r["Level"] ?? "").trim() === "Month").map((r) => String(r["Месяц"] ?? "").trim()).filter(Boolean))];
+          months.forEach((m) => expand ? expandedYandexMonths.add(m) : expandedYandexMonths.delete(m));
+          const mcs = [...new Set(viewRows.filter((r) => String(r["Level"] ?? "").trim() === "Campaign").map((r) => `${String(r["Месяц"] ?? "").trim()}||${String(r["№ Кампании"] ?? "").trim()}`).filter((k) => !k.endsWith("||")) )];
+          mcs.forEach((k) => expand ? expandedYandexCampaigns.add(k) : expandedYandexCampaigns.delete(k));
+        } else if (isYandexProjectHierarchy) {
+          const keys = [...new Set(viewRows.filter((r) => num(r["__yandex_project_detail"]) === 0 && num(r["__yandex_project_has_details"]) > 0).map((r) => `${view}||${String(r["__yandex_project_ctx"] ?? r["Yandex кампания"] ?? r["Проект"] ?? "").trim()}`).filter((k) => !k.endsWith("||")) )];
+          keys.forEach((k) => expand ? expandedYandexProjectRows.add(k) : expandedYandexProjectRows.delete(k));
+        } else if (isAssocEmailHierarchy) {
+          const keys = [...new Set(viewRows.filter((r) => num(r["__assoc_email_other_group"]) > 0 && num(r["__assoc_email_has_details"]) > 0).map((r) => `assoc||${String(r["__assoc_email_ctx"] ?? "__root__")}`))];
+          keys.forEach((k) => expand ? expandedAssocOtherRows.add(k) : expandedAssocOtherRows.delete(k));
+        } else if (isAssocEventHierarchy) {
+          const keys = [...new Set(viewRows.filter((r) => num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0).map((r) => String(r["__assoc_event_ctx"] ?? r["Мероприятие"] ?? "").trim()).filter(Boolean))];
+          keys.forEach((k) => expand ? expandedAssocEventRows.add(k) : expandedAssocEventRows.delete(k));
+        } else if (isAssocYandexHierarchy) {
+          const keys = [...new Set(viewRows.filter((r) => num(r["__assoc_yandex_detail"]) === 0 && num(r["__assoc_yandex_has_details"]) > 0).map((r) => String(r["__assoc_yandex_ctx"] ?? r["Yandex кампания"] ?? "").trim()).filter(Boolean))];
+          keys.forEach((k) => expand ? expandedAssocYandexRows.add(k) : expandedAssocYandexRows.delete(k));
+        } else if (isBudgetHierarchy) {
+          const keys = [...new Set(viewRows.filter((r) => String(r["Level"] ?? "").trim() === "Month").map((r) => String(r["__pay_month"] ?? r["month"] ?? r["Период"] ?? "").trim()).filter(Boolean))];
+          keys.forEach((k) => expand ? expandedBudget.add(k) : expandedBudget.delete(k));
+        }
+        draw();
+      };
+    }
   };
 
   const kpiRows =
@@ -2027,6 +2114,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       ${
         hasDateWindowControl
           ? `<label class="date-window-inline">Период: <input class="date-window-slider" type="range" min="1" max="24" step="1" value="${dateWindowMonths}" /> <span class="date-window-value">${dateWindowMonths} мес.</span></label>`
+          : ""
+      }
+      ${
+        (isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isYandexProjectHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy || isAssocYandexHierarchy || isBudgetHierarchy)
+          ? `<button class="expand-all-toggle-btn">Развернуть всё</button>`
           : ""
       }
       <input type="search" placeholder="Фильтр по строке…" class="filter-input" />
@@ -2671,6 +2763,16 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
       };
     });
 
+    const bitrixExpandAllBtn = app.querySelector<HTMLButtonElement>(".week-expand-all-btn");
+    if (bitrixExpandAllBtn) {
+      bitrixExpandAllBtn.onclick = () => {
+        const weeks = [...new Set(bitrixWeekFunnel.map((r) => String(r["Неделя"] ?? "").trim()).filter(Boolean))];
+        const allOpen = weeks.length > 0 && weeks.every((w) => expandedWeeks.has(w));
+        weeks.forEach((w) => allOpen ? expandedWeeks.delete(w) : expandedWeeks.add(w));
+        drawDashboard();
+      };
+    }
+
     app.querySelectorAll<HTMLButtonElement>(".yweek-expand-btn").forEach((btn) => {
       btn.onclick = () => {
         const week = btn.getAttribute("data-week") || "";
@@ -2680,6 +2782,16 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
         drawDashboard();
       };
     });
+
+    const yandexExpandAllBtn = app.querySelector<HTMLButtonElement>(".yweek-expand-all-btn");
+    if (yandexExpandAllBtn) {
+      yandexExpandAllBtn.onclick = () => {
+        const weeks = [...new Set(yandexWeekFiltered.map((r) => String(r["Неделя"] ?? "").trim()).filter(Boolean))];
+        const allOpen = weeks.length > 0 && weeks.every((w) => expandedYandexWeeks.has(w));
+        weeks.forEach((w) => allOpen ? expandedYandexWeeks.delete(w) : expandedYandexWeeks.add(w));
+        drawDashboard();
+      };
+    }
 
     app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
       btn.onclick = async () => {
