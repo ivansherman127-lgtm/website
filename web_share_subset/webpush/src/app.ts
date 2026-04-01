@@ -945,6 +945,10 @@ function rowKey(_view: ViewKey, row: Record<string, unknown>): string {
   return [String(row["Level"] ?? ""), String(row["Месяц"] ?? ""), String(row["Название выпуска"] ?? ""), String(row["utm_campaign"] ?? "")].join("::");
 }
 
+function budgetPayMonthKey(row: Record<string, unknown>): string {
+  return String(row["__pay_month"] ?? row["month"] ?? row["Период"] ?? "").trim();
+}
+
 function dealsForRow(view: ViewKey, row: Record<string, unknown>, dealsIndex: DealsIndex): DealRow[] {
   void view;
   void row;
@@ -974,8 +978,8 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
       const isDetail = lvl === "Detail";
       const out: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(r)) {
-        // Strip spend/profit on non-detail rows; detail rows never have them anyway
-        if ((k === "Расход, ₽" || k === "Прибыль") && !isDetail) continue;
+        // Detail rows don't carry spend/profit; keep month-level spend/profit intact.
+        if ((k === "Расход, ₽" || k === "Прибыль") && isDetail) continue;
         out[k] = v;
       }
       return out;
@@ -1707,7 +1711,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       const ordered: Record<string, unknown>[] = [];
       for (const r of data) {
         const lvl = String(r["Level"] ?? "").trim();
-        const payMonth = String(r["__pay_month"] ?? r["month"] ?? r["Период"] ?? "").trim();
+        const payMonth = budgetPayMonthKey(r);
         if (lvl === "Month") ordered.push(r);
         else if (lvl === "Detail" && expandedBudget.has(payMonth)) ordered.push(r);
       }
@@ -1791,7 +1795,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         isYandexProjectHierarchy && num(r["__yandex_project_detail"]) === 0 && num(r["__yandex_project_has_details"]) > 0
           ? `<button class="yd-project-expand-btn" data-ctx="${escapeHtml(yProjectCtx)}">${expandedYandexProjectRows.has(`${view}||${yProjectCtx}`) ? "−" : "+"}</button>`
           : "";
-      const budgetPayMonth = String(r["__pay_month"] ?? r["month"] ?? r["Период"] ?? "").trim();
+      const budgetPayMonth = budgetPayMonthKey(r);
       const budgetBtn =
         isBudgetHierarchy && lvl === "Month"
           ? `<button class="budget-expand-btn" data-paymonth="${escapeHtml(budgetPayMonth)}">${expandedBudget.has(budgetPayMonth) ? "−" : "+"}</button>`
@@ -2006,7 +2010,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           return keys.length > 0 && keys.every((k) => expandedAssocYandexRows.has(k));
         }
         if (isBudgetHierarchy) {
-          const keys = [...new Set(data.filter((r) => String(r["Level"] ?? "").trim() === "Month").map((r) => String(r["__pay_month"] ?? r["month"] ?? r["Период"] ?? "").trim()).filter(Boolean))];
+          const keys = [...new Set(data.filter((r) => String(r["Level"] ?? "").trim() === "Month").map((r) => budgetPayMonthKey(r)).filter(Boolean))];
           return keys.length > 0 && keys.every((k) => expandedBudget.has(k));
         }
         return false;
@@ -2046,7 +2050,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           const keys = [...new Set(viewRows.filter((r) => num(r["__assoc_yandex_detail"]) === 0 && num(r["__assoc_yandex_has_details"]) > 0).map((r) => String(r["__assoc_yandex_ctx"] ?? r["Yandex кампания"] ?? "").trim()).filter(Boolean))];
           keys.forEach((k) => expand ? expandedAssocYandexRows.add(k) : expandedAssocYandexRows.delete(k));
         } else if (isBudgetHierarchy) {
-          const keys = [...new Set(viewRows.filter((r) => String(r["Level"] ?? "").trim() === "Month").map((r) => String(r["__pay_month"] ?? r["month"] ?? r["Период"] ?? "").trim()).filter(Boolean))];
+          const keys = [...new Set(viewRows.filter((r) => String(r["Level"] ?? "").trim() === "Month").map((r) => budgetPayMonthKey(r)).filter(Boolean))];
           keys.forEach((k) => expand ? expandedBudget.add(k) : expandedBudget.delete(k));
         }
         draw();
