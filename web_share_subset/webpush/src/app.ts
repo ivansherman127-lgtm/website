@@ -5,6 +5,13 @@ import { mapYandexProjectGroup } from "./yandexProjectGroups";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const columnAliasesByView = new Map<string, Record<string, string>>();
+let utmLatestTag = "";
+
+const UTM_SOURCES_BY_MEDIUM: Record<string, string[]> = {
+  cpc: ["yandexd", "headhunter"],
+  email: ["sendsay", "unisender"],
+  tg: ["social", "cybered"],
+};
 
 
 async function fetchJson<T>(path: string): Promise<T> {
@@ -456,7 +463,7 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
   `;
 }
 
-type TabKey = "assoc_builder" | "media" | "budget" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa";
+type TabKey = "assoc_builder" | "media" | "budget" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa" | "utm";
 type ViewKey =
   | "assoc_dynamic"
   | "media_email"
@@ -478,7 +485,8 @@ type ViewKey =
   | "qa_dedup_collisions"
   | "qa_campaign_mapping"
   | "qa_top50_cohort"
-  | "qa_share_global";
+  | "qa_share_global"
+  | "utm_constructor";
 
 type ViewMeta = { tab: TabKey; label: string; path: string; rowsLabel: string; title: string; kind?: "assoc" | "email" | "generic" };
 const VIEW_META: Record<ViewKey, ViewMeta> = {
@@ -504,6 +512,7 @@ const VIEW_META: Record<ViewKey, ViewMeta> = {
   qa_campaign_mapping: { tab: "qa", label: "Маппинг кампаний", path: "data/qa/yandex_campaign_mapping_seed.json", rowsLabel: "Кампаний", title: "Контроль качества" },
   qa_top50_cohort: { tab: "qa", label: "Топ-50 когорт", path: "data/qa/other_top50_cohort.json", rowsLabel: "Строк", title: "Контроль качества" },
   qa_share_global: { tab: "qa", label: "Доля прочих (глобально)", path: "data/qa/other_share_global.json", rowsLabel: "Строк", title: "Контроль качества" },
+  utm_constructor: { tab: "utm", label: "UTM Конструктор", path: "/api/utm", rowsLabel: "Тегов", title: "UTM Конструктор" },
 };
 const ALL_VIEWS = Object.keys(VIEW_META) as ViewKey[];
 type MenuMode = "dashboard" | "reports" | "charts";
@@ -1311,6 +1320,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     "managers_firstline_course",
     "funnels_hierarchy",
   ]);
+  const isUtmConstructor = view === "utm_constructor";
   const hasDateWindowControl = dateWindowViews.has(view);
   const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let visibleRows: Record<string, unknown>[] = [];
@@ -2109,6 +2119,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         <button class="tab-btn ${tab === "funnels" ? "active" : ""}" data-tab="funnels">По воронкам</button>
         <button class="tab-btn ${tab === "contacts" ? "active" : ""}" data-tab="contacts">Уникальные контакты</button>
         <button class="tab-btn ${tab === "qa" ? "active" : ""}" data-tab="qa">Контроль качества</button>
+        <button class="tab-btn ${tab === "utm" ? "active" : ""}" data-tab="utm">UTM Конструктор</button>
       </div>
       <div class="tabs-row sub-tabs">
         ${tabViews
@@ -2123,8 +2134,12 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           ? `<div class="tabs-row event-tabs">${assocEvents.map((ev) => `<button class="tab-btn${ev === assocEventTab ? " active" : ""}" data-event="${escapeHtml(ev)}">${escapeHtml(ev)}</button>`).join("")}</div>`
           : ""
       }
-      <button class="copy-table-btn">Скопировать таблицу</button>
-      <button class="download-table-btn">Загрузить таблицу</button>
+      ${
+        isUtmConstructor
+          ? ""
+          : `<button class="copy-table-btn">Скопировать таблицу</button>
+      <button class="download-table-btn">Загрузить таблицу</button>`
+      }
       ${
         view === "contacts_unique"
           ? `<button class="contacts-full-btn">Контакты: имя + телефон + email (${contactsFullOnly ? "on" : "off"})</button>`
@@ -2140,20 +2155,56 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           ? `<button class="expand-all-toggle-btn">Развернуть всё</button>`
           : ""
       }
-      <input type="search" placeholder="Фильтр по строке…" class="filter-input" />
+      ${isUtmConstructor ? "" : '<input type="search" placeholder="Фильтр по строке…" class="filter-input" />'}
       <span class="row-note"></span>
     </div>
     ${canSaveViewJson ? '<div class="push-status muted"></div>' : ""}
+    ${
+      isUtmConstructor
+        ? `<section class="utm-builder">
+      <h3>Создать UTM тег</h3>
+      <div class="utm-grid">
+        <label>Medium
+          <select class="utm-medium-select"></select>
+        </label>
+        <label>Source
+          <select class="utm-source-select"></select>
+        </label>
+        <label>Name (Campaign)
+          <input class="utm-campaign-input" type="text" placeholder="Например, spring_sale_2026" />
+        </label>
+        <label>Content
+          <input class="utm-content-input" type="text" placeholder="Например, banner_a" />
+        </label>
+        <label>Term
+          <input class="utm-term-input" type="text" placeholder="Например, python_course" />
+        </label>
+      </div>
+      <div class="utm-actions">
+        <button class="utm-write-btn">write</button>
+        <span class="utm-write-status muted"></span>
+      </div>
+      <div class="utm-preview-wrap">
+        <h4>Готовый UTM тег</h4>
+        <table>
+          <thead><tr><th>UTM Tag</th></tr></thead>
+          <tbody><tr><td class="utm-preview-cell">${escapeHtml(utmLatestTag)}</td></tr></tbody>
+        </table>
+        <button class="copy-utm-btn">Скопировать UTM</button>
+      </div>
+    </section>`
+        : ""
+    }
     <div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
     </main>
   </div>`;
 
-  const filterInput = app.querySelector<HTMLInputElement>(".filter-input")!;
+  const filterInput = app.querySelector<HTMLInputElement>(".filter-input");
   const dateWindowSlider = app.querySelector<HTMLInputElement>(".date-window-slider");
   const dateWindowValue = app.querySelector<HTMLElement>(".date-window-value");
   const contactsFullBtn = app.querySelector<HTMLButtonElement>(".contacts-full-btn");
-  const copyTableBtn = app.querySelector<HTMLButtonElement>(".copy-table-btn")!;
-  const downloadTableBtn = app.querySelector<HTMLButtonElement>(".download-table-btn")!;
+  const copyTableBtn = app.querySelector<HTMLButtonElement>(".copy-table-btn");
+  const downloadTableBtn = app.querySelector<HTMLButtonElement>(".download-table-btn");
   const status = app.querySelector<HTMLDivElement>(".push-status");
 
   app.querySelectorAll<HTMLButtonElement>(".top-tabs .tab-btn").forEach((btn) => {
@@ -2179,7 +2230,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         const r = await fetchJson<Record<string, unknown>[]>(viewPath(next));
         void renderTable(next, r, dealsIndex);
       } catch (e) {
-        status.textContent = `Ошибка загрузки: ${String(e)}`;
+        if (status) status.textContent = `Ошибка загрузки: ${String(e)}`;
       }
     };
   });
@@ -2207,7 +2258,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     const r = await fetchJson<Record<string, unknown>[]>(VIEW_META[next].path);
     void renderTable(next, r, dealsIndex);
   }; */
-  filterInput.oninput = () => { filter = filterInput.value; draw(); };
+  if (filterInput) {
+    filterInput.oninput = () => { filter = filterInput.value; draw(); };
+  }
   if (dateWindowSlider && dateWindowValue) {
     dateWindowSlider.oninput = () => {
       const next = Number(dateWindowSlider.value);
@@ -2230,7 +2283,86 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       draw();
     };
   }
-  copyTableBtn.onclick = async () => {
+  const utmMediumSelect = app.querySelector<HTMLSelectElement>(".utm-medium-select");
+  const utmSourceSelect = app.querySelector<HTMLSelectElement>(".utm-source-select");
+  const utmCampaignInput = app.querySelector<HTMLInputElement>(".utm-campaign-input");
+  const utmContentInput = app.querySelector<HTMLInputElement>(".utm-content-input");
+  const utmTermInput = app.querySelector<HTMLInputElement>(".utm-term-input");
+  const utmWriteBtn = app.querySelector<HTMLButtonElement>(".utm-write-btn");
+  const utmWriteStatus = app.querySelector<HTMLSpanElement>(".utm-write-status");
+  const utmPreviewCell = app.querySelector<HTMLElement>(".utm-preview-cell");
+  const copyUtmBtn = app.querySelector<HTMLButtonElement>(".copy-utm-btn");
+
+  const setUtmPreview = (tag: string): void => {
+    utmLatestTag = tag;
+    if (utmPreviewCell) utmPreviewCell.textContent = tag;
+  };
+
+  const setSources = (medium: string): void => {
+    if (!utmSourceSelect) return;
+    const sources = UTM_SOURCES_BY_MEDIUM[medium] || [];
+    utmSourceSelect.innerHTML = sources.map((src) => `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`).join("");
+  };
+
+  if (utmMediumSelect && utmSourceSelect && utmWriteBtn && utmCampaignInput && utmContentInput && utmTermInput) {
+    const mediums = Object.keys(UTM_SOURCES_BY_MEDIUM);
+    utmMediumSelect.innerHTML = mediums.map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
+    setSources(utmMediumSelect.value || mediums[0] || "");
+
+    utmMediumSelect.onchange = () => {
+      setSources(utmMediumSelect.value);
+    };
+
+    utmWriteBtn.onclick = async () => {
+      const payload = {
+        utm_medium: (utmMediumSelect.value || "").trim(),
+        utm_source: (utmSourceSelect.value || "").trim(),
+        utm_campaign: (utmCampaignInput.value || "").trim(),
+        utm_content: (utmContentInput.value || "").trim(),
+        utm_term: (utmTermInput.value || "").trim(),
+      };
+      if (!payload.utm_campaign || !payload.utm_content || !payload.utm_term) {
+        if (utmWriteStatus) utmWriteStatus.textContent = "Заполните Name, Content и Term";
+        return;
+      }
+      utmWriteBtn.disabled = true;
+      if (utmWriteStatus) utmWriteStatus.textContent = "Сохраняю...";
+      try {
+        const resp = await fetch("/api/utm", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await resp.json() as { ok?: boolean; row?: Record<string, unknown>; utm_tag?: string; error?: string };
+        if (!resp.ok || !data.ok) {
+          if (utmWriteStatus) utmWriteStatus.textContent = `Ошибка записи: ${String(data.error || resp.status)}`;
+          return;
+        }
+        setUtmPreview(String(data.row?.["UTM Tag"] ?? data.utm_tag ?? ""));
+        if (utmWriteStatus) utmWriteStatus.textContent = "Сохранено";
+        const refreshed = await fetchJson<Record<string, unknown>[]>(viewPath(view));
+        await renderTable(view, refreshed, dealsIndex);
+      } catch (e) {
+        if (utmWriteStatus) utmWriteStatus.textContent = `Ошибка записи: ${String(e)}`;
+      } finally {
+        utmWriteBtn.disabled = false;
+      }
+    };
+  }
+
+  if (copyUtmBtn) {
+    copyUtmBtn.onclick = async () => {
+      if (!utmLatestTag) return;
+      try {
+        await navigator.clipboard.writeText(utmLatestTag);
+        if (utmWriteStatus) utmWriteStatus.textContent = "UTM скопирован";
+      } catch (e) {
+        if (utmWriteStatus) utmWriteStatus.textContent = `Ошибка копирования: ${String(e)}`;
+      }
+    };
+  }
+
+  if (copyTableBtn) copyTableBtn.onclick = async () => {
     const headers = cols.map((c) => displayColName(view, c));
     const lines = [headers.join("\t")];
     for (const r of visibleRows) {
@@ -2243,7 +2375,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       if (status) status.textContent = `Ошибка копирования: ${String(e)}`;
     }
   };
-  downloadTableBtn.onclick = () => {
+  if (downloadTableBtn) downloadTableBtn.onclick = () => {
     const headers = cols.map((c) => displayColName(view, c));
     const esc = (v: unknown): string => `"${String(v ?? "").replaceAll('"', '""')}"`;
     const csv = [
@@ -2260,6 +2392,10 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     URL.revokeObjectURL(a.href);
     if (status) status.textContent = `Скачано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
   };
+  if (isUtmConstructor && !utmLatestTag) {
+    const lastFromRows = String(viewRows[0]?.["UTM Tag"] ?? "");
+    setUtmPreview(lastFromRows);
+  }
   draw();
 }
 
