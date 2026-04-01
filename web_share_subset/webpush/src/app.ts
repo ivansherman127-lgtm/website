@@ -2107,6 +2107,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const kpiRows =
     view === "funnels_hierarchy"
       ? viewRows.filter((r) => String(r["__node"] ?? "").trim() === "code")
+      : isManagerHierarchy
+        ? viewRows.filter((r) => String(r["Level"] ?? "").trim() === "Manager")
       : isAssocEmailHierarchy
         ? viewRows.filter((r) => num(r["__assoc_email_detail"]) === 0)
         : isAssocEventHierarchy
@@ -2172,9 +2174,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           ? `<button class="expand-all-toggle-btn">Развернуть всё</button>`
           : ""
       }
-      <input type="search" placeholder="Фильтр по строке…" class="filter-input" />
       <span class="row-note"></span>
     </div>
+      ${isUtmConstructor ? "" : '<div class="table-filter-row"><input type="search" placeholder="Фильтр по строке…" class="filter-input" /></div>'}
     ${canSaveViewJson ? '<div class="push-status muted"></div>' : ""}
     <div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
     </main>
