@@ -478,6 +478,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${yandexLeadLogic.qual} AS is_qual,
            ${yandexLeadLogic.unqual} AS is_unqual,
            ${yandexLeadLogic.refusal} AS is_refusal,
+           ${yandexLeadLogic.invalid} AS is_invalid,
            CASE WHEN COALESCE(l.is_paid_deal, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_yandex_leads_raw l
          LEFT JOIN mart_deals_enriched m ON m."ID" = l."ID"
@@ -494,6 +495,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            is_qual,
            is_unqual,
            is_refusal,
+           is_invalid,
            is_revenue
          FROM ysrc
          WHERE created_date <> ''
@@ -575,6 +577,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          SUM(b.is_unqual) AS "Неквал",
          SUM(CASE WHEN b.is_qual = 0 AND b.is_unqual = 0 THEN 1 ELSE 0 END) AS "Неизвестно",
          SUM(b.is_refusal) AS "Отказы",
+         SUM(b.is_invalid) AS "Невалидные_лиды",
          SUM(b.is_revenue) AS "Сделок_с_выручкой",
          SUM(CASE WHEN b.is_revenue = 1 THEN b.revenue_amount ELSE 0 END) AS "Ассоц_выручка",
          COALESCE(sa.spend_alloc, 0) AS "Расход, ₽",
