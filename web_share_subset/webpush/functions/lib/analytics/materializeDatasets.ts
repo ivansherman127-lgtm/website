@@ -502,9 +502,18 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          SELECT MAX(created_dt) AS latest_created_dt FROM base WHERE created_dt IS NOT NULL
        ),
        latest_spend AS (
-         SELECT MAX(date(COALESCE(NULLIF(TRIM(COALESCE(month, "Месяц")), ''), '') || '-01', 'start of month', '+1 month', '-1 day')) AS latest_spend_dt
+         SELECT MAX(date(NULLIF(TRIM(COALESCE("День", '')), ''))) AS latest_spend_dt
          FROM stg_yandex_stats
-         WHERE COALESCE(NULLIF(TRIM(COALESCE(month, "Месяц")), ''), '') <> ''
+         WHERE COALESCE(NULLIF(TRIM(COALESCE("День", '')), ''), '') <> ''
+       ),
+       latest_yandex AS (
+         SELECT
+           CASE
+             WHEN (SELECT latest_spend_dt FROM latest_spend) IS NULL THEN (SELECT latest_created_dt FROM latest)
+             WHEN (SELECT latest_created_dt FROM latest) IS NULL THEN (SELECT latest_spend_dt FROM latest_spend)
+             WHEN date((SELECT latest_spend_dt FROM latest_spend)) >= date((SELECT latest_created_dt FROM latest)) THEN (SELECT latest_spend_dt FROM latest_spend)
+             ELSE (SELECT latest_created_dt FROM latest)
+           END AS latest_yandex_dt
        ),
        campaign_month_spend AS (
          SELECT
@@ -571,7 +580,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          COALESCE(sa.spend_alloc, 0) AS "Расход, ₽",
          SUM(CASE WHEN b.is_revenue = 1 THEN b.revenue_amount ELSE 0 END) - COALESCE(sa.spend_alloc, 0) AS "Прибыль",
          MAX(b.created_dt) AS "Макс_дата_в_строке",
-         COALESCE((SELECT latest_spend_dt FROM latest_spend), (SELECT latest_created_dt FROM latest)) AS "Дата_последней_записи_Yandex"
+         (SELECT latest_yandex_dt FROM latest_yandex) AS "Дата_последней_записи_Yandex"
        FROM base b
        LEFT JOIN spend_alloc sa
          ON sa.week_start = b.week_start
