@@ -1360,6 +1360,13 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     if (view === "media_yandex" && hasDateWindowControl) {
       const monthly = filterRowsByMonthsBack(mediaYandexMonthlyRows, "month", dateWindowMonths);
       const mByProject = new Map<string, { leads: number; paid: number; revenue: number; spend: number }>();
+      const assocRevenueByProject = new Map<string, number>();
+      for (const r of viewRows) {
+        const p = String(r["Yandex кампания"] ?? r["project_name"] ?? "").trim();
+        if (!p) continue;
+        const prev = assocRevenueByProject.get(p) || 0;
+        assocRevenueByProject.set(p, prev + num(r["Ассоц. Выручка"] ?? r["assoc_revenue"]));
+      }
       for (const r of monthly) {
         const p = mapYandexProjectGroup(r["project_name"]);
         if (!p) continue;
@@ -1389,7 +1396,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         const unqual = ym.unqual;
         const refusal = ym.refusal;
         const clicks = ym.clicks;
-        const assocRevenue = v.revenue;
+        const assocRevenue = Math.max(v.revenue, assocRevenueByProject.get(project) || 0);
         return {
           "Yandex кампания": project,
           "Yandex объявление": "-",
