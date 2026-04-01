@@ -112,6 +112,8 @@ function buildYandexNoMonthHierarchyRows(
       project_name: project,
       ad_id: adId,
       ad_title: String(raw.ad_title ?? "").trim(),
+      first_month: String(raw.first_month ?? "").trim(),
+      last_month: String(raw.last_month ?? "").trim(),
       leads_raw: Number(raw.leads_raw ?? 0) || 0,
       payments_count: Number(raw.payments_count ?? raw.paid_deals_raw ?? 0) || 0,
       paid_deals_raw: Number(raw.paid_deals_raw ?? raw.payments_count ?? 0) || 0,
@@ -302,7 +304,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          UNION
          SELECT spend_month AS month FROM spend_by_month WHERE COALESCE(spend_month, '') <> ''
        )
-       SELECT "Level", "Период", "Сделок_с_выручкой", "Выручка", "Расход, ₽", "Прибыль", month, "__pay_month"
+      SELECT "Level", "Период", "Сделок_с_выручкой", "Выручка", "Расход, ₽", "Прибыль", month, "__pay_month"
        FROM (
          -- Month header rows
          SELECT
@@ -315,7 +317,6 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            month,
            month AS "__pay_month",
            0 AS _sort_level,
-           0 AS _sort_total,
            '' AS _sort_lead_month
          FROM all_months am
          LEFT JOIN paid_revenue pr ON pr.pay_month = am.month
@@ -332,26 +333,11 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            pbc.pay_month AS month,
            pbc.pay_month AS "__pay_month",
            1 AS _sort_level,
-           0 AS _sort_total,
            COALESCE(pbc.lead_month, '') AS _sort_lead_month
          FROM paid_revenue_by_creation pbc
          WHERE COALESCE(pbc.pay_month, '') <> ''
-         UNION ALL
-         -- Total row
-         SELECT
-           'Total' AS "Level",
-           'Итого' AS "Период",
-           (SELECT COALESCE(SUM(paid_deals), 0) FROM paid_revenue) AS "Сделок_с_выручкой",
-           (SELECT COALESCE(SUM(revenue), 0) FROM paid_revenue) AS "Выручка",
-           (SELECT COALESCE(SUM(spend), 0) FROM spend_by_month) AS "Расход, ₽",
-           (SELECT COALESCE(SUM(revenue), 0) FROM paid_revenue) - (SELECT COALESCE(SUM(spend), 0) FROM spend_by_month) AS "Прибыль",
-           '' AS month,
-           '' AS "__pay_month",
-           0 AS _sort_level,
-           1 AS _sort_total,
-           '' AS _sort_lead_month
        ) q
-       ORDER BY month DESC, _sort_total ASC, _sort_level ASC, _sort_lead_month DESC`,
+       ORDER BY month DESC, _sort_level ASC, _sort_lead_month DESC`,
     )
     .all<Record<string, unknown>>();
   await upsertDataset(db, "global/budget_monthly.json", rowsToJson((budgetMonthly.results ?? []) as Record<string, unknown>[]));
@@ -668,39 +654,15 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        )
        SELECT
          "Период",
-         "Актуальная база email",
-         "Контактов email (DB)",
-         "Рассылок за месяц",
-         "Лиды",
-         "Сделок с выручкой",
-         "Выручка",
+         ${goodEmailContactsExpr} AS "Актуальная база email",
+         ${totalEmailContactsExpr} AS "Контактов email (DB)",
+         sends AS "Рассылок за месяц",
+         leads AS "Лиды",
+         paid_deals AS "Сделок с выручкой",
+         revenue AS "Выручка",
          month
-       FROM (
-         SELECT
-           "Период",
-           ${goodEmailContactsExpr} AS "Актуальная база email",
-           ${totalEmailContactsExpr} AS "Контактов email (DB)",
-           sends AS "Рассылок за месяц",
-           leads AS "Лиды",
-           paid_deals AS "Сделок с выручкой",
-           revenue AS "Выручка",
-           month,
-           0 AS _sort_total
-         FROM month_rows
-         UNION ALL
-         SELECT
-           'Итого' AS "Период",
-           ${goodEmailContactsExpr} AS "Актуальная база email",
-           ${totalEmailContactsExpr} AS "Контактов email (DB)",
-           SUM(sends) AS "Рассылок за месяц",
-           SUM(leads) AS "Лиды",
-           SUM(paid_deals) AS "Сделок с выручкой",
-           SUM(revenue) AS "Выручка",
-           '' AS month,
-           1 AS _sort_total
-         FROM month_rows
-       ) q
-       ORDER BY month DESC, _sort_total ASC`,
+       FROM month_rows
+       ORDER BY month DESC`,
     )
     .all<Record<string, unknown>>();
   await upsertDataset(db, "email_operational_summary.json", rowsToJson((emailOperationalSummary.results ?? []) as Record<string, unknown>[]));
@@ -2091,6 +2053,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${groupedStatsProjectExpr} AS project_name,
            REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
            MIN(NULLIF(TRIM(COALESCE("Заголовок", '')), '')) AS ad_title,
+           MIN(COALESCE(NULLIF(TRIM(COALESCE(month, "Месяц")), ''), '')) AS first_spend_month,
+           MAX(COALESCE(NULLIF(TRIM(COALESCE(month, "Месяц")), ''), '')) AS last_spend_month,
            SUM(COALESCE("Клики", 0)) AS clicks,
            SUM(COALESCE("Расход, ₽", 0)) AS spend
          FROM stg_yandex_stats
@@ -2101,6 +2065,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          SELECT
            COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name,
            ${sourceYandexAdExpr} AS ad_id,
+           MIN(COALESCE(NULLIF(TRIM(COALESCE(src.month, '')), ''), '')) AS first_lead_month,
+           MAX(COALESCE(NULLIF(TRIM(COALESCE(src.month, '')), ''), '')) AS last_lead_month,
            COUNT(*) AS leads_raw,
            SUM(CASE WHEN COALESCE(src.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END) AS payments_count,
            SUM(CASE WHEN COALESCE(src.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END) AS paid_deals_raw,
@@ -2122,6 +2088,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          d.project_name,
          d.ad_id,
          COALESCE(ys.ad_title, '') AS ad_title,
+         COALESCE(NULLIF(ys.first_spend_month, ''), NULLIF(yd.first_lead_month, ''), '') AS first_month,
+         COALESCE(NULLIF(ys.last_spend_month, ''), NULLIF(yd.last_lead_month, ''), '') AS last_month,
          COALESCE(yd.leads_raw, 0) AS leads_raw,
          COALESCE(yd.payments_count, 0) AS payments_count,
          COALESCE(yd.paid_deals_raw, 0) AS paid_deals_raw,

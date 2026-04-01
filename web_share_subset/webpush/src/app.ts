@@ -151,7 +151,7 @@ function formatCell(col: string, v: unknown): string {
 
 function isTotalValue(v: unknown): boolean {
   const s = String(v ?? "").trim().toLowerCase();
-  return s === "итого";
+  return s === "total";
 }
 
 function monthNameToNumber(s: string): number {
@@ -317,7 +317,7 @@ function renderWeeklyBitrixExpandableTable(rows: Record<string, unknown>[], expa
     const items = byWeek.get(week) || [];
     const totals: Record<string, unknown> = {
       "Неделя": week,
-      "Воронка": "Итого",
+      "Воронка": "Всего",
       "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
       "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
       "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
@@ -408,7 +408,7 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
     const items = byWeek.get(week) || [];
     const totals: Record<string, unknown> = {
       "Неделя": week,
-      "Кампания": "Итого",
+      "Кампания": "Всего",
       "ID кампании": "-",
       "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
       "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
@@ -843,6 +843,8 @@ function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown
     "Yandex кампания": project,
     "Yandex объявление": "-",
     "Заголовок": "-",
+    "Первый месяц": String(raw["first_month"] ?? "").trim(),
+    "Последний месяц": String(raw["last_month"] ?? "").trim(),
     "Лиды": leads,
     "Квал": qual,
     "Конверсия в Квал": leads > 0 ? qual / leads : 0,
@@ -878,6 +880,8 @@ function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): R
     "Yandex кампания": project,
     "Yandex объявление": adId,
     "Заголовок": adTitle,
+    "Первый месяц": String(raw["first_month"] ?? "").trim(),
+    "Последний месяц": String(raw["last_month"] ?? "").trim(),
     "Лиды": leads,
     "Квал": qual,
     "Конверсия в Квал": leads > 0 ? qual / leads : 0,
@@ -1573,17 +1577,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       );
       const allowed = new Set(months.map((r) => String(r["month"] ?? r["Период"] ?? "").trim()).filter(Boolean));
       const details = viewRows.filter((r) => String(r["Level"] ?? "") === "Detail" && allowed.has(String(r["month"] ?? "").trim()));
-      const total = {
-        "Level": "Total",
-        "Период": "Итого",
-        "Сделок_с_выручкой": months.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
-        "Выручка": months.reduce((a, x) => a + num(x["Выручка"]), 0),
-        "Расход, ₽": months.reduce((a, x) => a + num(x["Расход, ₽"]), 0),
-        "Прибыль": months.reduce((a, x) => a + num(x["Прибыль"]), 0),
-        "month": "",
-        "__pay_month": "",
-      };
-      data = [...months, ...details, total];
+      data = [...months, ...details];
     }
     if (view === "contacts_unique" && contactsFullOnly) {
       data = data.filter((r) => {
@@ -1707,7 +1701,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       for (const r of data) {
         const lvl = String(r["Level"] ?? "").trim();
         const payMonth = String(r["__pay_month"] ?? r["month"] ?? r["Период"] ?? "").trim();
-        if (lvl === "Month" || lvl === "Total") ordered.push(r);
+        if (lvl === "Month") ordered.push(r);
         else if (lvl === "Detail" && expandedBudget.has(payMonth)) ordered.push(r);
       }
       data = ordered;
@@ -2065,7 +2059,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           : isYandexProjectHierarchy
             ? viewRows.filter((r) => num(r["__yandex_project_detail"]) === 0)
             : isBudgetHierarchy
-              ? viewRows.filter((r) => String(r["Level"] ?? "").trim() !== "Detail")
+              ? viewRows.filter((r) => String(r["Level"] ?? "").trim() === "Month")
               : viewRows;
   const totalRevenue = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Выручка", "выручка"]), 0);
   const deals = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Сделок_с_выручкой", "Сделок с выручкой"]), 0);
