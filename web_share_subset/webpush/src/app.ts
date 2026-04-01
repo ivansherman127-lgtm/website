@@ -2,17 +2,15 @@ import "./style.css";
 import Chart from "chart.js/auto";
 import { dataUrl, staticUrl } from "./data-source";
 import { mapYandexProjectGroup } from "./yandexProjectGroups";
+import mediumConfigJson from "../functions/api/utm_medium_sources.json";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const columnAliasesByView = new Map<string, Record<string, string>>();
 let utmLatestTag = "";
 let utmSessionRows: Record<string, unknown>[] = [];
 
-const UTM_SOURCES_BY_MEDIUM: Record<string, string[]> = {
-  cpc: ["yandexd", "headhunter"],
-  email: ["sendsay", "unisender"],
-  tg: ["social", "cybered"],
-};
+type UtmMediumEntry = { value: string; label: string; sourceType: "select" | "freetext"; hasPartner?: boolean; sources: string[] };
+const UTM_MEDIUM_CONFIG: UtmMediumEntry[] = (mediumConfigJson as { mediums: UtmMediumEntry[] }).mediums;
 
 
 async function fetchJson<T>(path: string): Promise<T> {
@@ -2203,9 +2201,14 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         </label>
         <label>Source
           <select class="utm-source-select"></select>
+          <input class="utm-source-freetext" type="text" placeholder="Введите источник" style="display:none" />
         </label>
         <label>Name (Campaign)
-          <input class="utm-campaign-input" type="text" placeholder="Например, spring_sale_2026" />
+          <span class="utm-campaign-row">
+            <input class="utm-campaign-input" type="text" placeholder="Например, spring_sale_2026" />
+            <label class="utm-partner-toggle-wrap" style="display:none"><input type="checkbox" class="utm-partner-toggle" /> Partner</label>
+            <input class="utm-partner-input" type="text" placeholder="Partner" style="display:none" />
+          </span>
         </label>
         <label>Link
           <input class="utm-link-input" type="url" placeholder="https://example.com/campaign" />
@@ -2322,7 +2325,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   }
   const utmMediumSelect = app.querySelector<HTMLSelectElement>(".utm-medium-select");
   const utmSourceSelect = app.querySelector<HTMLSelectElement>(".utm-source-select");
+  const utmSourceFreetext = app.querySelector<HTMLInputElement>(".utm-source-freetext");
   const utmCampaignInput = app.querySelector<HTMLInputElement>(".utm-campaign-input");
+  const utmPartnerToggleWrap = app.querySelector<HTMLElement>(".utm-partner-toggle-wrap");
+  const utmPartnerToggle = app.querySelector<HTMLInputElement>(".utm-partner-toggle");
+  const utmPartnerInput = app.querySelector<HTMLInputElement>(".utm-partner-input");
   const utmLinkInput = app.querySelector<HTMLInputElement>(".utm-link-input");
   const utmContentInput = app.querySelector<HTMLInputElement>(".utm-content-input");
   const utmTermInput = app.querySelector<HTMLInputElement>(".utm-term-input");
@@ -2338,25 +2345,46 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
 
   const setSources = (medium: string): void => {
     if (!utmSourceSelect) return;
-    const sources = UTM_SOURCES_BY_MEDIUM[medium] || [];
-    utmSourceSelect.innerHTML = sources.map((src) => `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`).join("");
+    const entry = UTM_MEDIUM_CONFIG.find(m => m.value === medium);
+    if (entry?.sourceType === "freetext") {
+      utmSourceSelect.style.display = "none";
+      if (utmSourceFreetext) { utmSourceFreetext.style.display = ""; utmSourceFreetext.value = ""; }
+    } else {
+      utmSourceSelect.style.display = "";
+      if (utmSourceFreetext) { utmSourceFreetext.style.display = "none"; utmSourceFreetext.value = ""; }
+      const sources = entry?.sources || [];
+      utmSourceSelect.innerHTML = sources.map((src) => `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`).join("");
+    }
+    const showPartner = !!(entry?.hasPartner);
+    if (utmPartnerToggleWrap) utmPartnerToggleWrap.style.display = showPartner ? "" : "none";
+    if (!showPartner) {
+      if (utmPartnerToggle) utmPartnerToggle.checked = false;
+      if (utmPartnerInput) { utmPartnerInput.style.display = "none"; utmPartnerInput.value = ""; }
+    }
   };
 
   const syncUtmWriteState = (): void => {
     if (!utmWriteBtn || !utmMediumSelect || !utmSourceSelect || !utmCampaignInput || !utmLinkInput || !utmContentInput || !utmTermInput) return;
+    const entry = UTM_MEDIUM_CONFIG.find(m => m.value === utmMediumSelect.value);
+    const sourceValue = entry?.sourceType === "freetext"
+      ? (utmSourceFreetext?.value ?? "")
+      : utmSourceSelect.value;
+    const partnerRequired = !!(utmPartnerToggle?.checked);
+    const partnerValue = partnerRequired ? (utmPartnerInput?.value ?? "") : "x";
     const ready = [
       utmMediumSelect.value,
-      utmSourceSelect.value,
+      sourceValue,
       utmCampaignInput.value,
       utmLinkInput.value,
       utmContentInput.value,
       utmTermInput.value,
+      partnerValue,
     ].every((value) => String(value || "").trim() !== "");
     utmWriteBtn.disabled = !ready;
   };
 
   if (utmMediumSelect && utmSourceSelect && utmWriteBtn && utmCampaignInput && utmLinkInput && utmContentInput && utmTermInput) {
-    const mediums = Object.keys(UTM_SOURCES_BY_MEDIUM);
+    const mediums = UTM_MEDIUM_CONFIG.map(m => m.value);
     utmMediumSelect.innerHTML = mediums.map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
     setSources(utmMediumSelect.value || mediums[0] || "");
     syncUtmWriteState();
@@ -2366,16 +2394,32 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       syncUtmWriteState();
     };
     utmSourceSelect.onchange = syncUtmWriteState;
+    if (utmSourceFreetext) utmSourceFreetext.oninput = syncUtmWriteState;
     utmCampaignInput.oninput = syncUtmWriteState;
     utmLinkInput.oninput = syncUtmWriteState;
     utmContentInput.oninput = syncUtmWriteState;
     utmTermInput.oninput = syncUtmWriteState;
+    if (utmPartnerToggle) {
+      utmPartnerToggle.onchange = () => {
+        if (utmPartnerInput) utmPartnerInput.style.display = utmPartnerToggle.checked ? "" : "none";
+        if (!utmPartnerToggle.checked && utmPartnerInput) utmPartnerInput.value = "";
+        syncUtmWriteState();
+      };
+    }
+    if (utmPartnerInput) utmPartnerInput.oninput = syncUtmWriteState;
 
     utmWriteBtn.onclick = async () => {
+      const entry = UTM_MEDIUM_CONFIG.find(m => m.value === utmMediumSelect.value);
+      const sourceValue = entry?.sourceType === "freetext"
+        ? (utmSourceFreetext?.value || "").trim()
+        : (utmSourceSelect.value || "").trim();
+      const campaignBase = (utmCampaignInput.value || "").trim();
+      const partnerVal = utmPartnerToggle?.checked ? (utmPartnerInput?.value || "").trim() : "";
+      const campaignFinal = partnerVal ? `${campaignBase}|${partnerVal}` : campaignBase;
       const payload = {
         utm_medium: (utmMediumSelect.value || "").trim(),
-        utm_source: (utmSourceSelect.value || "").trim(),
-        utm_campaign: (utmCampaignInput.value || "").trim(),
+        utm_source: sourceValue,
+        utm_campaign: campaignFinal,
         campaign_link: (utmLinkInput.value || "").trim(),
         utm_content: (utmContentInput.value || "").trim(),
         utm_term: (utmTermInput.value || "").trim(),

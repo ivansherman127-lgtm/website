@@ -16,6 +16,7 @@
       "value": "social",
       "label": "Social",
       "sourceType": "select",
+      "hasPartner": true,
       "sources": ["telegram", "youtube", "yandex_dzen", "instagram", "rutube", "vk", "max"]
     },
     {
