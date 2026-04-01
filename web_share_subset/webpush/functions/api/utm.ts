@@ -133,8 +133,8 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const content = asTrimmedString(body.utm_content);
   const term = asTrimmedString(body.utm_term);
 
-  if (!campaign || !campaignLink || !content || !term) {
-    return json(400, { ok: false, error: "all_fields_required" });
+  if (!campaign || !campaignLink) {
+    return json(400, { ok: false, error: "required_fields_missing" });
   }
 
   const utmTag = buildUtmTag({

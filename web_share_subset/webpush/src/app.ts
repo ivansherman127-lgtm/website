@@ -2196,14 +2196,14 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         ? `<section class="utm-builder">
       <h3>Создать UTM тег</h3>
       <div class="utm-grid">
-        <label>Medium
+        <label>Medium <span class="required-marker">*</span>
           <select class="utm-medium-select"></select>
         </label>
-        <label>Source
+        <label>Source <span class="required-marker">*</span>
           <select class="utm-source-select"></select>
           <input class="utm-source-freetext" type="text" placeholder="Введите источник" style="display:none" />
         </label>
-        <label>Name (Campaign)
+        <label>Name (Campaign) <span class="required-marker">*</span>
           <span class="utm-campaign-row">
             <input class="utm-campaign-input" type="text" placeholder="Например, spring_sale_2026" />
             <span class="utm-partner-field">
@@ -2212,7 +2212,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
             </span>
           </span>
         </label>
-        <label>Link
+        <label>Link <span class="required-marker">*</span>
           <input class="utm-link-input" type="url" placeholder="https://example.com/campaign" />
         </label>
         <label>Content
@@ -2378,8 +2378,6 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       sourceValue,
       utmCampaignInput.value,
       utmLinkInput.value,
-      utmContentInput.value,
-      utmTermInput.value,
       partnerValue,
     ].every((value) => String(value || "").trim() !== "");
     utmWriteBtn.disabled = !ready;
@@ -2426,8 +2424,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         utm_content: (utmContentInput.value || "").trim(),
         utm_term: (utmTermInput.value || "").trim(),
       };
-      if (!payload.utm_medium || !payload.utm_source || !payload.utm_campaign || !payload.campaign_link || !payload.utm_content || !payload.utm_term) {
-        if (utmWriteStatus) utmWriteStatus.textContent = "Заполните все поля";
+      if (!payload.utm_medium || !payload.utm_source || !payload.utm_campaign || !payload.campaign_link) {
+        if (utmWriteStatus) utmWriteStatus.textContent = "Заполните обязательные поля";
         return;
       }
       utmWriteBtn.disabled = true;
