@@ -298,9 +298,14 @@ function renderWeeklyBitrixExpandableTable(rows: Record<string, unknown>[], expa
     "Воронка",
     "Лиды",
     "Квал",
+    "Конверсия в Квал",
     "Неквал",
+    "Конверсия в Неквал",
+    "Неизвестно",
     "Отказы",
+    "Конверсия в Отказ",
     "В работе",
+    "Конверсия в работе",
     "Сделок_с_выручкой",
     "Выручка_сделки_недели",
     "Выручка_получена_на_неделе",
@@ -315,12 +320,22 @@ function renderWeeklyBitrixExpandableTable(rows: Record<string, unknown>[], expa
       "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
       "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
       "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
+      "Неизвестно": items.reduce((a, x) => a + num(x["Неизвестно"]), 0),
       "Отказы": items.reduce((a, x) => a + num(x["Отказы"]), 0),
       "В работе": items.reduce((a, x) => a + num(x["В работе"]), 0),
       "Сделок_с_выручкой": items.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
       "Выручка_сделки_недели": items.reduce((a, x) => a + num(x["Выручка_сделки_недели"]), 0),
       "Выручка_получена_на_неделе": items.reduce((a, x) => a + num(x["Выручка_получена_на_неделе"]), 0),
     };
+    const leads = num(totals["Лиды"]);
+    const qual = num(totals["Квал"]);
+    const unqual = num(totals["Неквал"]);
+    const refusal = num(totals["Отказы"]);
+    const inWork = num(totals["В работе"]);
+    totals["Конверсия в Квал"] = leads > 0 ? qual / leads : 0;
+    totals["Конверсия в Неквал"] = leads > 0 ? unqual / leads : 0;
+    totals["Конверсия в Отказ"] = leads > 0 ? refusal / leads : 0;
+    totals["Конверсия в работе"] = leads > 0 ? inWork / leads : 0;
     const open = expandedWeeks.has(week);
     bodyRows.push(
       `<tr class="week-row"><td><button class="week-expand-btn" data-week="${escapeHtml(week)}">${open ? "−" : "+"}</button> ${escapeHtml(week)}</td>${cols
@@ -373,8 +388,12 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
     "ID кампании",
     "Лиды",
     "Квал",
+    "Конверсия в Квал",
     "Неквал",
+    "Конверсия в Неквал",
+    "Неизвестно",
     "Отказы",
+    "Конверсия в Отказ",
     "Сделок_с_выручкой",
     "Ассоц_выручка",
     "Расход, ₽",
@@ -391,12 +410,20 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
       "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
       "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
       "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
+      "Неизвестно": items.reduce((a, x) => a + num(x["Неизвестно"]), 0),
       "Отказы": items.reduce((a, x) => a + num(x["Отказы"]), 0),
       "Сделок_с_выручкой": items.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
       "Ассоц_выручка": items.reduce((a, x) => a + num(x["Ассоц_выручка"]), 0),
       "Расход, ₽": items.reduce((a, x) => a + num(x["Расход, ₽"]), 0),
       "Прибыль": items.reduce((a, x) => a + num(x["Прибыль"]), 0),
     };
+    const leads = num(totals["Лиды"]);
+    const qual = num(totals["Квал"]);
+    const unqual = num(totals["Неквал"]);
+    const refusal = num(totals["Отказы"]);
+    totals["Конверсия в Квал"] = leads > 0 ? qual / leads : 0;
+    totals["Конверсия в Неквал"] = leads > 0 ? unqual / leads : 0;
+    totals["Конверсия в Отказ"] = leads > 0 ? refusal / leads : 0;
     const open = expandedWeeks.has(week);
     bodyRows.push(
       `<tr class="week-row"><td><button class="yweek-expand-btn" data-week="${escapeHtml(week)}">${open ? "−" : "+"}</button> ${escapeHtml(week)}</td>${cols
@@ -818,7 +845,6 @@ function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown
     "Неквал": unqual,
     "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
     "Неизвестно": unknown,
-    "Конверсия в Неизвестно": leads > 0 ? unknown / leads : 0,
     "Отказы": refusal,
     "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
     "Клики": clicks,
@@ -854,7 +880,6 @@ function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): R
     "Неквал": unqual,
     "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
     "Неизвестно": unknown,
-    "Конверсия в Неизвестно": leads > 0 ? unknown / leads : 0,
     "Отказы": refusal,
     "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
     "Клики": num(raw["clicks"]),
@@ -875,6 +900,7 @@ function toYandexMetrics(row: Record<string, unknown>): YandexLeadMetrics {
     leads: num(row["Leads"]),
     qual: num(row["Qual"]),
     unqual: num(row["Unqual"]),
+    unknown: num(row["Unknown"]),
     refusal: num(row["Refusal"]),
     clicks: num(row["Клики"]),
     spend: num(row["Расход, ₽"]),
@@ -894,7 +920,6 @@ function addKpi(row: Record<string, unknown>): Record<string, unknown> {
     ...row,
     "Конверсия в Квал": leads > 0 ? qual / leads : 0,
     "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
-    "Конверсия в Неизвестно": leads > 0 ? unknown / leads : 0,
     "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
     "Конверсия в работе": leads > 0 ? inWork / leads : 0,
     "Средний_чек": deals > 0 ? revenue / deals : 0,
@@ -976,7 +1001,6 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
         "Неквал": unqual,
         "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
         "Неизвестно": unknown,
-        "Конверсия в Неизвестно": leads > 0 ? unknown / leads : 0,
         "Отказы": refusal,
         // User rule: refusal conversion is based on qualified leads.
         "Конверсия в Отказ": qual > 0 ? refusal / qual : 0,
@@ -1078,7 +1102,6 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
         "Неквал": unqual,
         "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
         "Неизвестно": unknown,
-        "Конверсия в Неизвестно": leads > 0 ? unknown / leads : 0,
         "Отказы": refusal,
         "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
         "Клики": m.clicks,

@@ -45,7 +45,6 @@ def _add_kpi(df: pd.DataFrame) -> pd.DataFrame:
     leads = out["Лиды"].replace(0, pd.NA)
     out["Конверсия в Квал"] = (out["Квал"] / leads).fillna(0.0)
     out["Конверсия в Неквал"] = (out["Неквал"] / leads).fillna(0.0)
-    out["Конверсия в Неизвестно"] = (out.get("Неизвестно", 0) / leads).fillna(0.0)
     out["Конверсия в Отказ"] = (out["Отказы"] / leads).fillna(0.0)
     out["Конверсия в работе"] = (out["В работе"] / leads).fillna(0.0)
     out["Средний_чек"] = (out["Выручка"] / out["Сделок_с_выручкой"].replace(0, pd.NA)).fillna(0.0)

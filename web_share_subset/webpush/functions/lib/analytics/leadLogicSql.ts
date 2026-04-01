@@ -26,6 +26,7 @@ type SqlBuildParams = {
 type LeadLogicSql = {
   qual: string;
   unqual: string;
+  unknown: string;
   refusal: string;
   inWork: string;
   invalid: string;
@@ -73,6 +74,7 @@ export function buildLeadLogicSql(params: SqlBuildParams): LeadLogicSql {
 
   const qualConds: string[] = [];
   const unqualConds: string[] = [];
+  const unknownConds: string[] = [];
   const refusalConds: string[] = [];
   const inWorkConds: string[] = [];
 
@@ -84,11 +86,20 @@ export function buildLeadLogicSql(params: SqlBuildParams): LeadLogicSql {
         qualConds.push(base);
       } else if (rule.qual_state === "qual_from_date") {
         const month = normalizeDateToMonth(rule.qual_from_date);
-        if (month) qualConds.push(`${base} AND COALESCE(${params.monthExpr}, '') >= ${sqlQuote(month)}`);
+        if (month) {
+          qualConds.push(`${base} AND COALESCE(${params.monthExpr}, '') >= ${sqlQuote(month)}`);
+          unqualConds.push(`${base} AND COALESCE(${params.monthExpr}, '') < ${sqlQuote(month)}`);
+        }
       } else if (rule.qual_state === "refusal") {
+        // Refusal can only happen after qualification: count it in both refusal and qual.
+        qualConds.push(base);
         refusalConds.push(base);
       } else if (rule.qual_state === "not_qual") {
         unqualConds.push(base);
+      } else if (rule.qual_state === "not_yet") {
+        unqualConds.push(base);
+      } else if (rule.qual_state === "unassigned") {
+        unknownConds.push(base);
       }
 
       if (rule.working_state === "yes") inWorkConds.push(base);
@@ -99,10 +110,19 @@ export function buildLeadLogicSql(params: SqlBuildParams): LeadLogicSql {
     .map((tok) => `lower(COALESCE(${params.stageExpr}, '')) LIKE ${sqlQuote(`%${tok}%`)}`)
     .join(" OR ");
 
+  const qualCondSql = joinConds(qualConds);
+  const unqualCondSql = joinConds(unqualConds);
+  const unknownCondSql = joinConds(unknownConds);
+  const refusalCondSql = joinConds(refusalConds);
+
+  // Ensure every lead lands in qual/unqual/unknown. Any unmatched state is treated as unknown.
+  const fallbackUnknown = `NOT ((${qualCondSql}) OR (${unqualCondSql}) OR (${refusalCondSql}))`;
+
   return {
-    qual: `CASE WHEN ${joinConds(qualConds)} THEN 1 ELSE 0 END`,
-    unqual: `CASE WHEN ${joinConds(unqualConds)} OR (${invalidCond}) THEN 1 ELSE 0 END`,
-    refusal: `CASE WHEN ${joinConds(refusalConds)} THEN 1 ELSE 0 END`,
+    qual: `CASE WHEN ${qualCondSql} THEN 1 ELSE 0 END`,
+    unqual: `CASE WHEN ${unqualCondSql} OR (${invalidCond}) THEN 1 ELSE 0 END`,
+    unknown: `CASE WHEN ${unknownCondSql} OR (${fallbackUnknown}) THEN 1 ELSE 0 END`,
+    refusal: `CASE WHEN ${refusalCondSql} THEN 1 ELSE 0 END`,
     inWork: `CASE WHEN ${joinConds(inWorkConds)} THEN 1 ELSE 0 END`,
     invalid: `CASE WHEN ${invalidCond} THEN 1 ELSE 0 END`,
   };
