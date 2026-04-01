@@ -237,6 +237,38 @@ function rankToMonthSerial(rank: number): number {
   return y * 12 + (m - 1);
 }
 
+function monthSerialToRussianLabel(serial: number): string {
+  const year = Math.floor(serial / 12);
+  const monthIndex = serial % 12;
+  const months = [
+    "Январь",
+    "Февраль",
+    "Март",
+    "Апрель",
+    "Май",
+    "Июнь",
+    "Июль",
+    "Август",
+    "Сентябрь",
+    "Октябрь",
+    "Ноябрь",
+    "Декабрь",
+  ];
+  return `${months[monthIndex] || months[0]} ${year}`;
+}
+
+function monthsBackRangeLabel(rows: Record<string, unknown>[], dateCol: string, monthsBack: number): string {
+  if (!Number.isFinite(monthsBack) || monthsBack <= 0) return "";
+  const serials = rows
+    .map((r) => parseDateRank(r[dateCol]))
+    .filter((v): v is number => v !== null && Number.isFinite(v) && v !== Number.POSITIVE_INFINITY)
+    .map((v) => rankToMonthSerial(v));
+  if (!serials.length) return "";
+  const latest = Math.max(...serials);
+  const earliest = latest - (Math.max(1, Math.floor(monthsBack)) - 1);
+  return `${monthSerialToRussianLabel(earliest)}:${monthSerialToRussianLabel(latest)}`;
+}
+
 function filterRowsByMonthsBack(rows: Record<string, unknown>[], dateCol: string, monthsBack: number): Record<string, unknown>[] {
   if (!Number.isFinite(monthsBack) || monthsBack <= 0) return rows;
   const serials = rows
@@ -2132,7 +2164,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       }
       ${
         hasDateWindowControl
-          ? `<label class="date-window-inline">Период: <input class="date-window-slider" type="range" min="1" max="24" step="1" value="${dateWindowMonths}" /> <span class="date-window-value">${dateWindowMonths} мес.</span></label>`
+          ? `<label class="date-window-inline">Период: <input class="date-window-slider" type="range" min="1" max="24" step="1" value="${dateWindowMonths}" /> <span class="date-window-value">${escapeHtml(monthsBackRangeLabel(viewRows, dateWindowCol, dateWindowMonths))}</span></label>`
           : ""
       }
       ${
@@ -2212,7 +2244,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     dateWindowSlider.oninput = () => {
       const next = Number(dateWindowSlider.value);
       dateWindowMonths = Number.isFinite(next) && next > 0 ? Math.round(next) : 12;
-      dateWindowValue.textContent = `${dateWindowMonths} мес.`;
+      dateWindowValue.textContent = monthsBackRangeLabel(viewRows, dateWindowCol, dateWindowMonths);
       draw();
     };
   }
@@ -2271,6 +2303,7 @@ function toConvPct(v: unknown): number {
 async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
   writeUrlState("charts");
   let chartsMonthsBack = 12;
+  let bitrixMonths: Record<string, unknown>[] = [];
 
   app.innerHTML = `<div class="app-layout">
     <aside class="side-menu">
@@ -2284,7 +2317,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
         <p class="sub">Динамика продаж и выручки</p>
       </header>
       <div class="toolbar">
-        <label class="date-window-inline">Период: <input class="charts-date-window-slider" type="range" min="1" max="24" step="1" value="${chartsMonthsBack}" /> <span class="charts-date-window-value">${chartsMonthsBack} мес.</span></label>
+        <label class="date-window-inline">Период: <input class="charts-date-window-slider" type="range" min="1" max="24" step="1" value="${chartsMonthsBack}" /> <span class="charts-date-window-value">${escapeHtml(monthsBackRangeLabel(bitrixMonths, "Месяц", chartsMonthsBack))}</span></label>
       </div>
       <div class="charts-page"></div>
     </main>
@@ -2371,7 +2404,6 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
     },
   };
 
-  let bitrixMonths: Record<string, unknown>[] = [];
   let yandexMonths: Record<string, unknown>[] = [];
   let emailOps: Record<string, unknown>[] = [];
   let managerRows: Record<string, unknown>[] = [];
@@ -2646,10 +2678,11 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
   const slider = app.querySelector<HTMLInputElement>(".charts-date-window-slider");
   const sliderValue = app.querySelector<HTMLElement>(".charts-date-window-value");
   if (slider && sliderValue) {
+    sliderValue.textContent = monthsBackRangeLabel(bitrixMonths, "Месяц", chartsMonthsBack);
     slider.oninput = () => {
       const next = Number(slider.value);
       chartsMonthsBack = Number.isFinite(next) && next > 0 ? Math.round(next) : 12;
-      sliderValue.textContent = `${chartsMonthsBack} мес.`;
+      sliderValue.textContent = monthsBackRangeLabel(bitrixMonths, "Месяц", chartsMonthsBack);
       drawCharts();
     };
   }
