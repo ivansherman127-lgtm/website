@@ -1709,11 +1709,21 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
     if (isBudgetHierarchy) {
       const ordered: Record<string, unknown>[] = [];
+      const months = data.filter((r) => String(r["Level"] ?? "").trim() === "Month");
+      const detailsByMonth = new Map<string, Record<string, unknown>[]>();
       for (const r of data) {
-        const lvl = String(r["Level"] ?? "").trim();
+        if (String(r["Level"] ?? "").trim() !== "Detail") continue;
         const payMonth = budgetPayMonthKey(r);
-        if (lvl === "Month") ordered.push(r);
-        else if (lvl === "Detail" && expandedBudget.has(payMonth)) ordered.push(r);
+        if (!payMonth) continue;
+        if (!detailsByMonth.has(payMonth)) detailsByMonth.set(payMonth, []);
+        detailsByMonth.get(payMonth)!.push(r);
+      }
+      for (const m of months) {
+        const payMonth = budgetPayMonthKey(m);
+        ordered.push(m);
+        if (!expandedBudget.has(payMonth)) continue;
+        const details = detailsByMonth.get(payMonth) || [];
+        ordered.push(...details);
       }
       data = ordered;
     }
