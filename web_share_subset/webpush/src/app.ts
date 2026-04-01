@@ -2902,8 +2902,8 @@ async function boot(): Promise<void> {
     dealRevenueById.clear();
     yandexProjectLeadMetrics.clear();
     yandexMonthLeadMetrics.clear();
-    // Regenerate all table JSONs fresh from D1 using the current campaign-group mapping.
-    // Rate-limited server-side to 90 s so rapid reloads don't spam SQL.
+    // Refresh materialized datasets only when D1 source fingerprint changed.
+    // Server-side gate skips recomputation on unchanged raw/staging data.
     // This must succeed before we fetch any table data, otherwise we'd read stale/missing rows.
     const matRes = await fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" });
     if (!matRes.ok) {

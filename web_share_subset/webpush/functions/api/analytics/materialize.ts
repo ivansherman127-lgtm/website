@@ -6,37 +6,41 @@
 /// <reference types="@cloudflare/workers-types" />
 
 import { materializeSliceDatasets } from "../../lib/analytics/materializeDatasets";
+import { evaluateFreshness, saveFreshnessMeta } from "../../lib/analytics/sourceFreshness";
 
 interface Env {
   DB: D1Database;
 }
-
-const RATE_LIMIT_MS = 90_000;
-const RATE_LIMIT_KEY = "last_materialize_utc";
 
 export async function onRequestPost(context: {
   request: Request;
   env: Env;
 }): Promise<Response> {
   const db = context.env.DB;
+  const url = new URL(context.request.url);
+  const force = (url.searchParams.get("force") || "").toLowerCase() === "true";
 
-  // Rate-limit using a separate key from full rebuild so they don't interfere.
   try {
-    const meta = await db
-      .prepare(`SELECT v FROM analytics_build_meta WHERE k = ? LIMIT 1`)
-      .bind(RATE_LIMIT_KEY)
-      .first<{ v: string }>();
-    if (meta?.v) {
-      const lastMs = new Date(meta.v).getTime();
-      if (!Number.isNaN(lastMs) && Date.now() - lastMs < RATE_LIMIT_MS) {
-        return new Response(JSON.stringify({ ok: true, skipped: true, reason: "rate_limited" }), {
-          status: 200,
-          headers: { "content-type": "application/json; charset=utf-8" },
-        });
+    if (!force) {
+      const freshness = await evaluateFreshness(db);
+      if (!freshness.stale) {
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            skipped: true,
+            reason: freshness.reason,
+            fingerprint: freshness.fingerprint,
+            last_materialize_utc: freshness.meta.lastMaterializeUtc,
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json; charset=utf-8" },
+          },
+        );
       }
     }
   } catch {
-    // If metadata check fails, proceed with materialization anyway.
+    // If freshness check fails, continue with recomputation for correctness.
   }
 
   try {
@@ -55,13 +59,10 @@ export async function onRequestPost(context: {
         .run();
     }
 
-    await db
-      .prepare(
-        `INSERT OR REPLACE INTO analytics_build_meta (k, v, updated_at) VALUES (?, ?, datetime('now'))`,
-      )
-      .bind(RATE_LIMIT_KEY, new Date().toISOString())
-      .run();
-    return new Response(JSON.stringify({ ok: true, datasets: written.length }), {
+    const freshnessAfter = await evaluateFreshness(db);
+    await saveFreshnessMeta(db, freshnessAfter.fingerprint);
+
+    return new Response(JSON.stringify({ ok: true, skipped: false, datasets: written.length }), {
       status: 200,
       headers: { "content-type": "application/json; charset=utf-8" },
     });
