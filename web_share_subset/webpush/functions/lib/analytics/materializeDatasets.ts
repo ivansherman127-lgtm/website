@@ -368,7 +368,6 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE(revenue_amount, 0) AS revenue_amount,
            ${bitrixLeadLogic.qual} AS is_qual,
            ${bitrixLeadLogic.unqual} AS is_unqual,
-           ${bitrixLeadLogic.unknown} AS is_unknown,
            ${bitrixLeadLogic.refusal} AS is_refusal,
            ${bitrixLeadLogic.invalid} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
@@ -381,7 +380,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          COUNT(*) AS "Лиды",
          SUM(is_qual) AS "Квал",
          SUM(is_unqual) AS "Неквал",
-         SUM(is_unknown) AS "Неизвестно",
+         SUM(CASE WHEN is_qual = 0 AND is_unqual = 0 THEN 1 ELSE 0 END) AS "Неизвестно",
          SUM(is_refusal) AS "Отказы",
          SUM(is_in_work) AS "В работе",
          SUM(is_invalid) AS "Невалидные_лиды",
@@ -418,7 +417,6 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE(revenue_amount, 0) AS revenue_amount,
            ${bitrixLeadLogic.qual} AS is_qual,
            ${bitrixLeadLogic.unqual} AS is_unqual,
-           ${bitrixLeadLogic.unknown} AS is_unknown,
            ${bitrixLeadLogic.refusal} AS is_refusal,
            ${bitrixLeadLogic.invalid} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
@@ -454,7 +452,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          COUNT(*) AS "Лиды",
          SUM(is_qual) AS "Квал",
          SUM(is_unqual) AS "Неквал",
-         SUM(is_unknown) AS "Неизвестно",
+         SUM(CASE WHEN is_qual = 0 AND is_unqual = 0 THEN 1 ELSE 0 END) AS "Неизвестно",
          SUM(is_refusal) AS "Отказы",
          SUM(is_in_work) AS "В работе",
          SUM(is_invalid) AS "Невалидные_лиды",
@@ -493,7 +491,6 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE(l.revenue_amount, 0) AS revenue_amount,
            ${yandexLeadLogic.qual} AS is_qual,
            ${yandexLeadLogic.unqual} AS is_unqual,
-           ${yandexLeadLogic.unknown} AS is_unknown,
            ${yandexLeadLogic.refusal} AS is_refusal,
            CASE WHEN COALESCE(l.is_paid_deal, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_yandex_leads_raw l
@@ -510,7 +507,6 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            revenue_amount,
            is_qual,
            is_unqual,
-           is_unknown,
            is_refusal,
            is_revenue
          FROM ysrc
@@ -582,7 +578,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          COUNT(*) AS "Лиды",
          SUM(b.is_qual) AS "Квал",
          SUM(b.is_unqual) AS "Неквал",
-         SUM(b.is_unknown) AS "Неизвестно",
+         SUM(CASE WHEN b.is_qual = 0 AND b.is_unqual = 0 THEN 1 ELSE 0 END) AS "Неизвестно",
          SUM(b.is_refusal) AS "Отказы",
          SUM(b.is_revenue) AS "Сделок_с_выручкой",
          SUM(CASE WHEN b.is_revenue = 1 THEN b.revenue_amount ELSE 0 END) AS "Ассоц_выручка",

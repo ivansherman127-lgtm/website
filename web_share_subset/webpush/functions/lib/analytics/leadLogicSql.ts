@@ -115,13 +115,10 @@ export function buildLeadLogicSql(params: SqlBuildParams): LeadLogicSql {
   const unknownCondSql = joinConds(unknownConds);
   const refusalCondSql = joinConds(refusalConds);
 
-  // Ensure every lead lands in qual/unqual/unknown. Any unmatched state is treated as unknown.
-  const fallbackUnknown = `NOT ((${qualCondSql}) OR (${unqualCondSql}) OR (${refusalCondSql}))`;
-
   return {
     qual: `CASE WHEN ${qualCondSql} THEN 1 ELSE 0 END`,
     unqual: `CASE WHEN ${unqualCondSql} OR (${invalidCond}) THEN 1 ELSE 0 END`,
-    unknown: `CASE WHEN ${unknownCondSql} OR (${fallbackUnknown}) THEN 1 ELSE 0 END`,
+    unknown: `CASE WHEN ${unknownCondSql} THEN 1 ELSE 0 END`,
     refusal: `CASE WHEN ${refusalCondSql} THEN 1 ELSE 0 END`,
     inWork: `CASE WHEN ${joinConds(inWorkConds)} THEN 1 ELSE 0 END`,
     invalid: `CASE WHEN ${invalidCond} THEN 1 ELSE 0 END`,
