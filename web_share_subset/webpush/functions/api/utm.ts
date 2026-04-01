@@ -1,3 +1,5 @@
+import mediumConfig from "./utm_medium_sources.json";
+
 type D1Prepared = {
   bind: (...args: unknown[]) => D1Prepared;
   all: <T = Record<string, unknown>>() => Promise<{ results?: T[] }>;
@@ -13,13 +15,10 @@ interface Env {
   UTM: D1Database;
 }
 
-type UtmMedium = "cpc" | "email" | "tg";
+type MediumEntry = { value: string; label: string; sourceType: "select" | "freetext"; sources: string[] };
 
-const SOURCES_BY_MEDIUM: Record<UtmMedium, string[]> = {
-  cpc: ["yandexd", "headhunter"],
-  email: ["sendsay", "unisender"],
-  tg: ["social", "cybered"],
-};
+const MEDIUM_CONFIG: MediumEntry[] = (mediumConfig as { mediums: MediumEntry[] }).mediums;
+const MEDIUM_MAP = new Map<string, MediumEntry>(MEDIUM_CONFIG.map(m => [m.value, m]));
 
 type UtmRow = {
   "Дата создания": string;
@@ -92,10 +91,7 @@ async function fetchRows(db: D1Database): Promise<UtmRow[]> {
 export async function onRequestGet(context: { request: Request; env: Env }): Promise<Response> {
   const url = new URL(context.request.url);
   if ((url.searchParams.get("mode") || "").trim() === "config") {
-    return json(200, {
-      ok: true,
-      mapping: Object.entries(SOURCES_BY_MEDIUM).map(([medium, sources]) => ({ medium, sources })),
-    });
+    return json(200, { ok: true, mediums: MEDIUM_CONFIG });
   }
 
   try {
@@ -115,14 +111,21 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   }
 
   const mediumRaw = asTrimmedString(body.utm_medium).toLowerCase();
-  if (!(mediumRaw in SOURCES_BY_MEDIUM)) {
+  const mediumEntry = MEDIUM_MAP.get(mediumRaw);
+  if (!mediumEntry) {
     return json(400, { ok: false, error: "invalid_medium" });
   }
-  const medium = mediumRaw as UtmMedium;
+  const medium = mediumRaw;
 
-  const source = asTrimmedString(body.utm_source).toLowerCase();
-  if (!SOURCES_BY_MEDIUM[medium].includes(source)) {
-    return json(400, { ok: false, error: "invalid_source_for_medium" });
+  const source = asTrimmedString(body.utm_source);
+  if (mediumEntry.sourceType === "select") {
+    if (!mediumEntry.sources.includes(source.toLowerCase())) {
+      return json(400, { ok: false, error: "invalid_source_for_medium" });
+    }
+  } else {
+    if (!source) {
+      return json(400, { ok: false, error: "source_required" });
+    }
   }
 
   const campaign = asTrimmedString(body.utm_campaign);

@@ -1,0 +1,34 @@
+{
+  "mediums": [
+    {
+      "value": "cpc",
+      "label": "CPC",
+      "sourceType": "select",
+      "sources": ["yandex", "headhunter"]
+    },
+    {
+      "value": "email",
+      "label": "Email",
+      "sourceType": "select",
+      "sources": ["sendsay", "hacker", "securitylab", "stepik"]
+    },
+    {
+      "value": "social",
+      "label": "Social",
+      "sourceType": "select",
+      "sources": ["telegram", "youtube", "yandex_dzen", "instagram", "rutube", "vk", "max"]
+    },
+    {
+      "value": "referral",
+      "label": "Referral",
+      "sourceType": "freetext",
+      "sources": []
+    },
+    {
+      "value": "website",
+      "label": "Website",
+      "sourceType": "select",
+      "sources": ["banner"]
+    }
+  ]
+}
