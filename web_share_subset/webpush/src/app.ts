@@ -2118,7 +2118,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     </aside>
     <main class="main-content">
     <header><h1>${escapeHtml(meta.title)}</h1><p class="sub">${escapeHtml(resolvedPath)} · ${viewRows.length} строк</p></header>
-    <div class="kpi-grid"><div class="kpi"><div class="label">${escapeHtml(meta.rowsLabel)}</div><div class="value">${viewRows.length}</div></div><div class="kpi"><div class="label">Сделок с выручкой</div><div class="value">${deals.toLocaleString("ru-RU")}</div></div><div class="kpi"><div class="label">Выручка</div><div class="value">${formatRub(totalRevenue)}</div></div></div>
+    ${isUtmConstructor ? "" : `<div class="kpi-grid"><div class="kpi"><div class="label">${escapeHtml(meta.rowsLabel)}</div><div class="value">${viewRows.length}</div></div><div class="kpi"><div class="label">Сделок с выручкой</div><div class="value">${deals.toLocaleString("ru-RU")}</div></div><div class="kpi"><div class="label">Выручка</div><div class="value">${formatRub(totalRevenue)}</div></div></div>`}
     ${managerFormulaNote(view)}
     <div class="toolbar">
       ${isUtmConstructor ? "" : `<div class="tabs-row top-tabs">
@@ -2184,6 +2184,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         <label>Name (Campaign)
           <input class="utm-campaign-input" type="text" placeholder="Например, spring_sale_2026" />
         </label>
+        <label>Link
+          <input class="utm-link-input" type="url" placeholder="https://example.com/campaign" />
+        </label>
         <label>Content
           <input class="utm-content-input" type="text" placeholder="Например, banner_a" />
         </label>
@@ -2192,7 +2195,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         </label>
       </div>
       <div class="utm-actions">
-        <button class="utm-write-btn">write</button>
+        <button class="utm-write-btn" disabled>write</button>
         <span class="utm-write-status muted"></span>
       </div>
       ${utmLatestTag ? `<div class="utm-preview-wrap">
@@ -2297,6 +2300,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const utmMediumSelect = app.querySelector<HTMLSelectElement>(".utm-medium-select");
   const utmSourceSelect = app.querySelector<HTMLSelectElement>(".utm-source-select");
   const utmCampaignInput = app.querySelector<HTMLInputElement>(".utm-campaign-input");
+  const utmLinkInput = app.querySelector<HTMLInputElement>(".utm-link-input");
   const utmContentInput = app.querySelector<HTMLInputElement>(".utm-content-input");
   const utmTermInput = app.querySelector<HTMLInputElement>(".utm-term-input");
   const utmWriteBtn = app.querySelector<HTMLButtonElement>(".utm-write-btn");
@@ -2315,25 +2319,46 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     utmSourceSelect.innerHTML = sources.map((src) => `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`).join("");
   };
 
-  if (utmMediumSelect && utmSourceSelect && utmWriteBtn && utmCampaignInput && utmContentInput && utmTermInput) {
+  const syncUtmWriteState = (): void => {
+    if (!utmWriteBtn || !utmMediumSelect || !utmSourceSelect || !utmCampaignInput || !utmLinkInput || !utmContentInput || !utmTermInput) return;
+    const ready = [
+      utmMediumSelect.value,
+      utmSourceSelect.value,
+      utmCampaignInput.value,
+      utmLinkInput.value,
+      utmContentInput.value,
+      utmTermInput.value,
+    ].every((value) => String(value || "").trim() !== "");
+    utmWriteBtn.disabled = !ready;
+  };
+
+  if (utmMediumSelect && utmSourceSelect && utmWriteBtn && utmCampaignInput && utmLinkInput && utmContentInput && utmTermInput) {
     const mediums = Object.keys(UTM_SOURCES_BY_MEDIUM);
     utmMediumSelect.innerHTML = mediums.map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
     setSources(utmMediumSelect.value || mediums[0] || "");
+    syncUtmWriteState();
 
     utmMediumSelect.onchange = () => {
       setSources(utmMediumSelect.value);
+      syncUtmWriteState();
     };
+    utmSourceSelect.onchange = syncUtmWriteState;
+    utmCampaignInput.oninput = syncUtmWriteState;
+    utmLinkInput.oninput = syncUtmWriteState;
+    utmContentInput.oninput = syncUtmWriteState;
+    utmTermInput.oninput = syncUtmWriteState;
 
     utmWriteBtn.onclick = async () => {
       const payload = {
         utm_medium: (utmMediumSelect.value || "").trim(),
         utm_source: (utmSourceSelect.value || "").trim(),
         utm_campaign: (utmCampaignInput.value || "").trim(),
+        campaign_link: (utmLinkInput.value || "").trim(),
         utm_content: (utmContentInput.value || "").trim(),
         utm_term: (utmTermInput.value || "").trim(),
       };
-      if (!payload.utm_campaign || !payload.utm_content || !payload.utm_term) {
-        if (utmWriteStatus) utmWriteStatus.textContent = "Заполните Name, Content и Term";
+      if (!payload.utm_medium || !payload.utm_source || !payload.utm_campaign || !payload.campaign_link || !payload.utm_content || !payload.utm_term) {
+        if (utmWriteStatus) utmWriteStatus.textContent = "Заполните все поля";
         return;
       }
       utmWriteBtn.disabled = true;

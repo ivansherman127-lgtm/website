@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS utm_tags (
   utm_source TEXT NOT NULL,
   utm_medium TEXT NOT NULL,
   utm_campaign TEXT NOT NULL,
+  campaign_link TEXT NOT NULL,
   utm_content TEXT NOT NULL,
   utm_term TEXT NOT NULL,
   utm_tag TEXT NOT NULL

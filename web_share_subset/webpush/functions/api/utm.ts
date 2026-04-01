@@ -26,6 +26,7 @@ type UtmRow = {
   "UTM Source": string;
   "UTM Medium": string;
   "UTM Campaign": string;
+  "Link": string;
   "UTM Content": string;
   "UTM Term": string;
   "UTM Tag": string;
@@ -66,6 +67,7 @@ async function fetchRows(db: D1Database): Promise<UtmRow[]> {
          utm_source AS "UTM Source",
          utm_medium AS "UTM Medium",
          utm_campaign AS "UTM Campaign",
+         campaign_link AS "Link",
          utm_content AS "UTM Content",
          utm_term AS "UTM Term",
          utm_tag AS "UTM Tag"
@@ -114,11 +116,12 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   }
 
   const campaign = asTrimmedString(body.utm_campaign);
+  const campaignLink = asTrimmedString(body.campaign_link);
   const content = asTrimmedString(body.utm_content);
   const term = asTrimmedString(body.utm_term);
 
-  if (!campaign || !content || !term) {
-    return json(400, { ok: false, error: "campaign_content_term_required" });
+  if (!campaign || !campaignLink || !content || !term) {
+    return json(400, { ok: false, error: "all_fields_required" });
   }
 
   const utmTag = buildUtmTag({ source, medium, campaign, content, term });
@@ -131,12 +134,13 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
           utm_source,
           utm_medium,
           utm_campaign,
+          campaign_link,
           utm_content,
           utm_term,
           utm_tag
-        ) VALUES (datetime('now'), ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .bind(source, medium, campaign, content, term, utmTag)
+      .bind(source, medium, campaign, campaignLink, content, term, utmTag)
       .run();
 
     const latest = await context.env.UTM
@@ -146,6 +150,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
            utm_source AS "UTM Source",
            utm_medium AS "UTM Medium",
            utm_campaign AS "UTM Campaign",
+           campaign_link AS "Link",
            utm_content AS "UTM Content",
            utm_term AS "UTM Term",
            utm_tag AS "UTM Tag"
