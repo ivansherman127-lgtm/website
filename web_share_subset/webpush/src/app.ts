@@ -515,7 +515,7 @@ const VIEW_META: Record<ViewKey, ViewMeta> = {
   utm_constructor: { tab: "utm", label: "UTM Конструктор", path: "/api/utm", rowsLabel: "Тегов", title: "UTM Конструктор" },
 };
 const ALL_VIEWS = Object.keys(VIEW_META) as ViewKey[];
-type MenuMode = "dashboard" | "reports" | "charts";
+type MenuMode = "dashboard" | "reports" | "charts" | "utm";
 
 function isViewKey(v: string): v is ViewKey {
   return (ALL_VIEWS as string[]).includes(v);
@@ -525,7 +525,7 @@ function readUrlState(): { menu: MenuMode; view?: ViewKey } {
   const q = new URLSearchParams(window.location.search);
   const m = (q.get("m") || "").trim().toLowerCase();
   const v = (q.get("v") || "").trim();
-  const menu: MenuMode = m === "reports" ? "reports" : m === "charts" ? "charts" : "dashboard";
+  const menu: MenuMode = m === "reports" ? "reports" : m === "charts" ? "charts" : m === "utm" ? "utm" : "dashboard";
   return { menu, view: isViewKey(v) ? v : undefined };
 }
 
@@ -542,6 +542,11 @@ function viewPath(view: ViewKey): string {
     return "/api/assoc-revenue?dims=event";
   }
   return VIEW_META[view].path;
+}
+
+async function openTableView(view: ViewKey, dealsIndex: DealsIndex): Promise<void> {
+  const rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
+  await renderTable(view, rows, dealsIndex);
 }
 
 function managerFormulaNote(_view: ViewKey): string {
@@ -1219,10 +1224,11 @@ function isHiddenUiColumn(col: string): boolean {
 }
 
 async function renderTable(view: ViewKey, rows: Record<string, unknown>[], dealsIndex: DealsIndex): Promise<void> {
-  writeUrlState("reports", view);
+  const isUtmConstructor = view === "utm_constructor";
+  writeUrlState(isUtmConstructor ? "utm" : "reports", view);
   const meta = VIEW_META[view];
   const tab = meta.tab;
-  const tabViews = (Object.keys(VIEW_META) as ViewKey[]).filter((k) => VIEW_META[k].tab === tab);
+  const tabViews = (Object.keys(VIEW_META) as ViewKey[]).filter((k) => VIEW_META[k].tab === tab && VIEW_META[k].tab !== "utm");
   const resolvedPath = viewPath(view);
   const aliasMetaRow = rows.length > 0 && String(rows[0]["__type"] ?? "") === "column_aliases" ? rows[0] : undefined;
   if (aliasMetaRow) {
@@ -1320,7 +1326,6 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     "managers_firstline_course",
     "funnels_hierarchy",
   ]);
-  const isUtmConstructor = view === "utm_constructor";
   const hasDateWindowControl = dateWindowViews.has(view);
   const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let visibleRows: Record<string, unknown>[] = [];
@@ -2101,15 +2106,16 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   app.innerHTML = `<div class="app-layout">
     <aside class="side-menu">
       <button class="side-btn" data-menu="dashboard">Главная</button>
-      <button class="side-btn active" data-menu="reports">Детальные отчеты</button>
+      <button class="side-btn ${isUtmConstructor ? "" : "active"}" data-menu="reports">Детальные отчеты</button>
       <button class="side-btn" data-menu="charts">Графики</button>
+      <button class="side-btn ${isUtmConstructor ? "active" : ""}" data-menu="utm">UTM Конструктор</button>
     </aside>
     <main class="main-content">
     <header><h1>${escapeHtml(meta.title)}</h1><p class="sub">${escapeHtml(resolvedPath)} · ${viewRows.length} строк</p></header>
     <div class="kpi-grid"><div class="kpi"><div class="label">${escapeHtml(meta.rowsLabel)}</div><div class="value">${viewRows.length}</div></div><div class="kpi"><div class="label">Сделок с выручкой</div><div class="value">${deals.toLocaleString("ru-RU")}</div></div><div class="kpi"><div class="label">Выручка</div><div class="value">${formatRub(totalRevenue)}</div></div></div>
     ${managerFormulaNote(view)}
     <div class="toolbar">
-      <div class="tabs-row top-tabs">
+      ${isUtmConstructor ? "" : `<div class="tabs-row top-tabs">
         <button class="tab-btn ${tab === "year" ? "active" : ""}" data-tab="year">Отчет за год</button>
         <button class="tab-btn ${tab === "assoc_builder" ? "active" : ""}" data-tab="assoc_builder">Ассоц. выручка</button>
         <button class="tab-btn ${tab === "media" ? "active" : ""}" data-tab="media">Рекламные медиумы</button>
@@ -2119,7 +2125,6 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         <button class="tab-btn ${tab === "funnels" ? "active" : ""}" data-tab="funnels">По воронкам</button>
         <button class="tab-btn ${tab === "contacts" ? "active" : ""}" data-tab="contacts">Уникальные контакты</button>
         <button class="tab-btn ${tab === "qa" ? "active" : ""}" data-tab="qa">Контроль качества</button>
-        <button class="tab-btn ${tab === "utm" ? "active" : ""}" data-tab="utm">UTM Конструктор</button>
       </div>
       <div class="tabs-row sub-tabs">
         ${tabViews
@@ -2128,7 +2133,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
               `<button class="tab-btn ${v === view ? "active" : ""}" data-view="${v}">${escapeHtml(VIEW_META[v].label)}</button>`,
           )
           .join("")}
-      </div>
+      </div>`}
       ${
         view === "assoc_dynamic" && assocEvents.length > 0
           ? `<div class="tabs-row event-tabs">${assocEvents.map((ev) => `<button class="tab-btn${ev === assocEventTab ? " active" : ""}" data-event="${escapeHtml(ev)}">${escapeHtml(ev)}</button>`).join("")}</div>`
@@ -2187,10 +2192,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       <div class="utm-preview-wrap">
         <h4>Готовый UTM тег</h4>
         <table>
-          <thead><tr><th>UTM Tag</th></tr></thead>
-          <tbody><tr><td class="utm-preview-cell">${escapeHtml(utmLatestTag)}</td></tr></tbody>
+          <thead><tr><th>UTM Tag</th><th>Действие</th></tr></thead>
+          <tbody><tr><td class="utm-preview-cell">${escapeHtml(utmLatestTag)}</td><td><button class="copy-utm-row-btn">Copy</button></td></tr></tbody>
         </table>
-        <button class="copy-utm-btn">Скопировать UTM</button>
       </div>
     </section>`
         : ""
@@ -2274,6 +2278,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       const m = btn.getAttribute("data-menu");
       if (m === "dashboard") await renderDashboard(dealsIndex);
       else if (m === "charts") await renderCharts(dealsIndex);
+      else if (m === "utm") await openTableView("utm_constructor", dealsIndex);
     };
   });
   if (contactsFullBtn) {
@@ -2291,7 +2296,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const utmWriteBtn = app.querySelector<HTMLButtonElement>(".utm-write-btn");
   const utmWriteStatus = app.querySelector<HTMLSpanElement>(".utm-write-status");
   const utmPreviewCell = app.querySelector<HTMLElement>(".utm-preview-cell");
-  const copyUtmBtn = app.querySelector<HTMLButtonElement>(".copy-utm-btn");
+  const copyUtmRowBtn = app.querySelector<HTMLButtonElement>(".copy-utm-row-btn");
 
   const setUtmPreview = (tag: string): void => {
     utmLatestTag = tag;
@@ -2350,8 +2355,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     };
   }
 
-  if (copyUtmBtn) {
-    copyUtmBtn.onclick = async () => {
+  if (copyUtmRowBtn) {
+    copyUtmRowBtn.onclick = async () => {
       if (!utmLatestTag) return;
       try {
         await navigator.clipboard.writeText(utmLatestTag);
@@ -2413,6 +2418,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
       <button class="side-btn" data-menu="dashboard">Главная</button>
       <button class="side-btn" data-menu="reports">Детальные отчеты</button>
       <button class="side-btn active" data-menu="charts">Графики</button>
+      <button class="side-btn" data-menu="utm">UTM Конструктор</button>
     </aside>
     <main class="main-content">
       <header>
@@ -2432,9 +2438,9 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
       if (m === "dashboard") await renderDashboard(dealsIndex);
       else if (m === "reports") {
         const view: ViewKey = "year_total";
-        const rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
-        await renderTable(view, rows, dealsIndex);
+        await openTableView(view, dealsIndex);
       }
+      else if (m === "utm") await openTableView("utm_constructor", dealsIndex);
     };
   });
 
@@ -2833,8 +2839,11 @@ async function boot(): Promise<void> {
     const state = readUrlState();
     if (state.menu === "reports") {
       const v: ViewKey = state.view || "year_total";
-      const r = await fetchJson<Record<string, unknown>[]>(viewPath(v));
-      await renderTable(v, r, dealsIndex);
+      await openTableView(v, dealsIndex);
+      return;
+    }
+    if (state.menu === "utm") {
+      await openTableView("utm_constructor", dealsIndex);
       return;
     }
     if (state.menu === "charts") {
@@ -2891,6 +2900,7 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
         <button class="side-btn active" data-menu="dashboard">Главная</button>
         <button class="side-btn" data-menu="reports">Детальные отчеты</button>
         <button class="side-btn" data-menu="charts">Графики</button>
+        <button class="side-btn" data-menu="utm">UTM Конструктор</button>
       </aside>
       <main class="main-content">
         <header>
@@ -2953,10 +2963,11 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
         const m = btn.getAttribute("data-menu");
         if (m === "reports") {
           const view: ViewKey = "year_total";
-          const rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
-          await renderTable(view, rows, dealsIndex);
+          await openTableView(view, dealsIndex);
         } else if (m === "charts") {
           await renderCharts(dealsIndex);
+        } else if (m === "utm") {
+          await openTableView("utm_constructor", dealsIndex);
         }
       };
     });
