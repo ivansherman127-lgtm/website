@@ -44,19 +44,29 @@ function asTrimmedString(value: unknown): string {
 }
 
 function buildUtmTag(values: {
+  link: string;
   source: string;
   medium: string;
   campaign: string;
   content: string;
   term: string;
 }): string {
-  return [
+  const params = [
     `utm_source=${encodeURIComponent(values.source)}`,
     `utm_medium=${encodeURIComponent(values.medium)}`,
     `utm_campaign=${encodeURIComponent(values.campaign)}`,
     `utm_content=${encodeURIComponent(values.content)}`,
     `utm_term=${encodeURIComponent(values.term)}`,
   ].join("&");
+
+  const link = values.link.trim();
+  if (!link) return params;
+
+  const hashIndex = link.indexOf("#");
+  const beforeHash = hashIndex >= 0 ? link.slice(0, hashIndex) : link;
+  const hashPart = hashIndex >= 0 ? link.slice(hashIndex) : "";
+  const separator = beforeHash.includes("?") ? (beforeHash.endsWith("?") || beforeHash.endsWith("&") ? "" : "&") : "?";
+  return `${beforeHash}${separator}${params}${hashPart}`;
 }
 
 async function fetchRows(db: D1Database): Promise<UtmRow[]> {
@@ -124,7 +134,14 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
     return json(400, { ok: false, error: "all_fields_required" });
   }
 
-  const utmTag = buildUtmTag({ source, medium, campaign, content, term });
+  const utmTag = buildUtmTag({
+    link: campaignLink,
+    source,
+    medium,
+    campaign,
+    content,
+    term,
+  });
 
   try {
     await context.env.UTM
