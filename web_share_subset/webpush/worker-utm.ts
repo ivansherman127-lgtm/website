@@ -35,6 +35,19 @@ export default {
       return json(404, { ok: false, error: "not_found" });
     }
 
-    return env.ASSETS.fetch(request);
+    // Guard in case assets weren't published to the worker (env.ASSETS may be undefined).
+    if (!env || !(env as any).ASSETS || typeof (env as any).ASSETS.fetch !== "function") {
+      return json(404, {
+        ok: false,
+        error: "assets_not_deployed",
+        message: "Static assets not deployed for this worker. Deploy 'dist-utm' and redeploy with wrangler.utm.jsonc.",
+      });
+    }
+
+    try {
+      return await (env as any).ASSETS.fetch(request);
+    } catch (e) {
+      return json(500, { ok: false, error: "assets_fetch_failed", message: e instanceof Error ? e.message : String(e) });
+    }
   },
 };
