@@ -7,6 +7,7 @@
     "enabled": true
   },
   "assets": {
+    "binding": "ASSETS",
     "directory": "./dist-utm",
     "not_found_handling": "single-page-application"
   },
