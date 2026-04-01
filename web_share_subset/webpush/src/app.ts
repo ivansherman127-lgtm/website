@@ -188,6 +188,27 @@ function parseDateRank(v: unknown): number | null {
   return null;
 }
 
+function monthSerialToRussianLabel(serial: number): string {
+  const year = Math.floor(serial / 12);
+  const monthIndex = serial % 12;
+  const months = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+  return `${months[monthIndex]} ${year}`;
+}
+
+function monthsBackRangeLabel(rows: Record<string, unknown>[], dateCol: string, monthsBack: number): string {
+  const ranks = rows
+    .map((r) => parseDateRank(r[dateCol]))
+    .filter((v): v is number => v !== null && Number.isFinite(v) && v !== Number.POSITIVE_INFINITY)
+    .sort((a, b) => a - b);
+
+  if (!ranks.length) return `${monthsBack} мес.`;
+
+  const maxSerial = rankToMonthSerial(ranks[ranks.length - 1]);
+  const normalizedBack = Math.max(1, Math.round(monthsBack));
+  const minSerial = maxSerial - (normalizedBack - 1);
+  return `${monthSerialToRussianLabel(minSerial)}:${monthSerialToRussianLabel(maxSerial)}`;
+}
+
 function isDateColumn(col: string): boolean {
   const c = col.trim().toLowerCase();
   return c === "месяц" || c === "год" || c === "период" || c.includes("date");
@@ -2134,7 +2155,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       }
       ${
         hasDateWindowControl
-          ? `<label class="date-window-inline">Период: <input class="date-window-slider" type="range" min="1" max="24" step="1" value="${dateWindowMonths}" /> <span class="date-window-value">${dateWindowMonths} мес.</span></label>`
+          ? `<label class="date-window-inline">Период: <input class="date-window-slider" type="range" min="1" max="24" step="1" value="${dateWindowMonths}" /> <span class="date-window-value">${escapeHtml(monthsBackRangeLabel(viewRows, dateWindowCol, dateWindowMonths))}</span></label>`
           : ""
       }
       ${
@@ -2214,7 +2235,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     dateWindowSlider.oninput = () => {
       const next = Number(dateWindowSlider.value);
       dateWindowMonths = Number.isFinite(next) && next > 0 ? Math.round(next) : 12;
-      dateWindowValue.textContent = `${dateWindowMonths} мес.`;
+      dateWindowValue.textContent = monthsBackRangeLabel(viewRows, dateWindowCol, dateWindowMonths);
       draw();
     };
   }
@@ -2273,6 +2294,10 @@ function toConvPct(v: unknown): number {
 async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
   writeUrlState("charts");
   let chartsMonthsBack = 12;
+  let bitrixMonths: Record<string, unknown>[] = [];
+  let yandexMonths: Record<string, unknown>[] = [];
+  let emailOps: Record<string, unknown>[] = [];
+  let managerRows: Record<string, unknown>[] = [];
 
   app.innerHTML = `<div class="app-layout">
     <aside class="side-menu">
@@ -2286,7 +2311,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
         <p class="sub">Динамика продаж и выручки</p>
       </header>
       <div class="toolbar">
-        <label class="date-window-inline">Период: <input class="charts-date-window-slider" type="range" min="1" max="24" step="1" value="${chartsMonthsBack}" /> <span class="charts-date-window-value">${chartsMonthsBack} мес.</span></label>
+        <label class="date-window-inline">Период: <input class="charts-date-window-slider" type="range" min="1" max="24" step="1" value="${chartsMonthsBack}" /> <span class="charts-date-window-value">${escapeHtml(monthsBackRangeLabel(bitrixMonths, "Месяц", chartsMonthsBack))}</span></label>
       </div>
       <div class="charts-page"></div>
     </main>
@@ -2373,10 +2398,6 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
     },
   };
 
-  let bitrixMonths: Record<string, unknown>[] = [];
-  let yandexMonths: Record<string, unknown>[] = [];
-  let emailOps: Record<string, unknown>[] = [];
-  let managerRows: Record<string, unknown>[] = [];
   try {
     [bitrixMonths, yandexMonths, emailOps, managerRows] = await Promise.all([
       fetchJson<Record<string, unknown>[]>("data/bitrix_month_total_full.json"),
@@ -2651,7 +2672,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
     slider.oninput = () => {
       const next = Number(slider.value);
       chartsMonthsBack = Number.isFinite(next) && next > 0 ? Math.round(next) : 12;
-      sliderValue.textContent = `${chartsMonthsBack} мес.`;
+      sliderValue.textContent = monthsBackRangeLabel(bitrixMonths, "Месяц", chartsMonthsBack);
       drawCharts();
     };
   }
