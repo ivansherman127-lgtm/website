@@ -45,6 +45,7 @@ def _add_kpi(df: pd.DataFrame) -> pd.DataFrame:
     leads = out["Лиды"].replace(0, pd.NA)
     out["Конверсия в Квал"] = (out["Квал"] / leads).fillna(0.0)
     out["Конверсия в Неквал"] = (out["Неквал"] / leads).fillna(0.0)
+    out["Конверсия в Неизвестно"] = (out.get("Неизвестно", 0) / leads).fillna(0.0)
     out["Конверсия в Отказ"] = (out["Отказы"] / leads).fillna(0.0)
     out["Конверсия в работе"] = (out["В работе"] / leads).fillna(0.0)
     out["Средний_чек"] = (out["Выручка"] / out["Сделок_с_выручкой"].replace(0, pd.NA)).fillna(0.0)
@@ -79,7 +80,8 @@ def run() -> None:
         .agg(
             Лиды=("ID", "count"),
             Квал=("is_qual", "sum"),
-            Неквал=("is_unqual_reported", "sum"),
+            Неквал=("is_unqual", "sum"),
+            Неизвестно=("is_unknown", "sum"),
             Отказы=("is_refusal", "sum"),
             В_работе=("is_in_work", "sum"),
             Невалидные_лиды=("is_invalid", "sum"),
@@ -98,7 +100,8 @@ def run() -> None:
         .agg(
             Лиды=("ID", "count"),
             Квал=("is_qual", "sum"),
-            Неквал=("is_unqual_reported", "sum"),
+            Неквал=("is_unqual", "sum"),
+            Неизвестно=("is_unknown", "sum"),
             Отказы=("is_refusal", "sum"),
             В_работе=("is_in_work", "sum"),
             Невалидные_лиды=("is_invalid", "sum"),

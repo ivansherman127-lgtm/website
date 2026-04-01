@@ -513,7 +513,7 @@ type DealRow = Record<string, unknown>;
 type DealsIndex = { month: Map<string, DealRow[]>; event: Map<string, DealRow[]>; course: Map<string, DealRow[]> };
 type DealRevenue = { revenue: number; isRevenue: boolean };
 const dealRevenueById = new Map<string, DealRevenue>();
-type YandexLeadMetrics = { leads: number; qual: number; unqual: number; refusal: number; clicks: number; spend: number };
+type YandexLeadMetrics = { leads: number; qual: number; unqual: number; unknown: number; refusal: number; clicks: number; spend: number };
 const yandexProjectLeadMetrics = new Map<string, YandexLeadMetrics>();
 const yandexMonthLeadMetrics = new Map<string, YandexLeadMetrics>();
 const emailGroupByLookup = new Map<string, string>();
@@ -781,7 +781,7 @@ function regroupAssocEmailRows(rows: Record<string, unknown>[]): Record<string, 
 }
 
 function yandexEmptyMetrics(): YandexLeadMetrics {
-  return { leads: 0, qual: 0, unqual: 0, refusal: 0, clicks: 0, spend: 0 };
+  return { leads: 0, qual: 0, unqual: 0, unknown: 0, refusal: 0, clicks: 0, spend: 0 };
 }
 
 function addYandexMetrics(a: YandexLeadMetrics, b: YandexLeadMetrics): YandexLeadMetrics {
@@ -789,6 +789,7 @@ function addYandexMetrics(a: YandexLeadMetrics, b: YandexLeadMetrics): YandexLea
     leads: a.leads + b.leads,
     qual: a.qual + b.qual,
     unqual: a.unqual + b.unqual,
+    unknown: a.unknown + b.unknown,
     refusal: a.refusal + b.refusal,
     clicks: a.clicks + b.clicks,
     spend: a.spend + b.spend,
@@ -800,6 +801,7 @@ function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown
   const leads = m.leads > 0 ? m.leads : num(raw["leads_raw"]);
   const qual = m.qual > 0 ? m.qual : num(raw["qual"]);
   const unqual = m.unqual > 0 ? m.unqual : num(raw["unqual"]);
+  const unknown = m.unknown > 0 ? m.unknown : num(raw["unknown"]);
   const refusal = m.refusal > 0 ? m.refusal : num(raw["refusal"]);
   const paid = num(raw["payments_count"] ?? raw["paid_deals_raw"]);
   const revenue = num(raw["revenue_raw"]);
@@ -815,6 +817,8 @@ function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown
     "Конверсия в Квал": leads > 0 ? qual / leads : 0,
     "Неквал": unqual,
     "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+    "Неизвестно": unknown,
+    "Конверсия в Неизвестно": leads > 0 ? unknown / leads : 0,
     "Отказы": refusal,
     "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
     "Клики": clicks,
@@ -834,6 +838,7 @@ function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): R
   const leads = num(raw["leads_raw"]);
   const qual = num(raw["qual"]);
   const unqual = num(raw["unqual"]);
+  const unknown = num(raw["unknown"]);
   const refusal = num(raw["refusal"]);
   const paid = num(raw["payments_count"] ?? raw["paid_deals_raw"]);
   const revenue = num(raw["revenue_raw"]);
@@ -848,6 +853,8 @@ function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): R
     "Конверсия в Квал": leads > 0 ? qual / leads : 0,
     "Неквал": unqual,
     "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+    "Неизвестно": unknown,
+    "Конверсия в Неизвестно": leads > 0 ? unknown / leads : 0,
     "Отказы": refusal,
     "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
     "Клики": num(raw["clicks"]),
@@ -878,6 +885,7 @@ function addKpi(row: Record<string, unknown>): Record<string, unknown> {
   const leads = num(row["Лиды"]);
   const qual = num(row["Квал"]);
   const unqual = num(row["Неквал"]);
+  const unknown = num(row["Неизвестно"]);
   const refusal = num(row["Отказы"]);
   const inWork = num(row["В работе"]);
   const deals = num(row["Сделок_с_выручкой"]);
@@ -886,6 +894,7 @@ function addKpi(row: Record<string, unknown>): Record<string, unknown> {
     ...row,
     "Конверсия в Квал": leads > 0 ? qual / leads : 0,
     "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+    "Конверсия в Неизвестно": leads > 0 ? unknown / leads : 0,
     "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
     "Конверсия в работе": leads > 0 ? inWork / leads : 0,
     "Средний_чек": deals > 0 ? revenue / deals : 0,
@@ -952,6 +961,7 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
       const leads = rowsInYear.reduce((a, x) => a + num(x["Лиды"]), 0);
       const qual = rowsInYear.reduce((a, x) => a + num(x["Квал"]), 0);
       const unqual = rowsInYear.reduce((a, x) => a + num(x["Неквал"]), 0);
+      const unknown = rowsInYear.reduce((a, x) => a + num(x["Неизвестно"]), 0);
       const refusal = rowsInYear.reduce((a, x) => a + num(x["Отказы"]), 0);
       const inWork = rowsInYear.reduce((a, x) => a + num(x["В работе"]), 0);
       const deals = rowsInYear.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0);
@@ -965,6 +975,8 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
         "Конверсия в Квал": leads > 0 ? qual / leads : 0,
         "Неквал": unqual,
         "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+        "Неизвестно": unknown,
+        "Конверсия в Неизвестно": leads > 0 ? unknown / leads : 0,
         "Отказы": refusal,
         // User rule: refusal conversion is based on qualified leads.
         "Конверсия в Отказ": qual > 0 ? refusal / qual : 0,
@@ -1052,6 +1064,7 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
       const leads = m.leads > 0 ? m.leads : num(r["leads_raw"]);
       const qual = m.qual;
       const unqual = m.unqual;
+      const unknown = m.unknown;
       const refusal = m.refusal;
       const paid = num(r["paid_deals_raw"]);
       const revenue = num(r["revenue_raw"]);
@@ -1064,6 +1077,8 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
         "Конверсия в Квал": leads > 0 ? qual / leads : 0,
         "Неквал": unqual,
         "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+        "Неизвестно": unknown,
+        "Конверсия в Неизвестно": leads > 0 ? unknown / leads : 0,
         "Отказы": refusal,
         "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
         "Клики": m.clicks,
@@ -1095,6 +1110,7 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
       funnelRow["Лиды"] = funnelItems.reduce((acc, x) => acc + num(x["Лиды"]), 0);
       funnelRow["Квал"] = funnelItems.reduce((acc, x) => acc + num(x["Квал"]), 0);
       funnelRow["Неквал"] = funnelItems.reduce((acc, x) => acc + num(x["Неквал"]), 0);
+      funnelRow["Неизвестно"] = funnelItems.reduce((acc, x) => acc + num(x["Неизвестно"]), 0);
       funnelRow["Отказы"] = funnelItems.reduce((acc, x) => acc + num(x["Отказы"]), 0);
       funnelRow["В работе"] = funnelItems.reduce((acc, x) => acc + num(x["В работе"]), 0);
       funnelRow["Невалидные_лиды"] = funnelItems.reduce((acc, x) => acc + num(x["Невалидные_лиды"]), 0);
@@ -1122,6 +1138,7 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
         monthRow["Лиды"] = monthItems.reduce((acc, x) => acc + num(x["Лиды"]), 0);
         monthRow["Квал"] = monthItems.reduce((acc, x) => acc + num(x["Квал"]), 0);
         monthRow["Неквал"] = monthItems.reduce((acc, x) => acc + num(x["Неквал"]), 0);
+        monthRow["Неизвестно"] = monthItems.reduce((acc, x) => acc + num(x["Неизвестно"]), 0);
         monthRow["Отказы"] = monthItems.reduce((acc, x) => acc + num(x["Отказы"]), 0);
         monthRow["В работе"] = monthItems.reduce((acc, x) => acc + num(x["В работе"]), 0);
         monthRow["Невалидные_лиды"] = monthItems.reduce((acc, x) => acc + num(x["Невалидные_лиды"]), 0);

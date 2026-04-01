@@ -167,7 +167,14 @@ def in_work_series(df: pd.DataFrame) -> pd.Series:
 
 
 def apply_notebook_lead_flags(df: pd.DataFrame) -> pd.DataFrame:
-    """Adds Воронка (как в ноутбуке: fl_* или CRM), lead_type, is_qual, …"""
+    """Adds Воронка (как в ноутбуке: fl_* или CRM), lead_type, is_qual, …
+    
+    Classification (per bitrix_lead_logic.json):
+    - is_qual: qual + refusal + qual_from_date (all we consider qualified)
+    - is_unqual: not_qual + not_yet (we know they are not qualified)
+    - is_unknown: unassigned (we don't know their qual state)
+    - Total: is_qual + is_unqual + is_unknown = all leads
+    """
     d = df.copy()
     funnel_c = deal_funnel_raw_series(d)
     stage_c = coalesce_columns(d, "Стадия сделки")
@@ -182,9 +189,14 @@ def apply_notebook_lead_flags(df: pd.DataFrame) -> pd.DataFrame:
     lt_arr = np.where(inv_arr & ~ref_mask, "unqual", lt_arr)
     d["lead_type"] = lt_arr
     d["is_invalid"] = inv
-    d["is_qual"] = lt_arr == "qual"
+    # Qual: includes refusals (must be qualified to refuse), qual_from_date, and qual
+    d["is_qual"] = (lt_arr == "qual") | (lt_arr == "refusal")
+    # Unqual: not qualified or qual tokens (invalid leads without refusal marker)
+    d["is_unqual"] = (lt_arr == "unqual")
+    # Unknown: unassigned qual state (we don't know if they're qual or not)
+    d["is_unknown"] = (lt_arr == "unknown")
+    # Legacy column: unqual_reported = unqual + unknown (kept for backward compat)
+    d["is_unqual_reported"] = d["is_unqual"] | d["is_unknown"]
+    # Refusal: separate flag for conversion analysis (but counted in is_qual)
     d["is_refusal"] = lt_arr == "refusal"
-    d["is_unqual_reported"] = pd.Series(
-        np.isin(lt_arr, np.array(["unqual", "unknown"], dtype=object)), index=d.index
-    )
     return d
