@@ -286,6 +286,21 @@ header .sub {
   font: inherit;
 }
 
+.table-filter-row {
+  margin-bottom: 1rem;
+}
+
+.table-filter-row .filter-input {
+  width: 100%;
+  min-width: 200px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
 .toolbar .date-window-inline {
   display: inline-flex;
   align-items: center;
