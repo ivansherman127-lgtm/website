@@ -13,6 +13,35 @@ This runs as a Cloudflare Worker with static assets from `dist`. Assoc report ge
 
 Wrangler config source of truth: `wrangler.jsonc` (Wrangler v4 prefers it when both config files exist).
 
+## UTM-only deployment
+
+This repository now supports a separate UTM-only deployment that does not expose analytics routes.
+
+- Frontend entry: `utm.html` + `src/utm-only.ts`
+- Worker entry: `worker-utm.ts`
+- Wrangler config: `wrangler.utm.jsonc`
+- Build output: `dist-utm`
+
+Run locally:
+
+```bash
+npm run dev:utm
+```
+
+Run as Worker locally:
+
+```bash
+npm run worker:dev:utm
+```
+
+Deploy UTM-only:
+
+```bash
+npm run worker:deploy:utm
+```
+
+The UTM worker serves only `/api/utm` and static UTM page assets. Other `/api/*` paths return `404`.
+
 ## D1 sync from local SQLite
 
 Run from this repo root (`web_share_subset/webpush`):
