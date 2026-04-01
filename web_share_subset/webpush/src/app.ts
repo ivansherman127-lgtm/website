@@ -5,6 +5,14 @@ import { mapYandexProjectGroup } from "./yandexProjectGroups";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const columnAliasesByView = new Map<string, Record<string, string>>();
+let utmLatestTag = "";
+let utmSessionRows: Record<string, unknown>[] = [];
+
+const UTM_SOURCES_BY_MEDIUM: Record<string, string[]> = {
+  cpc: ["yandexd", "headhunter"],
+  email: ["sendsay", "unisender"],
+  tg: ["social", "cybered"],
+};
 
 
 async function fetchJson<T>(path: string): Promise<T> {
@@ -477,7 +485,7 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
   `;
 }
 
-type TabKey = "assoc_builder" | "media" | "budget" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa";
+type TabKey = "assoc_builder" | "media" | "budget" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa" | "utm";
 type ViewKey =
   | "assoc_dynamic"
   | "media_email"
@@ -499,7 +507,8 @@ type ViewKey =
   | "qa_dedup_collisions"
   | "qa_campaign_mapping"
   | "qa_top50_cohort"
-  | "qa_share_global";
+  | "qa_share_global"
+  | "utm_constructor";
 
 type ViewMeta = { tab: TabKey; label: string; path: string; rowsLabel: string; title: string; kind?: "assoc" | "email" | "generic" };
 const VIEW_META: Record<ViewKey, ViewMeta> = {
@@ -525,9 +534,10 @@ const VIEW_META: Record<ViewKey, ViewMeta> = {
   qa_campaign_mapping: { tab: "qa", label: "Маппинг кампаний", path: "data/qa/yandex_campaign_mapping_seed.json", rowsLabel: "Кампаний", title: "Контроль качества" },
   qa_top50_cohort: { tab: "qa", label: "Топ-50 когорт", path: "data/qa/other_top50_cohort.json", rowsLabel: "Строк", title: "Контроль качества" },
   qa_share_global: { tab: "qa", label: "Доля прочих (глобально)", path: "data/qa/other_share_global.json", rowsLabel: "Строк", title: "Контроль качества" },
+  utm_constructor: { tab: "utm", label: "UTM Конструктор", path: "/api/utm", rowsLabel: "Тегов", title: "UTM Конструктор" },
 };
 const ALL_VIEWS = Object.keys(VIEW_META) as ViewKey[];
-type MenuMode = "dashboard" | "reports" | "charts";
+type MenuMode = "dashboard" | "reports" | "charts" | "utm";
 
 function isViewKey(v: string): v is ViewKey {
   return (ALL_VIEWS as string[]).includes(v);
@@ -537,7 +547,7 @@ function readUrlState(): { menu: MenuMode; view?: ViewKey } {
   const q = new URLSearchParams(window.location.search);
   const m = (q.get("m") || "").trim().toLowerCase();
   const v = (q.get("v") || "").trim();
-  const menu: MenuMode = m === "reports" ? "reports" : m === "charts" ? "charts" : "dashboard";
+  const menu: MenuMode = m === "reports" ? "reports" : m === "charts" ? "charts" : m === "utm" ? "utm" : "dashboard";
   return { menu, view: isViewKey(v) ? v : undefined };
 }
 
@@ -554,6 +564,15 @@ function viewPath(view: ViewKey): string {
     return "/api/assoc-revenue?dims=event";
   }
   return VIEW_META[view].path;
+}
+
+async function openTableView(view: ViewKey, dealsIndex: DealsIndex): Promise<void> {
+  if (view === "utm_constructor") {
+    await renderTable(view, utmSessionRows, dealsIndex);
+    return;
+  }
+  const rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
+  await renderTable(view, rows, dealsIndex);
 }
 
 function managerFormulaNote(_view: ViewKey): string {
@@ -1231,10 +1250,11 @@ function isHiddenUiColumn(col: string): boolean {
 }
 
 async function renderTable(view: ViewKey, rows: Record<string, unknown>[], dealsIndex: DealsIndex): Promise<void> {
-  writeUrlState("reports", view);
+  const isUtmConstructor = view === "utm_constructor";
+  writeUrlState(isUtmConstructor ? "utm" : "reports", view);
   const meta = VIEW_META[view];
   const tab = meta.tab;
-  const tabViews = (Object.keys(VIEW_META) as ViewKey[]).filter((k) => VIEW_META[k].tab === tab);
+  const tabViews = (Object.keys(VIEW_META) as ViewKey[]).filter((k) => VIEW_META[k].tab === tab && VIEW_META[k].tab !== "utm");
   const resolvedPath = viewPath(view);
   const aliasMetaRow = rows.length > 0 && String(rows[0]["__type"] ?? "") === "column_aliases" ? rows[0] : undefined;
   if (aliasMetaRow) {
@@ -1845,7 +1865,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       return `${row}<tr class="dev-row"><td colspan="${cols.length + (showCtrl ? 1 : 0)}">${renderDealsTable(dealsForRow(view, r, dealsIndex))}</td></tr>`;
     }).join("");
 
-    const table = app.querySelector(".table-scroll table")!;
+    const table = app.querySelector(".table-scroll table");
+    if (!table) return;
     table.innerHTML = `<thead><tr>${th}</tr></thead><tbody>${body}</tbody>`;
     app.querySelectorAll<HTMLTableCellElement>("th[data-col]").forEach((h) => {
       h.style.color = h.getAttribute("data-col") === sortCol ? "var(--accent)" : "";
@@ -2114,15 +2135,16 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   app.innerHTML = `<div class="app-layout">
     <aside class="side-menu">
       <button class="side-btn" data-menu="dashboard">Главная</button>
-      <button class="side-btn active" data-menu="reports">Детальные отчеты</button>
+      <button class="side-btn ${isUtmConstructor ? "" : "active"}" data-menu="reports">Детальные отчеты</button>
       <button class="side-btn" data-menu="charts">Графики</button>
+      <button class="side-btn ${isUtmConstructor ? "active" : ""}" data-menu="utm">UTM Конструктор</button>
     </aside>
     <main class="main-content">
     <header><h1>${escapeHtml(meta.title)}</h1><p class="sub">${escapeHtml(resolvedPath)} · ${viewRows.length} строк</p></header>
-    <div class="kpi-grid"><div class="kpi"><div class="label">${escapeHtml(meta.rowsLabel)}</div><div class="value">${viewRows.length}</div></div><div class="kpi"><div class="label">Сделок с выручкой</div><div class="value">${deals.toLocaleString("ru-RU")}</div></div><div class="kpi"><div class="label">Выручка</div><div class="value">${formatRub(totalRevenue)}</div></div></div>
+    ${isUtmConstructor ? "" : `<div class="kpi-grid"><div class="kpi"><div class="label">${escapeHtml(meta.rowsLabel)}</div><div class="value">${viewRows.length}</div></div><div class="kpi"><div class="label">Сделок с выручкой</div><div class="value">${deals.toLocaleString("ru-RU")}</div></div><div class="kpi"><div class="label">Выручка</div><div class="value">${formatRub(totalRevenue)}</div></div></div>`}
     ${managerFormulaNote(view)}
     <div class="toolbar">
-      <div class="tabs-row top-tabs">
+      ${isUtmConstructor ? "" : `<div class="tabs-row top-tabs">
         <button class="tab-btn ${tab === "year" ? "active" : ""}" data-tab="year">Отчет за год</button>
         <button class="tab-btn ${tab === "assoc_builder" ? "active" : ""}" data-tab="assoc_builder">Ассоц. выручка</button>
         <button class="tab-btn ${tab === "media" ? "active" : ""}" data-tab="media">Рекламные медиумы</button>
@@ -2140,14 +2162,18 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
               `<button class="tab-btn ${v === view ? "active" : ""}" data-view="${v}">${escapeHtml(VIEW_META[v].label)}</button>`,
           )
           .join("")}
-      </div>
+      </div>`}
       ${
         view === "assoc_dynamic" && assocEvents.length > 0
           ? `<div class="tabs-row event-tabs">${assocEvents.map((ev) => `<button class="tab-btn${ev === assocEventTab ? " active" : ""}" data-event="${escapeHtml(ev)}">${escapeHtml(ev)}</button>`).join("")}</div>`
           : ""
       }
-      <button class="copy-table-btn">Скопировать таблицу</button>
-      <button class="download-table-btn">Загрузить таблицу</button>
+      ${
+        isUtmConstructor
+          ? ""
+          : `<button class="copy-table-btn">Скопировать таблицу</button>
+      <button class="download-table-btn">Загрузить таблицу</button>`
+      }
       ${
         view === "contacts_unique"
           ? `<button class="contacts-full-btn">Контакты: имя + телефон + email (${contactsFullOnly ? "on" : "off"})</button>`
@@ -2167,16 +2193,54 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     </div>
     <div class="table-filter-row"><input type="search" placeholder="Фильтр по строке…" class="filter-input" /></div>
     ${canSaveViewJson ? '<div class="push-status muted"></div>' : ""}
-    <div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
+    ${
+      isUtmConstructor
+        ? `<section class="utm-builder">
+      <h3>Создать UTM тег</h3>
+      <div class="utm-grid">
+        <label>Medium
+          <select class="utm-medium-select"></select>
+        </label>
+        <label>Source
+          <select class="utm-source-select"></select>
+        </label>
+        <label>Name (Campaign)
+          <input class="utm-campaign-input" type="text" placeholder="Например, spring_sale_2026" />
+        </label>
+        <label>Link
+          <input class="utm-link-input" type="url" placeholder="https://example.com/campaign" />
+        </label>
+        <label>Content
+          <input class="utm-content-input" type="text" placeholder="Например, banner_a" />
+        </label>
+        <label>Term
+          <input class="utm-term-input" type="text" placeholder="Например, python_course" />
+        </label>
+      </div>
+      <div class="utm-actions">
+        <button class="utm-write-btn" disabled>write</button>
+        <span class="utm-write-status muted"></span>
+      </div>
+      ${utmLatestTag ? `<div class="utm-preview-wrap">
+        <h4>Готовый UTM тег</h4>
+        <table>
+          <thead><tr><th>UTM Tag</th><th>Действие</th></tr></thead>
+          <tbody><tr><td class="utm-preview-cell">${escapeHtml(utmLatestTag)}</td><td><button class="copy-utm-row-btn">Copy</button></td></tr></tbody>
+        </table>
+      </div>` : ""}
+    </section>`
+        : ""
+    }
+    ${!isUtmConstructor || viewRows.length > 0 ? `<div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody></tbody></table></div>` : ""}
     </main>
   </div>`;
 
-  const filterInput = app.querySelector<HTMLInputElement>(".filter-input")!;
+  const filterInput = app.querySelector<HTMLInputElement>(".filter-input");
   const dateWindowSlider = app.querySelector<HTMLInputElement>(".date-window-slider");
   const dateWindowValue = app.querySelector<HTMLElement>(".date-window-value");
   const contactsFullBtn = app.querySelector<HTMLButtonElement>(".contacts-full-btn");
-  const copyTableBtn = app.querySelector<HTMLButtonElement>(".copy-table-btn")!;
-  const downloadTableBtn = app.querySelector<HTMLButtonElement>(".download-table-btn")!;
+  const copyTableBtn = app.querySelector<HTMLButtonElement>(".copy-table-btn");
+  const downloadTableBtn = app.querySelector<HTMLButtonElement>(".download-table-btn");
   const status = app.querySelector<HTMLDivElement>(".push-status");
 
   app.querySelectorAll<HTMLButtonElement>(".top-tabs .tab-btn").forEach((btn) => {
@@ -2202,7 +2266,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         const r = await fetchJson<Record<string, unknown>[]>(viewPath(next));
         void renderTable(next, r, dealsIndex);
       } catch (e) {
-        status.textContent = `Ошибка загрузки: ${String(e)}`;
+        if (status) status.textContent = `Ошибка загрузки: ${String(e)}`;
       }
     };
   });
@@ -2230,7 +2294,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     const r = await fetchJson<Record<string, unknown>[]>(VIEW_META[next].path);
     void renderTable(next, r, dealsIndex);
   }; */
-  filterInput.oninput = () => { filter = filterInput.value; draw(); };
+  if (filterInput) {
+    filterInput.oninput = () => { filter = filterInput.value; draw(); };
+  }
   if (dateWindowSlider && dateWindowValue) {
     dateWindowSlider.oninput = () => {
       const next = Number(dateWindowSlider.value);
@@ -2244,6 +2310,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       const m = btn.getAttribute("data-menu");
       if (m === "dashboard") await renderDashboard(dealsIndex);
       else if (m === "charts") await renderCharts(dealsIndex);
+      else if (m === "utm") await openTableView("utm_constructor", dealsIndex);
     };
   });
   if (contactsFullBtn) {
@@ -2253,7 +2320,108 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       draw();
     };
   }
-  copyTableBtn.onclick = async () => {
+  const utmMediumSelect = app.querySelector<HTMLSelectElement>(".utm-medium-select");
+  const utmSourceSelect = app.querySelector<HTMLSelectElement>(".utm-source-select");
+  const utmCampaignInput = app.querySelector<HTMLInputElement>(".utm-campaign-input");
+  const utmLinkInput = app.querySelector<HTMLInputElement>(".utm-link-input");
+  const utmContentInput = app.querySelector<HTMLInputElement>(".utm-content-input");
+  const utmTermInput = app.querySelector<HTMLInputElement>(".utm-term-input");
+  const utmWriteBtn = app.querySelector<HTMLButtonElement>(".utm-write-btn");
+  const utmWriteStatus = app.querySelector<HTMLSpanElement>(".utm-write-status");
+  const utmPreviewCell = app.querySelector<HTMLElement>(".utm-preview-cell");
+  const copyUtmRowBtn = app.querySelector<HTMLButtonElement>(".copy-utm-row-btn");
+
+  const setUtmPreview = (tag: string): void => {
+    utmLatestTag = tag;
+    if (utmPreviewCell) utmPreviewCell.textContent = tag;
+  };
+
+  const setSources = (medium: string): void => {
+    if (!utmSourceSelect) return;
+    const sources = UTM_SOURCES_BY_MEDIUM[medium] || [];
+    utmSourceSelect.innerHTML = sources.map((src) => `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`).join("");
+  };
+
+  const syncUtmWriteState = (): void => {
+    if (!utmWriteBtn || !utmMediumSelect || !utmSourceSelect || !utmCampaignInput || !utmLinkInput || !utmContentInput || !utmTermInput) return;
+    const ready = [
+      utmMediumSelect.value,
+      utmSourceSelect.value,
+      utmCampaignInput.value,
+      utmLinkInput.value,
+      utmContentInput.value,
+      utmTermInput.value,
+    ].every((value) => String(value || "").trim() !== "");
+    utmWriteBtn.disabled = !ready;
+  };
+
+  if (utmMediumSelect && utmSourceSelect && utmWriteBtn && utmCampaignInput && utmLinkInput && utmContentInput && utmTermInput) {
+    const mediums = Object.keys(UTM_SOURCES_BY_MEDIUM);
+    utmMediumSelect.innerHTML = mediums.map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
+    setSources(utmMediumSelect.value || mediums[0] || "");
+    syncUtmWriteState();
+
+    utmMediumSelect.onchange = () => {
+      setSources(utmMediumSelect.value);
+      syncUtmWriteState();
+    };
+    utmSourceSelect.onchange = syncUtmWriteState;
+    utmCampaignInput.oninput = syncUtmWriteState;
+    utmLinkInput.oninput = syncUtmWriteState;
+    utmContentInput.oninput = syncUtmWriteState;
+    utmTermInput.oninput = syncUtmWriteState;
+
+    utmWriteBtn.onclick = async () => {
+      const payload = {
+        utm_medium: (utmMediumSelect.value || "").trim(),
+        utm_source: (utmSourceSelect.value || "").trim(),
+        utm_campaign: (utmCampaignInput.value || "").trim(),
+        campaign_link: (utmLinkInput.value || "").trim(),
+        utm_content: (utmContentInput.value || "").trim(),
+        utm_term: (utmTermInput.value || "").trim(),
+      };
+      if (!payload.utm_medium || !payload.utm_source || !payload.utm_campaign || !payload.campaign_link || !payload.utm_content || !payload.utm_term) {
+        if (utmWriteStatus) utmWriteStatus.textContent = "Заполните все поля";
+        return;
+      }
+      utmWriteBtn.disabled = true;
+      if (utmWriteStatus) utmWriteStatus.textContent = "Сохраняю...";
+      try {
+        const resp = await fetch("/api/utm", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await resp.json() as { ok?: boolean; row?: Record<string, unknown>; utm_tag?: string; error?: string };
+        if (!resp.ok || !data.ok) {
+          if (utmWriteStatus) utmWriteStatus.textContent = `Ошибка записи: ${String(data.error || resp.status)}`;
+          return;
+        }
+        utmSessionRows = data.row ? [data.row] : [];
+        setUtmPreview(String(data.row?.["UTM Tag"] ?? data.utm_tag ?? ""));
+        if (utmWriteStatus) utmWriteStatus.textContent = "Сохранено";
+        await renderTable(view, utmSessionRows, dealsIndex);
+      } catch (e) {
+        if (utmWriteStatus) utmWriteStatus.textContent = `Ошибка записи: ${String(e)}`;
+      } finally {
+        utmWriteBtn.disabled = false;
+      }
+    };
+  }
+
+  if (copyUtmRowBtn) {
+    copyUtmRowBtn.onclick = async () => {
+      if (!utmLatestTag) return;
+      try {
+        await navigator.clipboard.writeText(utmLatestTag);
+        if (utmWriteStatus) utmWriteStatus.textContent = "UTM скопирован";
+      } catch (e) {
+        if (utmWriteStatus) utmWriteStatus.textContent = `Ошибка копирования: ${String(e)}`;
+      }
+    };
+  }
+
+  if (copyTableBtn) copyTableBtn.onclick = async () => {
     const headers = cols.map((c) => displayColName(view, c));
     const lines = [headers.join("\t")];
     for (const r of visibleRows) {
@@ -2266,7 +2434,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       if (status) status.textContent = `Ошибка копирования: ${String(e)}`;
     }
   };
-  downloadTableBtn.onclick = () => {
+  if (downloadTableBtn) downloadTableBtn.onclick = () => {
     const headers = cols.map((c) => displayColName(view, c));
     const esc = (v: unknown): string => `"${String(v ?? "").replaceAll('"', '""')}"`;
     const csv = [
@@ -2283,6 +2451,10 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     URL.revokeObjectURL(a.href);
     if (status) status.textContent = `Скачано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
   };
+  if (isUtmConstructor && !utmLatestTag) {
+    const lastFromRows = String(viewRows[0]?.["UTM Tag"] ?? "");
+    setUtmPreview(lastFromRows);
+  }
   draw();
 }
 
@@ -2304,6 +2476,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
       <button class="side-btn" data-menu="dashboard">Главная</button>
       <button class="side-btn" data-menu="reports">Детальные отчеты</button>
       <button class="side-btn active" data-menu="charts">Графики</button>
+      <button class="side-btn" data-menu="utm">UTM Конструктор</button>
     </aside>
     <main class="main-content">
       <header>
@@ -2323,9 +2496,9 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
       if (m === "dashboard") await renderDashboard(dealsIndex);
       else if (m === "reports") {
         const view: ViewKey = "year_total";
-        const rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
-        await renderTable(view, rows, dealsIndex);
+        await openTableView(view, dealsIndex);
       }
+      else if (m === "utm") await openTableView("utm_constructor", dealsIndex);
     };
   });
 
@@ -2720,8 +2893,11 @@ async function boot(): Promise<void> {
     const state = readUrlState();
     if (state.menu === "reports") {
       const v: ViewKey = state.view || "year_total";
-      const r = await fetchJson<Record<string, unknown>[]>(viewPath(v));
-      await renderTable(v, r, dealsIndex);
+      await openTableView(v, dealsIndex);
+      return;
+    }
+    if (state.menu === "utm") {
+      await openTableView("utm_constructor", dealsIndex);
       return;
     }
     if (state.menu === "charts") {
@@ -2778,6 +2954,7 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
         <button class="side-btn active" data-menu="dashboard">Главная</button>
         <button class="side-btn" data-menu="reports">Детальные отчеты</button>
         <button class="side-btn" data-menu="charts">Графики</button>
+        <button class="side-btn" data-menu="utm">UTM Конструктор</button>
       </aside>
       <main class="main-content">
         <header>
@@ -2840,10 +3017,11 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
         const m = btn.getAttribute("data-menu");
         if (m === "reports") {
           const view: ViewKey = "year_total";
-          const rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
-          await renderTable(view, rows, dealsIndex);
+          await openTableView(view, dealsIndex);
         } else if (m === "charts") {
           await renderCharts(dealsIndex);
+        } else if (m === "utm") {
+          await openTableView("utm_constructor", dealsIndex);
         }
       };
     });

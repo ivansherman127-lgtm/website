@@ -2,11 +2,13 @@ import { onRequestGet as assocRevenueGet } from "./functions/api/assoc-revenue";
 import { onRequestGet as dataGet } from "./functions/api/data";
 import { onRequestGet as cohortDealsGet } from "./functions/api/cohort-deals";
 import { onRequestGet as protectedTableGet } from "./functions/api/protected-table";
+import { onRequestGet as utmGet, onRequestPost as utmPost } from "./functions/api/utm";
 import { onRequestPost as analyticsRebuildPost } from "./functions/api/analytics/rebuild";
 import { onRequestPost as analyticsMaterializePost } from "./functions/api/analytics/materialize";
 
 interface Env {
   DB: D1Database;
+  UTM: D1Database;
   ASSETS: Fetcher;
   GITHUB_TOKEN?: string;
   GITHUB_OWNER?: string;
@@ -52,6 +54,12 @@ export default {
     if (pathname === "/api/protected-table") {
       if (request.method !== "GET") return methodNotAllowed();
       return protectedTableGet({ request, env } as never);
+    }
+
+    if (pathname === "/api/utm") {
+      if (request.method === "GET") return utmGet({ request, env });
+      if (request.method === "POST") return utmPost({ request, env });
+      return methodNotAllowed();
     }
 
     if (pathname === "/api/save-view-json") {

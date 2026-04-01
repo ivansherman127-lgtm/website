@@ -17,6 +17,11 @@
       "binding": "DB",
       "database_name": "cybered",
       "database_id": "998b12bc-9fc3-4b55-92d9-aeec027e728d"
+    },
+    {
+      "binding": "UTM",
+      "database_name": "UTM",
+      "database_id": "eace941f-2100-4108-972d-86dd7baff2ea"
     }
   ]
 }

@@ -7,5 +7,10 @@ binding = "DB"
 database_name = "cybered"
 database_id = "998b12bc-9fc3-4b55-92d9-aeec027e728d"
 
+[[d1_databases]]
+binding = "UTM"
+database_name = "UTM"
+database_id = "eace941f-2100-4108-972d-86dd7baff2ea"
+
 # Note: Wrangler v4 prefers wrangler.jsonc when both files exist.
 # Keep wrangler.jsonc and this file in sync.
