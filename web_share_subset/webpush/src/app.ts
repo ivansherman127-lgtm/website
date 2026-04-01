@@ -6,6 +6,7 @@ import { mapYandexProjectGroup } from "./yandexProjectGroups";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const columnAliasesByView = new Map<string, Record<string, string>>();
 let utmLatestTag = "";
+let utmSessionRows: Record<string, unknown>[] = [];
 
 const UTM_SOURCES_BY_MEDIUM: Record<string, string[]> = {
   cpc: ["yandexd", "headhunter"],
@@ -545,6 +546,10 @@ function viewPath(view: ViewKey): string {
 }
 
 async function openTableView(view: ViewKey, dealsIndex: DealsIndex): Promise<void> {
+  if (view === "utm_constructor") {
+    await renderTable(view, utmSessionRows, dealsIndex);
+    return;
+  }
   const rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
   await renderTable(view, rows, dealsIndex);
 }
@@ -1839,7 +1844,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       return `${row}<tr class="dev-row"><td colspan="${cols.length + (showCtrl ? 1 : 0)}">${renderDealsTable(dealsForRow(view, r, dealsIndex))}</td></tr>`;
     }).join("");
 
-    const table = app.querySelector(".table-scroll table")!;
+    const table = app.querySelector(".table-scroll table");
+    if (!table) return;
     table.innerHTML = `<thead><tr>${th}</tr></thead><tbody>${body}</tbody>`;
     app.querySelectorAll<HTMLTableCellElement>("th[data-col]").forEach((h) => {
       h.style.color = h.getAttribute("data-col") === sortCol ? "var(--accent)" : "";
@@ -2189,17 +2195,17 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         <button class="utm-write-btn">write</button>
         <span class="utm-write-status muted"></span>
       </div>
-      <div class="utm-preview-wrap">
+      ${utmLatestTag ? `<div class="utm-preview-wrap">
         <h4>Готовый UTM тег</h4>
         <table>
           <thead><tr><th>UTM Tag</th><th>Действие</th></tr></thead>
           <tbody><tr><td class="utm-preview-cell">${escapeHtml(utmLatestTag)}</td><td><button class="copy-utm-row-btn">Copy</button></td></tr></tbody>
         </table>
-      </div>
+      </div>` : ""}
     </section>`
         : ""
     }
-    <div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
+    ${!isUtmConstructor || viewRows.length > 0 ? `<div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody></tbody></table></div>` : ""}
     </main>
   </div>`;
 
@@ -2343,10 +2349,10 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           if (utmWriteStatus) utmWriteStatus.textContent = `Ошибка записи: ${String(data.error || resp.status)}`;
           return;
         }
+        utmSessionRows = data.row ? [data.row] : [];
         setUtmPreview(String(data.row?.["UTM Tag"] ?? data.utm_tag ?? ""));
         if (utmWriteStatus) utmWriteStatus.textContent = "Сохранено";
-        const refreshed = await fetchJson<Record<string, unknown>[]>(viewPath(view));
-        await renderTable(view, refreshed, dealsIndex);
+        await renderTable(view, utmSessionRows, dealsIndex);
       } catch (e) {
         if (utmWriteStatus) utmWriteStatus.textContent = `Ошибка записи: ${String(e)}`;
       } finally {
