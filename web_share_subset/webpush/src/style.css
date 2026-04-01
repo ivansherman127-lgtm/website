@@ -564,6 +564,11 @@ tbody tr:hover {
   font-size: 0.82rem;
 }
 
+.utm-grid .required-marker {
+  color: #ef4444;
+  font-weight: 700;
+}
+
 .utm-campaign-row {
   display: flex;
   align-items: center;
