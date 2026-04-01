@@ -40,6 +40,17 @@ Deploy UTM-only:
 npm run worker:deploy:utm
 ```
 
+CI deploy (GitHub Actions)
+
+A GitHub Actions workflow is included to build `dist-utm` and deploy the UTM worker automatically on push to `main` or via manual dispatch. The workflow lives at `.github/workflows/deploy-website-utm.yml`.
+
+Required repository secret:
+
+- `CLOUDFLARE_API_TOKEN` — an API token with permissions to deploy Workers (Workers Scripts edit) and D1 write access if you push migrations. Add the secret in GitHub: Settings → Secrets → Actions.
+
+To trigger the deploy: push to `main` or run the workflow manually from the Actions tab. The workflow performs `npm ci`, `npm run build:utm`, then `npm run worker:deploy:utm` using the provided token.
+
+
 Cloudflare Git deploy settings (repo root = `website`):
 
 - Build/deploy command for UTM-only service:

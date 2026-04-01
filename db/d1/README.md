@@ -81,7 +81,7 @@ npx wrangler d1 migrations apply cybered --remote --config web/wrangler.toml
 
 After migrations and push, materialize marts and `dataset_json` slice blobs in D1 (no local Python):
 
-1. Set a secret: `npx wrangler pages secret put ANALYTICS_REBUILD_SECRET --project-name deved-web` (or use `[vars]` in dev only).
+1. Set a secret: `npx wrangler pages secret put ANALYTICS_REBUILD_SECRET --project-name website-web` (or use `[vars]` in dev only).
 2. `curl -X POST "https://<pages-host>/api/analytics/rebuild" -H "Authorization: Bearer <ANALYTICS_REBUILD_SECRET>"`
 
 This runs [`web/functions/lib/analytics/analyticsRebuild.ts`](../../web/functions/lib/analytics/analyticsRebuild.ts): refill `mart_deals_enriched` from `stg_deals_analytics`, cohort tables, Yandex marts, then SQL-backed JSON for global/qa/cohort paths (same queries as `db/run_all_slices.export_slices`).
