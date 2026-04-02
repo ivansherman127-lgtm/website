@@ -1,11 +1,28 @@
 import { materializeSliceDatasets } from "./materializeDatasets";
 import { rebuildMartDealsFromStaging } from "./rebuildMartDeals";
 import { rebuildYandexMarts } from "./rebuildYandex";
+import { ANALYTICS_LOGIC_VERSION, evaluateFreshness, saveFreshnessMeta } from "./sourceFreshness";
 
 export async function runAnalyticsRebuild(
   db: D1Database,
-  opts: { materializationOnly?: boolean } = {},
+  opts: { materializationOnly?: boolean; force?: boolean } = {},
 ): Promise<Record<string, unknown>> {
+  if (!opts.force) {
+    try {
+      const freshness = await evaluateFreshness(db);
+      if (!freshness.stale) {
+        return {
+          skipped: true,
+          reason: freshness.reason,
+          fingerprint: freshness.fingerprint,
+          materialization_only: opts.materializationOnly === true,
+        };
+      }
+    } catch {
+      // If freshness check fails, continue with recomputation for correctness.
+    }
+  }
+
   let mart: Record<string, unknown> = { skipped: true };
   let yx: Record<string, unknown> = { skipped: true };
 
@@ -37,6 +54,9 @@ export async function runAnalyticsRebuild(
 
   const ds = await materializeSliceDatasets(db);
 
+  const freshnessAfter = await evaluateFreshness(db);
+  await saveFreshnessMeta(db, freshnessAfter.fingerprint);
+
   const now = new Date().toISOString();
   await db
     .prepare(
@@ -46,8 +66,9 @@ export async function runAnalyticsRebuild(
     .run();
   await db
     .prepare(
-      `INSERT OR REPLACE INTO analytics_build_meta (k, v, updated_at) VALUES ('logic_version', 'd1-workers-ts-v1', datetime('now'))`,
+      `INSERT OR REPLACE INTO analytics_build_meta (k, v, updated_at) VALUES ('logic_version', ?, datetime('now'))`,
     )
+    .bind(ANALYTICS_LOGIC_VERSION)
     .run();
 
   return {

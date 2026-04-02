@@ -385,7 +385,7 @@ function renderWeeklyBitrixExpandableTable(rows: Record<string, unknown>[], expa
   }
 
   return `
-    <section class="chart-wrap">
+    <section class="chart-wrap bitrix-weeks">
       <h3>Bitrix: недели (раскрытие по воронкам)</h3>
       <button class="week-expand-all-btn">${allOpen ? "Свернуть всё" : "Развернуть всё"}</button>
       <div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody>${bodyRows.join("")}</tbody></table></div>
@@ -475,7 +475,7 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
   }
 
   return `
-    <section class="chart-wrap">
+    <section class="chart-wrap yandex-weeks">
       <h3>Yandex: последние 7 дней (раскрытие по кампаниям)</h3>
       <button class="yweek-expand-all-btn">${allOpen ? "Свернуть всё" : "Развернуть всё"}</button>
       <div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody>${bodyRows.join("")}</tbody></table></div>
@@ -2902,8 +2902,8 @@ async function boot(): Promise<void> {
     dealRevenueById.clear();
     yandexProjectLeadMetrics.clear();
     yandexMonthLeadMetrics.clear();
-    // Regenerate all table JSONs fresh from D1 using the current campaign-group mapping.
-    // Rate-limited server-side to 90 s so rapid reloads don't spam SQL.
+    // Refresh materialized datasets only when D1 source fingerprint changed.
+    // Server-side gate skips recomputation on unchanged raw/staging data.
     // This must succeed before we fetch any table data, otherwise we'd read stale/missing rows.
     const matRes = await fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" });
     if (!matRes.ok) {
@@ -3016,44 +3016,50 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
       </main>
     </div>`;
 
-    app.querySelectorAll<HTMLButtonElement>(".week-expand-btn").forEach((btn) => {
-      btn.onclick = () => {
-        const week = btn.getAttribute("data-week") || "";
-        if (!week) return;
-        if (expandedWeeks.has(week)) expandedWeeks.delete(week);
-        else expandedWeeks.add(week);
-        drawDashboard();
-      };
-    });
+    const bitrixWrap = app.querySelector<HTMLElement>(".bitrix-weeks");
+    if (bitrixWrap) {
+      bitrixWrap.querySelectorAll<HTMLButtonElement>(".week-expand-btn").forEach((btn) => {
+        btn.onclick = () => {
+          const week = btn.getAttribute("data-week") || "";
+          if (!week) return;
+          if (expandedWeeks.has(week)) expandedWeeks.delete(week);
+          else expandedWeeks.add(week);
+          drawDashboard();
+        };
+      });
 
-    const bitrixExpandAllBtn = app.querySelector<HTMLButtonElement>(".week-expand-all-btn");
-    if (bitrixExpandAllBtn) {
-      bitrixExpandAllBtn.onclick = () => {
-        const weeks = [...new Set(bitrixWeekFunnel.map((r) => String(r["Неделя"] ?? "").trim()).filter(Boolean))];
-        const allOpen = weeks.length > 0 && weeks.every((w) => expandedWeeks.has(w));
-        weeks.forEach((w) => allOpen ? expandedWeeks.delete(w) : expandedWeeks.add(w));
-        drawDashboard();
-      };
+      const bitrixExpandAllBtn = bitrixWrap.querySelector<HTMLButtonElement>(".week-expand-all-btn");
+      if (bitrixExpandAllBtn) {
+        bitrixExpandAllBtn.onclick = () => {
+          const weeks = [...new Set(bitrixWeekFunnel.map((r) => String(r["Неделя"] ?? "").trim()).filter(Boolean))];
+          const allOpen = weeks.length > 0 && weeks.every((w) => expandedWeeks.has(w));
+          weeks.forEach((w) => allOpen ? expandedWeeks.delete(w) : expandedWeeks.add(w));
+          drawDashboard();
+        };
+      }
     }
 
-    app.querySelectorAll<HTMLButtonElement>(".yweek-expand-btn").forEach((btn) => {
-      btn.onclick = () => {
-        const week = btn.getAttribute("data-week") || "";
-        if (!week) return;
-        if (expandedYandexWeeks.has(week)) expandedYandexWeeks.delete(week);
-        else expandedYandexWeeks.add(week);
-        drawDashboard();
-      };
-    });
+    const yandexWrap = app.querySelector<HTMLElement>(".yandex-weeks");
+    if (yandexWrap) {
+      yandexWrap.querySelectorAll<HTMLButtonElement>(".yweek-expand-btn").forEach((btn) => {
+        btn.onclick = () => {
+          const week = btn.getAttribute("data-week") || "";
+          if (!week) return;
+          if (expandedYandexWeeks.has(week)) expandedYandexWeeks.delete(week);
+          else expandedYandexWeeks.add(week);
+          drawDashboard();
+        };
+      });
 
-    const yandexExpandAllBtn = app.querySelector<HTMLButtonElement>(".yweek-expand-all-btn");
-    if (yandexExpandAllBtn) {
-      yandexExpandAllBtn.onclick = () => {
-        const weeks = [...new Set(yandexWeekFiltered.map((r) => String(r["Неделя"] ?? "").trim()).filter(Boolean))];
-        const allOpen = weeks.length > 0 && weeks.every((w) => expandedYandexWeeks.has(w));
-        weeks.forEach((w) => allOpen ? expandedYandexWeeks.delete(w) : expandedYandexWeeks.add(w));
-        drawDashboard();
-      };
+      const yandexExpandAllBtn = yandexWrap.querySelector<HTMLButtonElement>(".yweek-expand-all-btn");
+      if (yandexExpandAllBtn) {
+        yandexExpandAllBtn.onclick = () => {
+          const weeks = [...new Set(yandexWeekFiltered.map((r) => String(r["Неделя"] ?? "").trim()).filter(Boolean))];
+          const allOpen = weeks.length > 0 && weeks.every((w) => expandedYandexWeeks.has(w));
+          weeks.forEach((w) => allOpen ? expandedYandexWeeks.delete(w) : expandedYandexWeeks.add(w));
+          drawDashboard();
+        };
+      }
     }
 
     app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {

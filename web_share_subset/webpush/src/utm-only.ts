@@ -11,6 +11,7 @@ type MediumEntry = {
 
 type UtmRow = {
   "Дата создания": string;
+  "Создал"?: string;
   "UTM Source": string;
   "UTM Medium": string;
   "UTM Campaign": string;
@@ -90,6 +91,9 @@ function renderShell(): void {
           <label>Partner
             <input class="partner-input" type="text" placeholder="Опционально" />
           </label>
+          <label>Автор
+            <input class="created-by-input" type="text" placeholder="Автор (опционально)" />
+          </label>
           <label>Link <span class="required-marker">*</span>
             <input class="link-input" type="url" placeholder="https://example.com/campaign" />
           </label>
@@ -124,6 +128,7 @@ async function main(): Promise<void> {
   const linkInput = app.querySelector<HTMLInputElement>(".link-input")!;
   const contentInput = app.querySelector<HTMLInputElement>(".content-input")!;
   const termInput = app.querySelector<HTMLInputElement>(".term-input")!;
+  const createdByInput = app.querySelector<HTMLInputElement>(".created-by-input")!;
   const writeBtn = app.querySelector<HTMLButtonElement>(".write-btn")!;
   const status = app.querySelector<HTMLSpanElement>(".status")!;
   const preview = app.querySelector<HTMLDivElement>(".preview")!;
@@ -216,6 +221,7 @@ async function main(): Promise<void> {
       campaign_link: linkInput.value.trim(),
       utm_content: contentInput.value.trim(),
       utm_term: termInput.value.trim(),
+      created_by: createdByInput.value.trim(),
     };
 
     if (!payload.utm_medium || !payload.utm_source || !payload.utm_campaign || !payload.campaign_link) {
