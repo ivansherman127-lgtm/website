@@ -28,9 +28,9 @@ export function buildFirstlineFilter(
   }
   // Hybrid: for months before 2026-02 use Ответственный; from 2026-02 use Передан первой линией
   return `(
-    (m.month < '2026-02' AND trim(manager) IN (${quoted}))
+    (month < '2026-02' AND trim(manager) IN (${quoted}))
     OR
-    (m.month >= '2026-02' AND trim(p."Передан первой линией") IN (${quoted}))
+    (month >= '2026-02' AND trim(COALESCE(passed_by_firstline, '')) IN (${quoted}))
   )`;
 }
 
@@ -77,12 +77,21 @@ export type ManagerBaseExprs = {
 export function buildManagerBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs): string {
   const monthLabel = sqlMonthLabel("m.month");
   if (hasRawP01) {
-    return `WITH base AS (
+    return `WITH p01 AS (
          SELECT
-           COALESCE(trim(p."Ответственный"), '') AS manager,
+           COALESCE("ID", '') AS deal_id,
+           MAX(COALESCE(trim("Ответственный"), '')) AS manager,
+           MAX(COALESCE(trim("Передан первой линией"), '')) AS passed_by_firstline
+         FROM raw_bitrix_deals_p01
+         GROUP BY COALESCE("ID", '')
+       ),
+       base AS (
+         SELECT
+           COALESCE(p.manager, '') AS manager,
            m.month,
            ${monthLabel} AS month_label,
            COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
+           COALESCE(p.passed_by_firstline, '') AS passed_by_firstline,
            COALESCE(m."ID", '') AS deal_id,
            COALESCE(m.revenue_amount, 0) AS revenue_amount,
            1 AS is_lead,
@@ -94,7 +103,7 @@ export function buildManagerBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs)
            ${exprs.potential} AS is_potential,
            CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched m
-         LEFT JOIN raw_bitrix_deals_p01 p ON p."ID" = m."ID"
+         LEFT JOIN p01 p ON p.deal_id = m."ID"
          WHERE COALESCE(m.month, '') <> ''
        )`;
   }
@@ -104,6 +113,7 @@ export function buildManagerBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs)
            m.month,
            ${monthLabel} AS month_label,
            COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
+           '' AS passed_by_firstline,
            COALESCE(m."ID", '') AS deal_id,
            COALESCE(m.revenue_amount, 0) AS revenue_amount,
            1 AS is_lead,
@@ -279,18 +289,32 @@ END`;
  * deal-creation month.  Only includes is_revenue_variant3 = 1 deals.
  * Used to produce the PNL manager report variants (_pnl.json).
  */
-export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs, modifyMonthExpr: string): string {
+export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs): string {
   const createMonthLabel = sqlMonthLabel("create_month");
   const modifyMonthLabel = sqlMonthLabel("modify_month");
   const payMonthLabel = sqlMonthLabel("pay_month");
   if (hasRawP01) {
-    return `WITH source AS (
+    return `WITH p01 AS (
          SELECT
-           COALESCE(trim(p."Ответственный"), '') AS manager,
+           COALESCE("ID", '') AS deal_id,
+           MAX(COALESCE(trim("Ответственный"), '')) AS manager,
+           MAX(COALESCE(trim("Передан первой линией"), '')) AS passed_by_firstline,
+           MAX(COALESCE("Дата изменения сделки", "Дата изменения", "date_modify", '')) AS modify_raw
+         FROM raw_bitrix_deals_p01
+         GROUP BY COALESCE("ID", '')
+       ),
+       source AS (
+         SELECT
+           COALESCE(p.manager, '') AS manager,
            COALESCE(m.month, '') AS create_month,
-           ${modifyMonthExpr} AS modify_month,
+           CASE
+             WHEN COALESCE(p.modify_raw, '') LIKE '____-__%' THEN SUBSTR(p.modify_raw, 1, 7)
+             WHEN COALESCE(p.modify_raw, '') LIKE '__.__.____%' THEN SUBSTR(p.modify_raw, 7, 4) || '-' || SUBSTR(p.modify_raw, 4, 2)
+             ELSE COALESCE(m.month, '')
+           END AS modify_month,
            ${PAY_MONTH_OF_M} AS pay_month,
            COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
+           COALESCE(p.passed_by_firstline, '') AS passed_by_firstline,
            COALESCE(m."ID", '') AS deal_id,
            COALESCE(m.revenue_amount, 0) AS revenue_amount,
            ${exprs.qual} AS is_qual,
@@ -301,7 +325,7 @@ export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExp
            ${exprs.potential} AS is_potential,
            CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched m
-         LEFT JOIN raw_bitrix_deals_p01 p ON p."ID" = m."ID"
+         LEFT JOIN p01 p ON p.deal_id = m."ID"
          WHERE COALESCE(m.month, '') <> ''
        ),
        base AS (
@@ -310,6 +334,7 @@ export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExp
            create_month AS month,
            ${createMonthLabel} AS month_label,
            course_code,
+           passed_by_firstline,
            deal_id,
            0 AS revenue_amount,
            1 AS is_lead,
@@ -328,6 +353,7 @@ export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExp
            modify_month AS month,
            ${modifyMonthLabel} AS month_label,
            course_code,
+           passed_by_firstline,
            deal_id,
            0 AS revenue_amount,
            0 AS is_lead,
@@ -346,6 +372,7 @@ export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExp
            pay_month AS month,
            ${payMonthLabel} AS month_label,
            course_code,
+           passed_by_firstline,
            deal_id,
            revenue_amount,
            0 AS is_lead,
@@ -368,6 +395,7 @@ export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExp
            COALESCE(m.month, '') AS modify_month,
            ${PAY_MONTH_OF_M} AS pay_month,
            COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
+           '' AS passed_by_firstline,
            COALESCE(m."ID", '') AS deal_id,
            COALESCE(m.revenue_amount, 0) AS revenue_amount,
            ${exprs.qual} AS is_qual,
@@ -386,6 +414,7 @@ export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExp
            create_month AS month,
            ${createMonthLabel} AS month_label,
            course_code,
+           passed_by_firstline,
            deal_id,
            0 AS revenue_amount,
            1 AS is_lead,
@@ -404,6 +433,7 @@ export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExp
            modify_month AS month,
            ${modifyMonthLabel} AS month_label,
            course_code,
+           passed_by_firstline,
            deal_id,
            0 AS revenue_amount,
            0 AS is_lead,
@@ -422,6 +452,7 @@ export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExp
            pay_month AS month,
            ${payMonthLabel} AS month_label,
            course_code,
+           passed_by_firstline,
            deal_id,
            revenue_amount,
            0 AS is_lead,

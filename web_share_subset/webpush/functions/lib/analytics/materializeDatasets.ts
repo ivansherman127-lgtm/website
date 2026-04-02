@@ -295,15 +295,6 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
       ])
     : ([false, false, false, false, false, false] as const);
   const hasTypyInRaw = hasTypyInRaw1 || hasTypyInRaw2;
-  const managerModifyMonthExpr = hasRawP01
-    ? hasModifyDateRu
-      ? sqlMonthFromDateExpr(`p."Дата изменения сделки"`)
-      : hasModifyDateShortRu
-      ? sqlMonthFromDateExpr(`p."Дата изменения"`)
-      : hasModifyDateEn
-      ? sqlMonthFromDateExpr(`p."date_modify"`)
-      : "COALESCE(m.month, '')"
-    : "COALESCE(m.month, '')";
 
   // ── Build SQL expression fragments ──────────────────────────────────────────
   const bitrixInvalidCond = hasTypyInMart
@@ -1197,18 +1188,21 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
 
   // ── Batch 3b: PNL variants — mixed clocks by report month:
   // leads by created month, qual-state by modified month, revenue by pay month.
-  const managerPnlBaseSql = buildManagerPnlBaseSql(hasRawP01, managerBaseExprs, managerModifyMonthExpr);
+  const managerPnlBaseSql = buildManagerPnlBaseSql(hasRawP01, managerBaseExprs);
   const PAY_MONTH_EXPR = sqlMonthFromDateExpr(`m."Дата оплаты"`);
   const FUNNEL_MODIFY_MONTH_EXPR = hasRawP01
-    ? hasModifyDateRu
-      ? sqlMonthFromDateExpr(`p."Дата изменения сделки"`)
-      : hasModifyDateShortRu
-      ? sqlMonthFromDateExpr(`p."Дата изменения"`)
-      : hasModifyDateEn
-      ? sqlMonthFromDateExpr(`p."date_modify"`)
-      : "COALESCE(m.month, '')"
+    ? sqlMonthFromDateExpr(`p.modify_raw`)
     : "COALESCE(m.month, '')";
-  const FUNNEL_RAW_JOIN_SQL = hasRawP01 ? `LEFT JOIN raw_bitrix_deals_p01 p ON p."ID" = m."ID"` : "";
+  const FUNNEL_RAW_WITH_SQL = hasRawP01
+    ? `p01 AS (
+         SELECT
+           COALESCE("ID", '') AS deal_id,
+           MAX(COALESCE("Дата изменения сделки", "Дата изменения", "date_modify", '')) AS modify_raw
+         FROM raw_bitrix_deals_p01
+         GROUP BY COALESCE("ID", '')
+       ),`
+    : "";
+  const FUNNEL_RAW_JOIN_SQL = hasRawP01 ? `LEFT JOIN p01 p ON p.deal_id = m."ID"` : "";
   const [
     r_mgr_fl_month_pnl,
     r_mgr_fl_course_month_pnl,
@@ -1221,7 +1215,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     db.prepare(buildManagerByMonthSql(managerPnlBaseSql, salesFilter)).all<RR>(),
     db.prepare(buildManagerByCourseMonthSql(managerPnlBaseSql, salesFilter)).all<RR>(),
     db.prepare(
-      `WITH source AS (
+      `WITH ${FUNNEL_RAW_WITH_SQL}
+       source AS (
          SELECT
            COALESCE(NULLIF(trim(funnel_group), ''), 'Другое') AS funnel_group,
            COALESCE(month, '') AS create_month,
