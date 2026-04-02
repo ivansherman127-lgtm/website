@@ -112,9 +112,9 @@ export function buildLeadLogicSql(params: SqlBuildParamsWithInvalid): LeadLogicS
     }
   }
 
-  // Stage-based invalid tokens
+  // Stage-based invalid tokens (use instr() to avoid complex LIKE/GLOB patterns)
   const stageInvalidCond = INVALID_STAGE_TOKENS
-    .map((tok) => `lower(COALESCE(${params.stageExpr}, '')) LIKE ${sqlQuote(`%${tok}%`)}`)
+    .map((tok) => `instr(lower(COALESCE(${params.stageExpr}, '')), ${sqlQuote(tok)}) > 0`)
     .join(" OR ");
 
   // Optionally include an extra invalid-condition (e.g. checks against raw Bitrix columns)

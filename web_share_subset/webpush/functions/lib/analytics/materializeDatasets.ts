@@ -198,15 +198,17 @@ function buildYandexAssocQaHierarchyRows(
 
 export async function materializeSliceDatasets(db: D1Database): Promise<{ paths: string[] }> {
   const paths: string[] = [];
-  // Bitrix invalid tokens are tracked in separate columns in the source data
+  // Bitrix invalid tokens are tracked in separate columns in the source data.
+  // Use the explicit list (lowercased) and search with instr() to avoid complex LIKE/GLOB patterns.
   const BITRIX_INVALID_TOKENS = [
+    "спам",
     "дубль",
     "тест",
-    "спам",
+    "некорректные данные",
     "чс",
     "неправильные данные",
-    "партнер",
-    "сотрудник",
+    "партнер или сотрудник cybered",
+    "партнеры, не нужно связываться",
   ];
   async function columnExists(db: D1Database, tableName: string, columnName: string): Promise<boolean> {
     try {
@@ -230,14 +232,14 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   let bitrixInvalidCond = "0";
   if (hasTypyInMart) {
     bitrixInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
-      `lower(COALESCE("Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-      `lower(COALESCE("Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+      `instr(lower(COALESCE("Типы некачественного лида", '')), ${sqlQuote(tok)}) > 0`,
+      `instr(lower(COALESCE("Типы некачественных лидов", '')), ${sqlQuote(tok)}) > 0`,
     ]).join(" OR ");
   } else if (hasTypyInRaw) {
     // Fall back to raw table columns when mart_deals_enriched lacks them
     bitrixInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
-      `lower(COALESCE(p."Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-      `lower(COALESCE(p."Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+      `instr(lower(COALESCE(p."Типы некачественного лида", '')), ${sqlQuote(tok)}) > 0`,
+      `instr(lower(COALESCE(p."Типы некачественных лидов", '')), ${sqlQuote(tok)}) > 0`,
     ]).join(" OR ");
   }
   const bitrixInvalidExpr = hasTypyInMart
@@ -249,13 +251,13 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   let managerInvalidCond = "0";
   if (managerHasTypyInMart) {
     managerInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
-      `lower(COALESCE(m."Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-      `lower(COALESCE(m."Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+      `instr(lower(COALESCE(m."Типы некачественного лида", '')), ${sqlQuote(tok)}) > 0`,
+      `instr(lower(COALESCE(m."Типы некачественных лидов", '')), ${sqlQuote(tok)}) > 0`,
     ]).join(" OR ");
   } else if (managerHasTypyInRaw) {
     managerInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
-      `lower(COALESCE(p."Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-      `lower(COALESCE(p."Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+      `instr(lower(COALESCE(p."Типы некачественного лида", '')), ${sqlQuote(tok)}) > 0`,
+      `instr(lower(COALESCE(p."Типы некачественных лидов", '')), ${sqlQuote(tok)}) > 0`,
     ]).join(" OR ");
   }
   const managerInvalidExpr = `CASE WHEN (${managerInvalidCond}) THEN 1 ELSE 0 END`;
@@ -429,7 +431,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.qual} AS is_qual,
            ${bitrixLeadLogic.unqual} AS is_unqual,
            ${bitrixLeadLogic.refusal} AS is_refusal,
-          ${bitrixInvalidExpr} AS is_invalid,
+           ${bitrixInvalidExpr} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched
