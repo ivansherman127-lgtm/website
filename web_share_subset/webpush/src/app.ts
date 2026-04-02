@@ -1542,8 +1542,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         dateTo,
       );
       const mgr = new Map<string, Record<string, unknown>>();
+      const monthsByManager = new Map<string, Record<string, unknown>[]>();
       for (const r of months) {
         const m = String(r["Менеджер"] ?? "").trim() || "Unassigned";
+        if (!monthsByManager.has(m)) monthsByManager.set(m, []);
+        monthsByManager.get(m)!.push(r);
         if (!mgr.has(m)) {
           mgr.set(m, {
             "Level": "Manager",
@@ -1574,7 +1577,13 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         "Конверсия в работе": num(r["Лиды"]) > 0 ? num(r["В работе"]) / num(r["Лиды"]) : 0,
         "Средний_чек": num(r["Сделок_с_выручкой"]) > 0 ? num(r["Выручка"]) / num(r["Сделок_с_выручкой"]) : 0,
       }));
-      data = [...managers, ...months];
+      const interleaved: Record<string, unknown>[] = [];
+      for (const mRow of managers) {
+        const manager = String(mRow["Менеджер"] ?? "").trim() || "Unassigned";
+        interleaved.push(mRow);
+        interleaved.push(...(monthsByManager.get(manager) || []));
+      }
+      data = interleaved;
     }
 
     if (isManagerCourseView && hasDateWindowControl) {

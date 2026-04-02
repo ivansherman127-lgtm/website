@@ -104,7 +104,6 @@ export function buildManagerBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs)
            CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched m
          LEFT JOIN p01 p ON p.deal_id = m."ID"
-         WHERE COALESCE(m.month, '') <> ''
        )`;
   }
   return `WITH base AS (
@@ -125,7 +124,6 @@ export function buildManagerBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs)
            0 AS is_potential,
            CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched m
-         WHERE COALESCE(m.month, '') <> ''
        )`;
 }
 

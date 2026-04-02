@@ -1233,7 +1233,6 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched m
          ${FUNNEL_RAW_JOIN_SQL}
-         WHERE COALESCE(month, '') <> ''
        ),
        events AS (
          SELECT
