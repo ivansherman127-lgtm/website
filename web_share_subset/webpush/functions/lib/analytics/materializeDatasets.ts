@@ -7,6 +7,7 @@ import { buildYdHierarchyRows } from "./ydHierarchy";
 import { buildBitrixContactsUidRows } from "./bitrixContactsUid";
 import { buildLeadLogicSql } from "./leadLogicSql";
 import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS, YANDEX_KNOWN_GROUPS, mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
+import managerFirstlineNames from "../../config/manager_firstline.json";
 
 async function tableExists(db: D1Database, tableName: string): Promise<boolean> {
   const row = await db
@@ -1064,7 +1065,10 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
 
   // SQLite lower()/upper() do not reliably normalize Cyrillic in D1.
   // Use exact trimmed names to keep manager datasets populated.
-  const firstlineFilter = `trim(manager) IN ('Алена Тиханова', 'Георгий Воеводин')`;
+  const firstlineList = Array.isArray(managerFirstlineNames) ? managerFirstlineNames.map((s) => String(s ?? "").trim()).filter(Boolean) : [];
+  const firstlineFilter = firstlineList.length
+    ? `trim(manager) IN (${firstlineList.map((n) => sqlQuote(n)).join(", ")})`
+    : `0`;
   const salesFilter = `trim(manager) IN ('Анастасия Крисанова', 'Василий Гореленков', 'Глеб Барбазанов', 'Елена Лобода')`;
 
   const managerFirstlineByMonth = await db
