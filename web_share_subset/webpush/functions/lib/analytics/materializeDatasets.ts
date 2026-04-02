@@ -28,6 +28,14 @@ async function tableExists(db: D1Database, tableName: string): Promise<boolean> 
   return !!row?.name;
 }
 
+function sqlMonthFromDateExpr(expr: string): string {
+  return `CASE
+    WHEN COALESCE(${expr}, '') LIKE '____-__%' THEN SUBSTR(${expr}, 1, 7)
+    WHEN COALESCE(${expr}, '') LIKE '__.__.____%' THEN SUBSTR(${expr}, 7, 4) || '-' || SUBSTR(${expr}, 4, 2)
+    ELSE ''
+  END`;
+}
+
 async function columnExists(db: D1Database, tableName: string, columnName: string): Promise<boolean> {
   try {
     const row = await db
@@ -276,14 +284,26 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     ]);
   const hasTypyInMart = hasTypyInMart1 || hasTypyInMart2;
 
-  const [hasTypyInRaw1, hasTypyInRaw2, hasPassedByFirstLine] = hasRawP01
+  const [hasTypyInRaw1, hasTypyInRaw2, hasPassedByFirstLine, hasModifyDateRu, hasModifyDateShortRu, hasModifyDateEn] = hasRawP01
     ? await Promise.all([
         columnExists(db, "raw_bitrix_deals_p01", "Типы некачественного лида"),
         columnExists(db, "raw_bitrix_deals_p01", "Типы некачественных лидов"),
         columnExists(db, "raw_bitrix_deals_p01", "Передан первой линией"),
+        columnExists(db, "raw_bitrix_deals_p01", "Дата изменения сделки"),
+        columnExists(db, "raw_bitrix_deals_p01", "Дата изменения"),
+        columnExists(db, "raw_bitrix_deals_p01", "date_modify"),
       ])
-    : ([false, false, false] as const);
+    : ([false, false, false, false, false, false] as const);
   const hasTypyInRaw = hasTypyInRaw1 || hasTypyInRaw2;
+  const managerModifyMonthExpr = hasRawP01
+    ? hasModifyDateRu
+      ? sqlMonthFromDateExpr(`p."Дата изменения сделки"`)
+      : hasModifyDateShortRu
+      ? sqlMonthFromDateExpr(`p."Дата изменения"`)
+      : hasModifyDateEn
+      ? sqlMonthFromDateExpr(`p."date_modify"`)
+      : "COALESCE(m.month, '')"
+    : "COALESCE(m.month, '')";
 
   // ── Build SQL expression fragments ──────────────────────────────────────────
   const bitrixInvalidCond = hasTypyInMart
@@ -1175,13 +1195,20 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     "manager_sales_by_course_month.json",
   );
 
-  // ── Batch 3b: PNL variants — grouped by pay_month instead of creation month ──
-  const managerPnlBaseSql = buildManagerPnlBaseSql(hasRawP01, managerBaseExprs);
-  const PAY_MONTH_EXPR = `CASE
-    WHEN COALESCE("Дата оплаты", '') LIKE '____-__%' THEN SUBSTR("Дата оплаты", 1, 7)
-    WHEN COALESCE("Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR("Дата оплаты", 7, 4) || '-' || SUBSTR("Дата оплаты", 4, 2)
-    ELSE ''
-  END`;
+  // ── Batch 3b: PNL variants — mixed clocks by report month:
+  // leads by created month, qual-state by modified month, revenue by pay month.
+  const managerPnlBaseSql = buildManagerPnlBaseSql(hasRawP01, managerBaseExprs, managerModifyMonthExpr);
+  const PAY_MONTH_EXPR = sqlMonthFromDateExpr(`m."Дата оплаты"`);
+  const FUNNEL_MODIFY_MONTH_EXPR = hasRawP01
+    ? hasModifyDateRu
+      ? sqlMonthFromDateExpr(`p."Дата изменения сделки"`)
+      : hasModifyDateShortRu
+      ? sqlMonthFromDateExpr(`p."Дата изменения"`)
+      : hasModifyDateEn
+      ? sqlMonthFromDateExpr(`p."date_modify"`)
+      : "COALESCE(m.month, '')"
+    : "COALESCE(m.month, '')";
+  const FUNNEL_RAW_JOIN_SQL = hasRawP01 ? `LEFT JOIN raw_bitrix_deals_p01 p ON p."ID" = m."ID"` : "";
   const [
     r_mgr_fl_month_pnl,
     r_mgr_fl_course_month_pnl,
@@ -1194,10 +1221,12 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     db.prepare(buildManagerByMonthSql(managerPnlBaseSql, salesFilter)).all<RR>(),
     db.prepare(buildManagerByCourseMonthSql(managerPnlBaseSql, salesFilter)).all<RR>(),
     db.prepare(
-      `WITH flags AS (
+      `WITH source AS (
          SELECT
            COALESCE(NULLIF(trim(funnel_group), ''), 'Другое') AS funnel_group,
-           ${PAY_MONTH_EXPR} AS month,
+           COALESCE(month, '') AS create_month,
+           ${FUNNEL_MODIFY_MONTH_EXPR} AS modify_month,
+           ${PAY_MONTH_EXPR} AS pay_month,
            COALESCE(NULLIF(trim(course_code_norm), ''), '—') AS course_code,
            COALESCE(revenue_amount, 0) AS revenue_amount,
            ${bitrixLeadLogic.qual} AS is_qual,
@@ -1206,16 +1235,66 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.invalid} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
            ${buildPotentialCond(`"Стадия сделки"`)} AS is_potential,
-           1 AS is_revenue
-         FROM mart_deals_enriched
-         WHERE COALESCE(is_revenue_variant3, 0) = 1
-           AND COALESCE("Дата оплаты", '') <> ''
+           CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
+         FROM mart_deals_enriched m
+         ${FUNNEL_RAW_JOIN_SQL}
+         WHERE COALESCE(month, '') <> ''
+       ),
+       events AS (
+         SELECT
+           funnel_group,
+           create_month AS month,
+           course_code,
+           1 AS is_lead,
+           0 AS is_qual,
+           0 AS is_unqual,
+           0 AS is_refusal,
+           0 AS is_invalid,
+           0 AS is_in_work,
+           0 AS is_potential,
+           0 AS is_revenue,
+           0 AS revenue_amount
+         FROM source
+         WHERE COALESCE(create_month, '') <> ''
+         UNION ALL
+         SELECT
+           funnel_group,
+           modify_month AS month,
+           course_code,
+           0 AS is_lead,
+           is_qual,
+           is_unqual,
+           is_refusal,
+           is_invalid,
+           is_in_work,
+           is_potential,
+           0 AS is_revenue,
+           0 AS revenue_amount
+         FROM source
+         WHERE COALESCE(modify_month, '') <> ''
+         UNION ALL
+         SELECT
+           funnel_group,
+           pay_month AS month,
+           course_code,
+           0 AS is_lead,
+           0 AS is_qual,
+           0 AS is_unqual,
+           0 AS is_refusal,
+           0 AS is_invalid,
+           0 AS is_in_work,
+           0 AS is_potential,
+           is_revenue,
+           CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END AS revenue_amount
+         FROM source
+         WHERE COALESCE(pay_month, '') <> ''
+           AND is_revenue = 1
        )
        SELECT
          funnel_group AS "Воронка",
          month AS "Месяц",
          course_code AS "Код_курса_норм",
-         COUNT(*) AS "Лиды",
+         SUM(is_lead) AS "Лиды",
          SUM(is_qual) AS "Квал",
          SUM(is_unqual) AS "Неквал",
          SUM(CASE WHEN is_qual = 0 AND is_unqual = 0 THEN 1 ELSE 0 END) AS "Неизвестно",
@@ -1224,14 +1303,14 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          SUM(is_invalid) AS "Невалидные_лиды",
          SUM(is_potential) AS "В потенциале",
          SUM(is_revenue) AS "Сделок_с_выручкой",
-         SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
+         SUM(revenue_amount) AS "Выручка",
+         CASE WHEN SUM(is_lead) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / SUM(is_lead) END AS "Конверсия в Квал",
+         CASE WHEN SUM(is_lead) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / SUM(is_lead) END AS "Конверсия в Неквал",
+         CASE WHEN SUM(is_lead) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / SUM(is_lead) END AS "Конверсия в Отказ",
+         CASE WHEN SUM(is_lead) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / SUM(is_lead) END AS "Конверсия в работе",
          CASE WHEN SUM(is_qual) = 0 THEN 0 ELSE SUM(is_revenue) * 1.0 / SUM(is_qual) END AS "Конверсия Квал→Оплата",
-         CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
-       FROM flags
+         CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(revenue_amount) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
+       FROM events
        WHERE month <> ''
        GROUP BY funnel_group, month, course_code
        ORDER BY funnel_group, month, course_code`,

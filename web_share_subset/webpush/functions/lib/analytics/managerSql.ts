@@ -85,6 +85,7 @@ export function buildManagerBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs)
            COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
            COALESCE(m."ID", '') AS deal_id,
            COALESCE(m.revenue_amount, 0) AS revenue_amount,
+           1 AS is_lead,
            ${exprs.qual} AS is_qual,
            ${exprs.unqual} AS is_unqual,
            ${exprs.refusal} AS is_refusal,
@@ -105,6 +106,7 @@ export function buildManagerBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs)
            COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
            COALESCE(m."ID", '') AS deal_id,
            COALESCE(m.revenue_amount, 0) AS revenue_amount,
+           1 AS is_lead,
            0 AS is_qual,
            0 AS is_unqual,
            0 AS is_refusal,
@@ -119,7 +121,7 @@ export function buildManagerBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs)
 
 // Shared aggregate columns for manager CTEs
 const AGGR = `
-           COUNT(*) AS leads,
+           SUM(is_lead) AS leads,
            SUM(is_qual) AS qual,
            SUM(is_unqual) AS unqual,
            SUM(is_refusal) AS refusal,
@@ -128,7 +130,7 @@ const AGGR = `
            SUM(is_revenue) AS paid_deals,
            SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
            SUM(is_potential) AS potential,
-           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids`;
+           SUBSTR(GROUP_CONCAT(DISTINCT deal_id), 1, 50000) AS fl_ids`;
 
 // Shared KPI output column list (used in both Manager header and detail rows)
 const KPI = `
@@ -241,7 +243,7 @@ export function buildManagerByCourseMonthSql(baseSql: string, filter: string): s
          month_label AS "Месяц",
          month AS "month",
          course_code AS "Код курса",
-         COUNT(*) AS "Лиды",
+         SUM(is_lead) AS "Лиды",
          SUM(is_qual) AS "Квал",
          SUM(is_unqual) AS "Неквал",
          SUM(is_refusal) AS "Отказы",
@@ -250,11 +252,11 @@ export function buildManagerByCourseMonthSql(baseSql: string, filter: string): s
          SUM(is_revenue) AS "Сделок_с_выручкой",
          SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
          SUM(is_potential) AS "В потенциале",
-         SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS "fl_IDs",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
+         SUBSTR(GROUP_CONCAT(DISTINCT deal_id), 1, 50000) AS "fl_IDs",
+         CASE WHEN SUM(is_lead) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / SUM(is_lead) END AS "Конверсия в Квал",
+         CASE WHEN SUM(is_lead) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / SUM(is_lead) END AS "Конверсия в Неквал",
+         CASE WHEN SUM(is_lead) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / SUM(is_lead) END AS "Конверсия в Отказ",
+         CASE WHEN SUM(is_lead) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / SUM(is_lead) END AS "Конверсия в работе",
          CASE WHEN SUM(is_qual) = 0 THEN 0 ELSE SUM(is_revenue) * 1.0 / SUM(is_qual) END AS "Конверсия Квал→Оплата",
          CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
        FROM filtered
@@ -277,14 +279,17 @@ END`;
  * deal-creation month.  Only includes is_revenue_variant3 = 1 deals.
  * Used to produce the PNL manager report variants (_pnl.json).
  */
-export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs): string {
-  const monthLabel = sqlMonthLabel(PAY_MONTH_OF_M);
+export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs, modifyMonthExpr: string): string {
+  const createMonthLabel = sqlMonthLabel("create_month");
+  const modifyMonthLabel = sqlMonthLabel("modify_month");
+  const payMonthLabel = sqlMonthLabel("pay_month");
   if (hasRawP01) {
-    return `WITH base AS (
+    return `WITH source AS (
          SELECT
            COALESCE(trim(p."Ответственный"), '') AS manager,
-           ${PAY_MONTH_OF_M} AS month,
-           ${monthLabel} AS month_label,
+           COALESCE(m.month, '') AS create_month,
+           ${modifyMonthExpr} AS modify_month,
+           ${PAY_MONTH_OF_M} AS pay_month,
            COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
            COALESCE(m."ID", '') AS deal_id,
            COALESCE(m.revenue_amount, 0) AS revenue_amount,
@@ -294,30 +299,141 @@ export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExp
            ${exprs.invalidExpr} AS is_invalid,
            ${exprs.inWork} AS is_in_work,
            ${exprs.potential} AS is_potential,
-           1 AS is_revenue
+           CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched m
          LEFT JOIN raw_bitrix_deals_p01 p ON p."ID" = m."ID"
-         WHERE COALESCE(m.is_revenue_variant3, 0) = 1
-           AND COALESCE(m."Дата оплаты", '') <> ''
-       )`;
-  }
-  return `WITH base AS (
+         WHERE COALESCE(m.month, '') <> ''
+       ),
+       base AS (
          SELECT
-           'Unassigned' AS manager,
-           ${PAY_MONTH_OF_M} AS month,
-           ${monthLabel} AS month_label,
-           COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
-           COALESCE(m."ID", '') AS deal_id,
-           COALESCE(m.revenue_amount, 0) AS revenue_amount,
+           manager,
+           create_month AS month,
+           ${createMonthLabel} AS month_label,
+           course_code,
+           deal_id,
+           0 AS revenue_amount,
+           1 AS is_lead,
            0 AS is_qual,
            0 AS is_unqual,
            0 AS is_refusal,
            0 AS is_invalid,
            0 AS is_in_work,
            0 AS is_potential,
-           1 AS is_revenue
+           0 AS is_revenue
+         FROM source
+         WHERE COALESCE(create_month, '') <> ''
+         UNION ALL
+         SELECT
+           manager,
+           modify_month AS month,
+           ${modifyMonthLabel} AS month_label,
+           course_code,
+           deal_id,
+           0 AS revenue_amount,
+           0 AS is_lead,
+           is_qual,
+           is_unqual,
+           is_refusal,
+           is_invalid,
+           is_in_work,
+           is_potential,
+           0 AS is_revenue
+         FROM source
+         WHERE COALESCE(modify_month, '') <> ''
+         UNION ALL
+         SELECT
+           manager,
+           pay_month AS month,
+           ${payMonthLabel} AS month_label,
+           course_code,
+           deal_id,
+           revenue_amount,
+           0 AS is_lead,
+           0 AS is_qual,
+           0 AS is_unqual,
+           0 AS is_refusal,
+           0 AS is_invalid,
+           0 AS is_in_work,
+           0 AS is_potential,
+           is_revenue
+         FROM source
+         WHERE COALESCE(pay_month, '') <> ''
+           AND is_revenue = 1
+       )`;
+  }
+  return `WITH source AS (
+         SELECT
+           'Unassigned' AS manager,
+           COALESCE(m.month, '') AS create_month,
+           COALESCE(m.month, '') AS modify_month,
+           ${PAY_MONTH_OF_M} AS pay_month,
+           COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
+           COALESCE(m."ID", '') AS deal_id,
+           COALESCE(m.revenue_amount, 0) AS revenue_amount,
+           ${exprs.qual} AS is_qual,
+           ${exprs.unqual} AS is_unqual,
+           ${exprs.refusal} AS is_refusal,
+           ${exprs.invalidExpr} AS is_invalid,
+           ${exprs.inWork} AS is_in_work,
+           ${exprs.potential} AS is_potential,
+           CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched m
-         WHERE COALESCE(m.is_revenue_variant3, 0) = 1
-           AND COALESCE(m."Дата оплаты", '') <> ''
+         WHERE COALESCE(m.month, '') <> ''
+       ),
+       base AS (
+         SELECT
+           manager,
+           create_month AS month,
+           ${createMonthLabel} AS month_label,
+           course_code,
+           deal_id,
+           0 AS revenue_amount,
+           1 AS is_lead,
+           0 AS is_qual,
+           0 AS is_unqual,
+           0 AS is_refusal,
+           0 AS is_invalid,
+           0 AS is_in_work,
+           0 AS is_potential,
+           0 AS is_revenue
+         FROM source
+         WHERE COALESCE(create_month, '') <> ''
+         UNION ALL
+         SELECT
+           manager,
+           modify_month AS month,
+           ${modifyMonthLabel} AS month_label,
+           course_code,
+           deal_id,
+           0 AS revenue_amount,
+           0 AS is_lead,
+           is_qual,
+           is_unqual,
+           is_refusal,
+           is_invalid,
+           is_in_work,
+           is_potential,
+           0 AS is_revenue
+         FROM source
+         WHERE COALESCE(modify_month, '') <> ''
+         UNION ALL
+         SELECT
+           manager,
+           pay_month AS month,
+           ${payMonthLabel} AS month_label,
+           course_code,
+           deal_id,
+           revenue_amount,
+           0 AS is_lead,
+           0 AS is_qual,
+           0 AS is_unqual,
+           0 AS is_refusal,
+           0 AS is_invalid,
+           0 AS is_in_work,
+           0 AS is_potential,
+           is_revenue
+         FROM source
+         WHERE COALESCE(pay_month, '') <> ''
+           AND is_revenue = 1
        )`;
 }
