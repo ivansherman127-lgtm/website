@@ -1,4 +1,5 @@
 import { parseAmount } from "./amt";
+import { extractCourseCodeFromText } from "./courseCodeLookup";
 import { classifyEventFromRow } from "./eventClassifier";
 import { funnelReportBucket } from "./funnelBucket";
 import { isAttackingJanuary } from "./isAttackingJanuary";
@@ -17,6 +18,9 @@ function buildMartRow(s: StgDealAnalytics) {
   const cls = classifyEventFromRow(rowForClassifier(s));
   let courseRaw = (s.code_site || "").trim();
   if (!courseRaw) courseRaw = (s.code_course || "").trim();
+  if (!courseRaw) courseRaw = extractCourseCodeFromText(s.deal_name);
+  if (!courseRaw) courseRaw = extractCourseCodeFromText(s.utm_campaign);
+  if (!courseRaw) courseRaw = extractCourseCodeFromText(s.utm_content);
   const courseNorm = normalizeCourseCode(courseRaw);
   const revMask = variant3RevenueMask({
     stage_raw: s.stage_raw,
@@ -56,6 +60,7 @@ function buildMartRow(s: StgDealAnalytics) {
     classification_pattern: cls.matched_pattern,
     classification_confidence: cls.confidence,
     is_attacking_january: aj,
+    invalid_type_lead: s.invalid_type_lead ?? "",
   };
 }
 
@@ -75,8 +80,8 @@ export async function rebuildMartDealsFromStaging(db: D1Database): Promise<{ row
       "UTM Source", "UTM Medium", "UTM Campaign", "UTM Content",
       "Название сделки", "Код_курса_сайт", "Код курса",
       course_code_norm, event_class, classification_source, classification_pattern, classification_confidence,
-      is_attacking_january
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      is_attacking_january, "Типы некачественного лида"
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,  
   );
 
   for (const batch of chunks(rows, 80)) {
@@ -110,6 +115,7 @@ export async function rebuildMartDealsFromStaging(db: D1Database): Promise<{ row
           r.classification_pattern,
           r.classification_confidence,
           r.is_attacking_january,
+          r.invalid_type_lead,
         ),
       );
     }

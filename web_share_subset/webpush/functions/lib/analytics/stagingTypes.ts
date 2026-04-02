@@ -18,6 +18,7 @@ export interface StgDealAnalytics {
   code_course: string;
   source_detail: string;
   source_inquiry: string;
+  invalid_type_lead: string;
 }
 
 export function rowForClassifier(s: StgDealAnalytics): Record<string, unknown> {

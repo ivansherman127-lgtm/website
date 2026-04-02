@@ -6,6 +6,34 @@
  * returning the full SQL to pass to db.prepare().
  */
 
+function sqlQuote(value: string): string {
+  return `'${String(value ?? "").replace(/'/g, "''")}'`;
+}
+
+/**
+ * Builds the WHERE filter expression used for the firstline manager segment.
+ *
+ * Before 2026-02 the "Передан первой линией" column was unreliable, so we always
+ * fall back to matching the "Ответственный" column against the firstline name list.
+ * From 2026-02 onwards, if the "Передан первой линией" column is present, use it.
+ */
+export function buildFirstlineFilter(
+  nameList: string[],
+  hasPassedByFirstLineCol: boolean,
+): string {
+  if (!nameList.length) return "0";
+  const quoted = nameList.map(sqlQuote).join(", ");
+  if (!hasPassedByFirstLineCol) {
+    return `trim(manager) IN (${quoted})`;
+  }
+  // Hybrid: for months before 2026-02 use Ответственный; from 2026-02 use Передан первой линией
+  return `(
+    (m.month < '2026-02' AND trim(manager) IN (${quoted}))
+    OR
+    (m.month >= '2026-02' AND trim(p."Передан первой линией") IN (${quoted}))
+  )`;
+}
+
 /**
  * Returns a SQLite CASE expression that converts a YYYY-MM month expression
  * to a Russian month-year label like "Январь, 2025".
@@ -37,6 +65,10 @@ export type ManagerBaseExprs = {
   refusal: string;
   invalidExpr: string;
   inWork: string;
+  potential: string;
+  firstlineFilter: string;
+  firstlineHybridMode: boolean; // true = use "Передан первой линией" column for month >= 2026-02
+  hasPassedByFirstLine: boolean; // true = column "Передан первой линией" exists in raw_bitrix_deals_p01
 };
 
 /**
@@ -58,6 +90,7 @@ export function buildManagerBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs)
            ${exprs.refusal} AS is_refusal,
            ${exprs.invalidExpr} AS is_invalid,
            ${exprs.inWork} AS is_in_work,
+           ${exprs.potential} AS is_potential,
            CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched m
          LEFT JOIN raw_bitrix_deals_p01 p ON p."ID" = m."ID"
@@ -77,6 +110,7 @@ export function buildManagerBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs)
            0 AS is_refusal,
            0 AS is_invalid,
            0 AS is_in_work,
+           0 AS is_potential,
            CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched m
          WHERE COALESCE(m.month, '') <> ''
@@ -93,6 +127,7 @@ const AGGR = `
            SUM(is_invalid) AS invalid_leads,
            SUM(is_revenue) AS paid_deals,
            SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
+           SUM(is_potential) AS potential,
            SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids`;
 
 // Shared KPI output column list (used in both Manager header and detail rows)
@@ -105,11 +140,13 @@ const KPI = `
          invalid_leads AS "Невалидные_лиды",
          paid_deals AS "Сделок_с_выручкой",
          revenue AS "Выручка",
+         potential AS "В потенциале",
          fl_ids AS "fl_IDs",
          CASE WHEN leads = 0 THEN 0 ELSE qual * 1.0 / leads END AS "Конверсия в Квал",
          CASE WHEN leads = 0 THEN 0 ELSE unqual * 1.0 / leads END AS "Конверсия в Неквал",
          CASE WHEN leads = 0 THEN 0 ELSE refusal * 1.0 / leads END AS "Конверсия в Отказ",
          CASE WHEN leads = 0 THEN 0 ELSE in_work * 1.0 / leads END AS "Конверсия в работе",
+         CASE WHEN qual = 0 THEN 0 ELSE paid_deals * 1.0 / qual END AS "Конверсия Квал→Оплата",
          CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средний_чек"`;
 
 /**
@@ -208,11 +245,13 @@ export function buildManagerByCourseMonthSql(baseSql: string, filter: string): s
          SUM(is_invalid) AS "Невалидные_лиды",
          SUM(is_revenue) AS "Сделок_с_выручкой",
          SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
+         SUM(is_potential) AS "В потенциале",
          SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS "fl_IDs",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
+         CASE WHEN SUM(is_qual) = 0 THEN 0 ELSE SUM(is_revenue) * 1.0 / SUM(is_qual) END AS "Конверсия Квал→Оплата",
          CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
        FROM filtered
        GROUP BY manager, month_label, course_code

@@ -211,6 +211,7 @@ def _staging_deals_analytics_df(bitrix: pd.DataFrame) -> pd.DataFrame:
             "code_course": bitrix.get("Код курса", "").fillna("").astype(str).map(_n),
             "source_detail": bitrix.get("Источник (подробно)", "").fillna("").astype(str).map(_n),
             "source_inquiry": bitrix.get("Источник обращения", "").fillna("").astype(str).map(_n),
+            "invalid_type_lead": bitrix.get("Типы некачественного лида", "").fillna("").astype(str).map(_n),
         }
     )
 

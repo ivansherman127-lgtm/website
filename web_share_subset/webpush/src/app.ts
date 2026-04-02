@@ -280,6 +280,22 @@ function filterRowsByMonthsBack(rows: Record<string, unknown>[], dateCol: string
   });
 }
 
+function filterRowsByDateRange(
+  rows: Record<string, unknown>[],
+  dateCol: string,
+  from: string,
+  to: string,
+): Record<string, unknown>[] {
+  if (!dateCol || (!from && !to)) return rows;
+  return rows.filter((r) => {
+    const v = String(r[dateCol] ?? "").slice(0, 7);
+    if (!v || v.length < 7) return true;
+    if (from && v < from) return false;
+    if (to && v > to) return false;
+    return true;
+  });
+}
+
 function renderRowsTable(title: string, rows: Record<string, unknown>[]): string {
   if (!rows.length) {
     return `
@@ -1299,7 +1315,13 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   let sortCol = initialDateCol || cols[0] || "";
   let sortDir: "asc" | "desc" = initialDateCol ? "desc" : "asc";
   let filter = "";
-  let dateWindowMonths = 12;
+  const _now = new Date();
+  const _toY = _now.getFullYear();
+  const _toM = String(_now.getMonth() + 1).padStart(2, "0");
+  const _fromD = new Date(_now); _fromD.setMonth(_fromD.getMonth() - 11);
+  let dateFrom = `${_fromD.getFullYear()}-${String(_fromD.getMonth() + 1).padStart(2, "0")}`;
+  let dateTo = `${_toY}-${_toM}`;
+  let pnlMode: "cohort" | "pnl" = "cohort";
   let contactsFullOnly = false;
   const expanded = new Set<string>();
   const expandedEmailMonths = new Set<string>();
@@ -1340,17 +1362,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const dateWindowCol = isManagerCourseView
     ? "Месяц"
     : (["Период", "Месяц", "month", "Год"].find((c) => allCols.includes(c)) || "");
-  const dateWindowViews = new Set<ViewKey>([
-    "assoc_dynamic",
-    "media_yandex",
-    "budget_monthly",
-    "managers_sales_month",
-    "managers_sales_course",
-    "managers_firstline_month",
-    "managers_firstline_course",
-    "funnels_hierarchy",
-  ]);
-  const hasDateWindowControl = dateWindowViews.has(view);
+  const hasDateWindowControl = !!dateWindowCol;
   const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let visibleRows: Record<string, unknown>[] = [];
   const postJson = async (url: string, body: unknown): Promise<{ ok: boolean; rows?: number; error?: string }> => {
@@ -1400,12 +1412,13 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     if (sortCol && !cols.includes(sortCol)) sortCol = cols[0] || "";
 
     let data = [...viewRows];
-    if (hasDateWindowControl && dateWindowCol && !isManagerCourseView) {
-      data = filterRowsByMonthsBack(data, dateWindowCol, dateWindowMonths);
+    const effectiveDateCol = (pnlMode === "pnl" && allCols.includes("pay_month")) ? "pay_month" : dateWindowCol;
+    if (hasDateWindowControl && effectiveDateCol && !isManagerCourseView) {
+      data = filterRowsByDateRange(data, effectiveDateCol, dateFrom, dateTo);
     }
 
     if (view === "media_yandex" && hasDateWindowControl) {
-      const monthly = filterRowsByMonthsBack(mediaYandexMonthlyRows, "month", dateWindowMonths);
+      const monthly = filterRowsByDateRange(mediaYandexMonthlyRows, "month", dateFrom, dateTo);
       const mByProject = new Map<string, { leads: number; paid: number; revenue: number; spend: number }>();
       const assocRevenueByProject = new Map<string, number>();
       for (const r of viewRows) {
@@ -1426,7 +1439,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       }
 
       const ymByProject = new Map<string, YandexLeadMetrics>();
-      const campaignFiltered = filterRowsByMonthsBack(mediaYandexCampaignMonthRows, "month", dateWindowMonths);
+      const campaignFiltered = filterRowsByDateRange(mediaYandexCampaignMonthRows, "month", dateFrom, dateTo);
       for (const r of campaignFiltered) {
         const p = mapYandexProjectGroup(r["Название кампании"]);
         if (!p) continue;
@@ -1468,10 +1481,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
 
     if (isManagerHierarchy && hasDateWindowControl && view.endsWith("_month")) {
-      const months = filterRowsByMonthsBack(
+      const months = filterRowsByDateRange(
         viewRows.filter((r) => String(r["Level"] ?? "") === "Месяц"),
         "Месяц",
-        dateWindowMonths,
+        dateFrom,
+        dateTo,
       );
       const mgr = new Map<string, Record<string, unknown>>();
       for (const r of months) {
@@ -1510,7 +1524,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
 
     if (isManagerCourseView && hasDateWindowControl) {
-      const monthRows = filterRowsByMonthsBack(managerCourseMonthRows, "Месяц", dateWindowMonths);
+      const monthRows = filterRowsByDateRange(managerCourseMonthRows, "Месяц", dateFrom, dateTo);
       const byManager = new Map<string, Map<string, Record<string, unknown>[]>>();
       for (const r of monthRows) {
         const manager = String(r["Менеджер"] ?? "").trim() || "Unassigned";
@@ -1562,10 +1576,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
 
     if (isFunnelHierarchy && hasDateWindowControl) {
-      const codeRows = filterRowsByMonthsBack(
+      const codeRows = filterRowsByDateRange(
         viewRows.filter((r) => String(r["__node"] ?? "").trim() === "code"),
         "Месяц",
-        dateWindowMonths,
+        dateFrom,
+        dateTo,
       );
       const groupedByFunnel = new Map<string, Record<string, unknown>[]>();
       for (const r of codeRows) {
@@ -1624,10 +1639,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
 
     if (isBudgetHierarchy && hasDateWindowControl) {
-      const months = filterRowsByMonthsBack(
+      const months = filterRowsByDateRange(
         viewRows.filter((r) => String(r["Level"] ?? "") === "Month"),
         "Период",
-        dateWindowMonths,
+        dateFrom,
+        dateTo,
       );
       const allowed = new Set(months.map((r) => String(r["month"] ?? r["Период"] ?? "").trim()).filter(Boolean));
       const details = viewRows.filter((r) => String(r["Level"] ?? "") === "Detail" && allowed.has(String(r["month"] ?? "").trim()));
@@ -2179,7 +2195,14 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       }
       ${
         hasDateWindowControl
-          ? `<label class="date-window-inline">Период: <input class="date-window-slider" type="range" min="1" max="24" step="1" value="${dateWindowMonths}" /> <span class="date-window-value">${escapeHtml(monthsBackRangeLabel(viewRows, dateWindowCol, dateWindowMonths))}</span></label>`
+          ? `<span class="date-range-controls">
+              <label>С: <input type="month" class="date-from-input" value="${dateFrom}" /></label>
+              <label>По: <input type="month" class="date-to-input" value="${dateTo}" /></label>
+              <span class="pnl-toggle">
+                <button class="pnl-btn${pnlMode === "cohort" ? " active" : ""}" data-mode="cohort">Когорта</button>
+                <button class="pnl-btn${pnlMode !== "cohort" ? " active" : ""}" data-mode="pnl">PNL</button>
+              </span>
+            </span>`
           : ""
       }
       ${
@@ -2241,8 +2264,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   </div>`;
 
   const filterInput = app.querySelector<HTMLInputElement>(".filter-input");
-  const dateWindowSlider = app.querySelector<HTMLInputElement>(".date-window-slider");
-  const dateWindowValue = app.querySelector<HTMLElement>(".date-window-value");
+  const dateFromInput = app.querySelector<HTMLInputElement>(".date-from-input");
+  const dateToInput = app.querySelector<HTMLInputElement>(".date-to-input");
   const contactsFullBtn = app.querySelector<HTMLButtonElement>(".contacts-full-btn");
   const copyTableBtn = app.querySelector<HTMLButtonElement>(".copy-table-btn");
   const downloadTableBtn = app.querySelector<HTMLButtonElement>(".download-table-btn");
@@ -2302,14 +2325,18 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   if (filterInput) {
     filterInput.oninput = () => { filter = filterInput.value; draw(); };
   }
-  if (dateWindowSlider && dateWindowValue) {
-    dateWindowSlider.oninput = () => {
-      const next = Number(dateWindowSlider.value);
-      dateWindowMonths = Number.isFinite(next) && next > 0 ? Math.round(next) : 12;
-      dateWindowValue.textContent = monthsBackRangeLabel(viewRows, dateWindowCol, dateWindowMonths);
+  if (dateFromInput) {
+    dateFromInput.onchange = () => { dateFrom = dateFromInput.value || ""; draw(); };
+  }
+  if (dateToInput) {
+    dateToInput.onchange = () => { dateTo = dateToInput.value || ""; draw(); };
+  }
+  app.querySelectorAll<HTMLButtonElement>(".pnl-btn").forEach((btn) => {
+    btn.onclick = () => {
+      pnlMode = (btn.getAttribute("data-mode") || "cohort") as "cohort" | "pnl";
       draw();
     };
-  }
+  });
   app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
     btn.onclick = async () => {
       const m = btn.getAttribute("data-menu");

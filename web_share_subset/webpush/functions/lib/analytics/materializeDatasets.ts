@@ -5,7 +5,7 @@ import { groupYandexProjectsNoMonth } from "./yandexProjectsNoMonth";
 import { sqlExtractYandexAdId } from "./yandexAdId";
 import { buildYdHierarchyRows } from "./ydHierarchy";
 import { buildBitrixContactsUidRows } from "./bitrixContactsUid";
-import { buildLeadLogicSql } from "./leadLogicSql";
+import { buildLeadLogicSql, buildPotentialCond } from "./leadLogicSql";
 import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS, YANDEX_KNOWN_GROUPS, mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
 import managerFirstlineNames from "../../config/manager_firstline.json";
 import {
@@ -14,6 +14,7 @@ import {
   buildManagerByMonthSql,
   buildManagerByCourseSql,
   buildManagerByCourseMonthSql,
+  buildFirstlineFilter,
   type ManagerBaseExprs,
 } from "./managerSql";
 import { buildAssocQaSql, buildAssocQaByAdSql, buildAdPerfSql, type AssocRevenueExprs } from "./assocRevenueSql";
@@ -274,20 +275,23 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     ]);
   const hasTypyInMart = hasTypyInMart1 || hasTypyInMart2;
 
-  const [hasTypyInRaw1, hasTypyInRaw2] = hasRawP01
+  const [hasTypyInRaw1, hasTypyInRaw2, hasPassedByFirstLine] = hasRawP01
     ? await Promise.all([
         columnExists(db, "raw_bitrix_deals_p01", "Типы некачественного лида"),
         columnExists(db, "raw_bitrix_deals_p01", "Типы некачественных лидов"),
+        columnExists(db, "raw_bitrix_deals_p01", "Передан первой линией"),
       ])
-    : ([false, false] as const);
+    : ([false, false, false] as const);
   const hasTypyInRaw = hasTypyInRaw1 || hasTypyInRaw2;
 
   // ── Build SQL expression fragments ──────────────────────────────────────────
   const bitrixInvalidCond = hasTypyInMart
     ? buildInvalidTokenCond(BITRIX_INVALID_TOKENS, "")
-    : hasTypyInRaw
-    ? buildInvalidTokenCond(BITRIX_INVALID_TOKENS, "p.")
     : "0";
+  // bitrixInvalidExpr is used in queries that SELECT directly from mart_deals_enriched
+  // (no p. alias). When the column is only in raw p01, the stage-token detection in
+  // buildLeadLogicSql (via extraInvalidCond) handles it; we still expose a direct expr
+  // so that explicit SUM(is_invalid) lines in Batch 1 queries are consistent.
   const bitrixInvalidExpr = hasTypyInMart
     ? `CASE WHEN (${bitrixInvalidCond}) THEN 1 ELSE 0 END`
     : `CASE WHEN 0 THEN 1 ELSE 0 END`;
@@ -350,16 +354,20 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   const firstlineList = Array.isArray(managerFirstlineNames)
     ? managerFirstlineNames.map((s) => String(s ?? "").trim()).filter(Boolean)
     : [];
-  const firstlineFilter = firstlineList.length
-    ? `trim(manager) IN (${firstlineList.map((n) => sqlQuote(n)).join(", ")})`
-    : `0`;
+  const firstlineFilter = buildFirstlineFilter(firstlineList, hasPassedByFirstLine);
   const salesFilter = `trim(manager) IN ('Анастасия Крисанова', 'Василий Гореленков', 'Глеб Барбазанов', 'Елена Лобода')`;
+
+  const managerPotentialExpr = buildPotentialCond(`m."Стадия сделки"`);
   const managerBaseExprs: ManagerBaseExprs = {
     qual: managerLeadLogic.qual,
     unqual: managerLeadLogic.unqual,
     refusal: managerLeadLogic.refusal,
     invalidExpr: managerInvalidExpr,
     inWork: managerLeadLogic.inWork,
+    potential: managerPotentialExpr,
+    firstlineFilter,
+    firstlineHybridMode: hasPassedByFirstLine,
+    hasPassedByFirstLine,
   };
   const managerBaseSql = buildManagerBaseSql(hasRawP01, managerBaseExprs);
 
@@ -471,6 +479,11 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
       `WITH flags AS (
          SELECT
            month,
+           CASE
+             WHEN COALESCE("Дата оплаты", '') LIKE '____-__%' THEN SUBSTR("Дата оплаты", 1, 7)
+             WHEN COALESCE("Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR("Дата оплаты", 7, 4) || '-' || SUBSTR("Дата оплаты", 4, 2)
+             ELSE ''
+           END AS pay_month,
            COALESCE("ID", '') AS deal_id,
            COALESCE("Стадия сделки", '') AS stage,
            COALESCE("Воронка", '') AS funnel,
@@ -480,6 +493,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.refusal} AS is_refusal,
            ${bitrixInvalidExpr} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
+           ${buildPotentialCond(`"Стадия сделки"`)} AS is_potential,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched
          WHERE COALESCE(month, '') <> ''
@@ -493,12 +507,14 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          SUM(is_refusal) AS "Отказы",
          SUM(is_in_work) AS "В работе",
          SUM(is_invalid) AS "Невалидные_лиды",
+         SUM(is_potential) AS "В потенциале",
          SUM(is_revenue) AS "Сделок_с_выручкой",
          SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
+         CASE WHEN SUM(is_qual) = 0 THEN 0 ELSE SUM(is_revenue) * 1.0 / SUM(is_qual) END AS "Конверсия Квал→Оплата",
          CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
        FROM flags
        GROUP BY month
@@ -529,6 +545,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     r_bitrixContactsUid,
     r_dashContactsCount,
     r_bitrixFunnelCode,
+    r_newEventContacts,
   ] = await Promise.all([
     db.prepare(
       `WITH src AS (
@@ -1035,6 +1052,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.refusal} AS is_refusal,
            ${bitrixInvalidExpr} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
+           ${buildPotentialCond(`"Стадия сделки"`)} AS is_potential,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched
          WHERE COALESCE(month, '') <> ''
@@ -1049,16 +1067,47 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          SUM(is_refusal) AS "Отказы",
          SUM(is_in_work) AS "В работе",
          SUM(is_invalid) AS "Невалидные_лиды",
+         SUM(is_potential) AS "В потенциале",
          SUM(is_revenue) AS "Сделок_с_выручкой",
          SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
+         CASE WHEN SUM(is_qual) = 0 THEN 0 ELSE SUM(is_revenue) * 1.0 / SUM(is_qual) END AS "Конверсия Квал→Оплата",
          CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
        FROM flags
        GROUP BY funnel_group, month, course_code
        ORDER BY funnel_group, month, course_code`,
+    ).all<RR>(),
+    db.prepare(
+      `WITH first_contact_months AS (
+         SELECT
+           "Контакт: ID" AS cid,
+           MIN(month) AS first_month
+         FROM mart_deals_enriched
+         WHERE COALESCE("Контакт: ID", '') <> ''
+           AND COALESCE(month, '') <> ''
+         GROUP BY "Контакт: ID"
+       ),
+       first_event_classes AS (
+         SELECT
+           fcm.cid,
+           fcm.first_month,
+           MAX(CASE WHEN lower(COALESCE(m.event_class, '')) IN ('webinar', 'demo', 'event') THEN 1 ELSE 0 END) AS has_event
+         FROM first_contact_months fcm
+         JOIN mart_deals_enriched m
+           ON m."Контакт: ID" = fcm.cid
+           AND m.month = fcm.first_month
+         GROUP BY fcm.cid, fcm.first_month
+       )
+       SELECT
+         first_month AS "Месяц",
+         COUNT(*) AS "Контактов всего",
+         SUM(has_event) AS "Новых с мероприятия"
+       FROM first_event_classes
+       GROUP BY first_month
+       ORDER BY first_month`,
     ).all<RR>(),
   ]);
 
@@ -1078,6 +1127,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     upsertDataset(db, "bitrix_contacts_uid.json", rowsToJson(bitrixContactsUidRows)),
     upsertDataset(db, "dashboard_contacts_total.json", rowsToJson(dashboardContactsTotalRows)),
     upsertDataset(db, "bitrix_funnel_month_code_full.json", rowsToJson(r_bitrixFunnelCode.results ?? [])),
+    upsertDataset(db, "bitrix_new_event_contacts_by_month.json", rowsToJson(r_newEventContacts.results ?? [])),
   ]);
   paths.push(
     "bitrix_week_funnel_total.json",
@@ -1087,6 +1137,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     "bitrix_contacts_uid.json",
     "dashboard_contacts_total.json",
     "bitrix_funnel_month_code_full.json",
+    "bitrix_new_event_contacts_by_month.json",
   );
 
   // ── Batch 3: Manager reports — 6 queries in parallel ─────────────────────────
