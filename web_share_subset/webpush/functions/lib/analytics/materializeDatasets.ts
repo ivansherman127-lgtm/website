@@ -203,6 +203,23 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     stageExpr: `"Стадия сделки"`,
     monthExpr: "month",
   });
+  // Bitrix invalid tokens are tracked in separate columns in the source data
+  const BITRIX_INVALID_TOKENS = [
+    "дубль",
+    "тест",
+    "спам",
+    "чс",
+    "неправильные данные",
+    "партнер",
+    "сотрудник",
+  ];
+  const bitrixInvalidCond = BITRIX_INVALID_TOKENS
+    .flatMap((tok) => [
+      `lower(COALESCE("Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+      `lower(COALESCE("Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+    ])
+    .join(" OR ");
+  const bitrixInvalidExpr = `CASE WHEN (${bitrixInvalidCond}) THEN 1 ELSE 0 END`;
   const yandexLeadLogic = buildLeadLogicSql({
     funnelExpr: "funnel",
     stageExpr: "stage",
@@ -213,6 +230,13 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     stageExpr: `m."Стадия сделки"`,
     monthExpr: "m.month",
   });
+  const managerInvalidCond = BITRIX_INVALID_TOKENS
+    .flatMap((tok) => [
+      `lower(COALESCE(m."Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+      `lower(COALESCE(m."Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+    ])
+    .join(" OR ");
+  const managerInvalidExpr = `CASE WHEN (${managerInvalidCond}) THEN 1 ELSE 0 END`;
   const hasRawP01 = await tableExists(db, "raw_bitrix_deals_p01");
   const hasSendsayContacts = await tableExists(db, "stg_sendsay_contacts");
   const totalEmailContactsExpr = hasSendsayContacts
@@ -356,7 +380,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.qual} AS is_qual,
            ${bitrixLeadLogic.unqual} AS is_unqual,
            ${bitrixLeadLogic.refusal} AS is_refusal,
-           ${bitrixLeadLogic.invalid} AS is_invalid,
+          ${bitrixInvalidExpr} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched
@@ -405,7 +429,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.qual} AS is_qual,
            ${bitrixLeadLogic.unqual} AS is_unqual,
            ${bitrixLeadLogic.refusal} AS is_refusal,
-           ${bitrixLeadLogic.invalid} AS is_invalid,
+           ${bitrixInvalidExpr} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched
@@ -967,7 +991,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.qual} AS is_qual,
            ${bitrixLeadLogic.unqual} AS is_unqual,
            ${bitrixLeadLogic.refusal} AS is_refusal,
-           ${bitrixLeadLogic.invalid} AS is_invalid,
+           ${bitrixInvalidExpr} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched
@@ -1024,7 +1048,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${managerLeadLogic.qual} AS is_qual,
            ${managerLeadLogic.unqual} AS is_unqual,
            ${managerLeadLogic.refusal} AS is_refusal,
-           ${managerLeadLogic.invalid} AS is_invalid,
+           ${managerInvalidExpr} AS is_invalid,
            ${managerLeadLogic.inWork} AS is_in_work,
            CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched m
