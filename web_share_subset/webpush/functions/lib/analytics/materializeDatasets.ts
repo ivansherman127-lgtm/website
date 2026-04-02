@@ -213,12 +213,38 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     "партнер",
     "сотрудник",
   ];
-  const bitrixInvalidCond = BITRIX_INVALID_TOKENS
-    .flatMap((tok) => [
+  async function columnExists(db: D1Database, tableName: string, columnName: string): Promise<boolean> {
+    try {
+      const row = await db
+        .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1`)
+        .bind(tableName)
+        .first<{ sql: string }>();
+      if (!row?.sql) return false;
+      const sql = String(row.sql);
+      return sql.includes(columnName) || sql.includes(`"${columnName}"`) || sql.includes(`'${columnName}'`);
+    } catch {
+      return false;
+    }
+  }
+
+  // Detect whether the invalid-token columns exist in mart_deals_enriched or raw_bitrix_deals_p01
+  const hasTypyInMart = (await columnExists(db, "mart_deals_enriched", "Типы некачественного лида")) || (await columnExists(db, "mart_deals_enriched", "Типы некачественных лидов"));
+  const hasRawP01 = await tableExists(db, "raw_bitrix_deals_p01");
+  const hasTypyInRaw = hasRawP01 && ((await columnExists(db, "raw_bitrix_deals_p01", "Типы некачественного лида")) || (await columnExists(db, "raw_bitrix_deals_p01", "Типы некачественных лидов")));
+
+  let bitrixInvalidCond = "0";
+  if (hasTypyInMart) {
+    bitrixInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
       `lower(COALESCE("Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
       `lower(COALESCE("Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-    ])
-    .join(" OR ");
+    ]).join(" OR ");
+  } else if (hasTypyInRaw) {
+    // Fall back to raw table columns when mart_deals_enriched lacks them
+    bitrixInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
+      `lower(COALESCE(p."Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+      `lower(COALESCE(p."Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+    ]).join(" OR ");
+  }
   const bitrixInvalidExpr = `CASE WHEN (${bitrixInvalidCond}) THEN 1 ELSE 0 END`;
   const yandexLeadLogic = buildLeadLogicSql({
     funnelExpr: "funnel",
@@ -230,12 +256,21 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     stageExpr: `m."Стадия сделки"`,
     monthExpr: "m.month",
   });
-  const managerInvalidCond = BITRIX_INVALID_TOKENS
-    .flatMap((tok) => [
-      `lower(COALESCE(COALESCE(m."Типы некачественного лида", p."Типы некачественного лида"), '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-      `lower(COALESCE(COALESCE(m."Типы некачественных лидов", p."Типы некачественных лидов"), '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-    ])
-    .join(" OR ");
+  // Build manager invalid condition without referencing non-existent columns.
+  const managerHasTypyInMart = hasTypyInMart; // mart_deals_enriched
+  const managerHasTypyInRaw = hasTypyInRaw; // raw_bitrix_deals_p01
+  let managerInvalidCond = "0";
+  if (managerHasTypyInMart) {
+    managerInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
+      `lower(COALESCE(m."Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+      `lower(COALESCE(m."Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+    ]).join(" OR ");
+  } else if (managerHasTypyInRaw) {
+    managerInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
+      `lower(COALESCE(p."Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+      `lower(COALESCE(p."Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+    ]).join(" OR ");
+  }
   const managerInvalidExpr = `CASE WHEN (${managerInvalidCond}) THEN 1 ELSE 0 END`;
   const hasRawP01 = await tableExists(db, "raw_bitrix_deals_p01");
   const hasSendsayContacts = await tableExists(db, "stg_sendsay_contacts");
