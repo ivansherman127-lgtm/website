@@ -11,6 +11,7 @@ import managerFirstlineNames from "../../config/manager_firstline.json";
 import {
   sqlMonthLabel,
   buildManagerBaseSql,
+  buildManagerPnlBaseSql,
   buildManagerByMonthSql,
   buildManagerByCourseSql,
   buildManagerByCourseMonthSql,
@@ -156,8 +157,8 @@ function buildYandexNoMonthHierarchyRows(
 
   const out: Record<string, unknown>[] = [];
   for (const row of projectRows) {
-    const project = String(row.project_name ?? "").trim();
-    if (!project) continue;
+    const project = toKnownGroup(String(row.project_name ?? "").trim());
+    if (!project || project === "UNMAPPED") continue;
     const details = (byProject.get(project) || []).sort((a, b) => {
       const spendDiff = (Number(b.spend ?? 0) || 0) - (Number(a.spend ?? 0) || 0);
       if (spendDiff !== 0) return spendDiff;
@@ -1172,6 +1173,83 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     "manager_sales_by_month.json",
     "manager_sales_by_course.json",
     "manager_sales_by_course_month.json",
+  );
+
+  // ── Batch 3b: PNL variants — grouped by pay_month instead of creation month ──
+  const managerPnlBaseSql = buildManagerPnlBaseSql(hasRawP01, managerBaseExprs);
+  const PAY_MONTH_EXPR = `CASE
+    WHEN COALESCE("Дата оплаты", '') LIKE '____-__%' THEN SUBSTR("Дата оплаты", 1, 7)
+    WHEN COALESCE("Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR("Дата оплаты", 7, 4) || '-' || SUBSTR("Дата оплаты", 4, 2)
+    ELSE ''
+  END`;
+  const [
+    r_mgr_fl_month_pnl,
+    r_mgr_fl_course_month_pnl,
+    r_mgr_sales_month_pnl,
+    r_mgr_sales_course_month_pnl,
+    r_bitrixFunnelCodePnl,
+  ] = await Promise.all([
+    db.prepare(buildManagerByMonthSql(managerPnlBaseSql, firstlineFilter)).all<RR>(),
+    db.prepare(buildManagerByCourseMonthSql(managerPnlBaseSql, firstlineFilter)).all<RR>(),
+    db.prepare(buildManagerByMonthSql(managerPnlBaseSql, salesFilter)).all<RR>(),
+    db.prepare(buildManagerByCourseMonthSql(managerPnlBaseSql, salesFilter)).all<RR>(),
+    db.prepare(
+      `WITH flags AS (
+         SELECT
+           COALESCE(NULLIF(trim(funnel_group), ''), 'Другое') AS funnel_group,
+           ${PAY_MONTH_EXPR} AS month,
+           COALESCE(NULLIF(trim(course_code_norm), ''), '—') AS course_code,
+           COALESCE(revenue_amount, 0) AS revenue_amount,
+           ${bitrixLeadLogic.qual} AS is_qual,
+           ${bitrixLeadLogic.unqual} AS is_unqual,
+           ${bitrixLeadLogic.refusal} AS is_refusal,
+           ${bitrixLeadLogic.invalid} AS is_invalid,
+           ${bitrixLeadLogic.inWork} AS is_in_work,
+           ${buildPotentialCond(`"Стадия сделки"`)} AS is_potential,
+           1 AS is_revenue
+         FROM mart_deals_enriched
+         WHERE COALESCE(is_revenue_variant3, 0) = 1
+           AND COALESCE("Дата оплаты", '') <> ''
+       )
+       SELECT
+         funnel_group AS "Воронка",
+         month AS "Месяц",
+         course_code AS "Код_курса_норм",
+         COUNT(*) AS "Лиды",
+         SUM(is_qual) AS "Квал",
+         SUM(is_unqual) AS "Неквал",
+         SUM(CASE WHEN is_qual = 0 AND is_unqual = 0 THEN 1 ELSE 0 END) AS "Неизвестно",
+         SUM(is_refusal) AS "Отказы",
+         SUM(is_in_work) AS "В работе",
+         SUM(is_invalid) AS "Невалидные_лиды",
+         SUM(is_potential) AS "В потенциале",
+         SUM(is_revenue) AS "Сделок_с_выручкой",
+         SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
+         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
+         CASE WHEN SUM(is_qual) = 0 THEN 0 ELSE SUM(is_revenue) * 1.0 / SUM(is_qual) END AS "Конверсия Квал→Оплата",
+         CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
+       FROM flags
+       WHERE month <> ''
+       GROUP BY funnel_group, month, course_code
+       ORDER BY funnel_group, month, course_code`,
+    ).all<RR>(),
+  ]);
+  await Promise.all([
+    upsertDataset(db, "manager_firstline_by_month_pnl.json", rowsToJson(r_mgr_fl_month_pnl.results ?? [])),
+    upsertDataset(db, "manager_firstline_by_course_month_pnl.json", rowsToJson(r_mgr_fl_course_month_pnl.results ?? [])),
+    upsertDataset(db, "manager_sales_by_month_pnl.json", rowsToJson(r_mgr_sales_month_pnl.results ?? [])),
+    upsertDataset(db, "manager_sales_by_course_month_pnl.json", rowsToJson(r_mgr_sales_course_month_pnl.results ?? [])),
+    upsertDataset(db, "bitrix_funnel_month_code_full_pnl.json", rowsToJson(r_bitrixFunnelCodePnl.results ?? [])),
+  ]);
+  paths.push(
+    "manager_firstline_by_month_pnl.json",
+    "manager_firstline_by_course_month_pnl.json",
+    "manager_sales_by_month_pnl.json",
+    "manager_sales_by_course_month_pnl.json",
+    "bitrix_funnel_month_code_full_pnl.json",
   );
 
   // ── Batch 4: Yandex KPIs + hierarchy + project revenue + cohort + QA (parallel) ─

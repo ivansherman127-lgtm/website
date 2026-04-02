@@ -261,3 +261,63 @@ export function buildManagerByCourseMonthSql(baseSql: string, filter: string): s
        GROUP BY manager, month, month_label, course_code
        ORDER BY manager, month_label DESC, course_code`;
 }
+
+/**
+ * SQL expression that derives an ISO YYYY-MM month from the "Дата оплаты" column
+ * of mart_deals_enriched (table alias m).
+ */
+const PAY_MONTH_OF_M = `CASE
+  WHEN COALESCE(m."Дата оплаты", '') LIKE '____-__%' THEN SUBSTR(m."Дата оплаты", 1, 7)
+  WHEN COALESCE(m."Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR(m."Дата оплаты", 7, 4) || '-' || SUBSTR(m."Дата оплаты", 4, 2)
+  ELSE ''
+END`;
+
+/**
+ * Like buildManagerBaseSql but groups by pay_month (payment date) instead of
+ * deal-creation month.  Only includes is_revenue_variant3 = 1 deals.
+ * Used to produce the PNL manager report variants (_pnl.json).
+ */
+export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs): string {
+  const monthLabel = sqlMonthLabel(PAY_MONTH_OF_M);
+  if (hasRawP01) {
+    return `WITH base AS (
+         SELECT
+           COALESCE(trim(p."Ответственный"), '') AS manager,
+           ${PAY_MONTH_OF_M} AS month,
+           ${monthLabel} AS month_label,
+           COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
+           COALESCE(m."ID", '') AS deal_id,
+           COALESCE(m.revenue_amount, 0) AS revenue_amount,
+           ${exprs.qual} AS is_qual,
+           ${exprs.unqual} AS is_unqual,
+           ${exprs.refusal} AS is_refusal,
+           ${exprs.invalidExpr} AS is_invalid,
+           ${exprs.inWork} AS is_in_work,
+           ${exprs.potential} AS is_potential,
+           1 AS is_revenue
+         FROM mart_deals_enriched m
+         LEFT JOIN raw_bitrix_deals_p01 p ON p."ID" = m."ID"
+         WHERE COALESCE(m.is_revenue_variant3, 0) = 1
+           AND COALESCE(m."Дата оплаты", '') <> ''
+       )`;
+  }
+  return `WITH base AS (
+         SELECT
+           'Unassigned' AS manager,
+           ${PAY_MONTH_OF_M} AS month,
+           ${monthLabel} AS month_label,
+           COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
+           COALESCE(m."ID", '') AS deal_id,
+           COALESCE(m.revenue_amount, 0) AS revenue_amount,
+           0 AS is_qual,
+           0 AS is_unqual,
+           0 AS is_refusal,
+           0 AS is_invalid,
+           0 AS is_in_work,
+           0 AS is_potential,
+           1 AS is_revenue
+         FROM mart_deals_enriched m
+         WHERE COALESCE(m.is_revenue_variant3, 0) = 1
+           AND COALESCE(m."Дата оплаты", '') <> ''
+       )`;
+}

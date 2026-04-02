@@ -525,6 +525,13 @@ type ViewKey =
   | "utm_constructor";
 
 type ViewMeta = { tab: TabKey; label: string; path: string; rowsLabel: string; title: string; kind?: "assoc" | "email" | "generic" };
+type PnlMode = "cohort" | "pnl";
+type RenderOptions = {
+  initialDateFrom?: string;
+  initialDateTo?: string;
+  initialPnlMode?: PnlMode;
+};
+
 const VIEW_META: Record<ViewKey, ViewMeta> = {
   assoc_dynamic: { tab: "assoc_builder", label: "Конструктор", path: "/api/assoc-revenue", rowsLabel: "Групп", title: "Ассоциативная выручка (конструктор)" },
   media_email: { tab: "media", label: "Имейл по месяцам", path: "data/email_hierarchy_by_send.json", rowsLabel: "Строк", title: "Рекламные медиумы" },
@@ -553,6 +560,16 @@ const VIEW_META: Record<ViewKey, ViewMeta> = {
 const ALL_VIEWS = Object.keys(VIEW_META) as ViewKey[];
 type MenuMode = "dashboard" | "reports" | "charts" | "utm";
 
+const PNL_PATH_BY_VIEW: Partial<Record<ViewKey, string>> = {
+  managers_sales_month: "data/manager_sales_by_month_pnl.json",
+  managers_firstline_month: "data/manager_firstline_by_month_pnl.json",
+  funnels_hierarchy: "data/bitrix_funnel_month_code_full_pnl.json",
+};
+
+function supportsPnlMode(view: ViewKey): boolean {
+  return view === "assoc_dynamic" || view === "funnels_hierarchy" || view.startsWith("managers_");
+}
+
 function isViewKey(v: string): v is ViewKey {
   return (ALL_VIEWS as string[]).includes(v);
 }
@@ -573,10 +590,15 @@ function writeUrlState(menu: MenuMode, view?: ViewKey): void {
   window.history.replaceState({}, "", url.toString());
 }
 
-function viewPath(view: ViewKey): string {
+function viewPath(view: ViewKey, options?: { pnlMode?: PnlMode; dateFrom?: string; dateTo?: string }): string {
   if (view === "assoc_dynamic") {
-    return "/api/assoc-revenue?dims=event";
+    const params = new URLSearchParams({ dims: "event" });
+    if (options?.dateFrom) params.set("from", options.dateFrom);
+    if (options?.dateTo) params.set("to", options.dateTo);
+    if (options?.pnlMode) params.set("pnlmode", options.pnlMode);
+    return `/api/assoc-revenue?${params.toString()}`;
   }
+  if (options?.pnlMode === "pnl" && PNL_PATH_BY_VIEW[view]) return PNL_PATH_BY_VIEW[view] as string;
   return VIEW_META[view].path;
 }
 
@@ -1263,13 +1285,21 @@ function isHiddenUiColumn(col: string): boolean {
   return col.startsWith("__");
 }
 
-async function renderTable(view: ViewKey, rows: Record<string, unknown>[], dealsIndex: DealsIndex): Promise<void> {
+async function renderTable(view: ViewKey, rows: Record<string, unknown>[], dealsIndex: DealsIndex, options: RenderOptions = {}): Promise<void> {
   const isUtmConstructor = view === "utm_constructor";
+  const _now = new Date();
+  const _toY = _now.getFullYear();
+  const _toM = String(_now.getMonth() + 1).padStart(2, "0");
+  const _fromD = new Date(_now); _fromD.setMonth(_fromD.getMonth() - 11);
+  let dateFrom = options.initialDateFrom ?? `${_fromD.getFullYear()}-${String(_fromD.getMonth() + 1).padStart(2, "0")}`;
+  let dateTo = options.initialDateTo ?? `${_toY}-${_toM}`;
+  let pnlMode: PnlMode = options.initialPnlMode ?? "cohort";
+
   writeUrlState(isUtmConstructor ? "utm" : "reports", view);
   const meta = VIEW_META[view];
   const tab = meta.tab;
   const tabViews = (Object.keys(VIEW_META) as ViewKey[]).filter((k) => VIEW_META[k].tab === tab && VIEW_META[k].tab !== "utm");
-  const resolvedPath = viewPath(view);
+  const resolvedPath = viewPath(view, { pnlMode, dateFrom, dateTo });
   const aliasMetaRow = rows.length > 0 && String(rows[0]["__type"] ?? "") === "column_aliases" ? rows[0] : undefined;
   if (aliasMetaRow) {
     const viewAliases: Record<string, string> = {};
@@ -1297,14 +1327,18 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   }
   if (view === "managers_sales_course") {
     try {
-      managerCourseMonthRows = await fetchJson<Record<string, unknown>[]>("data/manager_sales_by_course_month.json");
+      managerCourseMonthRows = await fetchJson<Record<string, unknown>[]>(
+        pnlMode === "pnl" ? "data/manager_sales_by_course_month_pnl.json" : "data/manager_sales_by_course_month.json",
+      );
     } catch {
       managerCourseMonthRows = [];
     }
   }
   if (view === "managers_firstline_course") {
     try {
-      managerCourseMonthRows = await fetchJson<Record<string, unknown>[]>("data/manager_firstline_by_course_month.json");
+      managerCourseMonthRows = await fetchJson<Record<string, unknown>[]>(
+        pnlMode === "pnl" ? "data/manager_firstline_by_course_month_pnl.json" : "data/manager_firstline_by_course_month.json",
+      );
     } catch {
       managerCourseMonthRows = [];
     }
@@ -1338,13 +1372,6 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   let sortCol = initialDateCol || cols[0] || "";
   let sortDir: "asc" | "desc" = initialDateCol ? "desc" : "asc";
   let filter = "";
-  const _now = new Date();
-  const _toY = _now.getFullYear();
-  const _toM = String(_now.getMonth() + 1).padStart(2, "0");
-  const _fromD = new Date(_now); _fromD.setMonth(_fromD.getMonth() - 11);
-  let dateFrom = `${_fromD.getFullYear()}-${String(_fromD.getMonth() + 1).padStart(2, "0")}`;
-  let dateTo = `${_toY}-${_toM}`;
-  let pnlMode: "cohort" | "pnl" = "cohort";
   let contactsFullOnly = false;
   const expanded = new Set<string>();
   const expandedEmailMonths = new Set<string>();
@@ -1382,10 +1409,14 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const isManagerCourseView = isManagerHierarchy && view.endsWith("_course");
   const isFunnelHierarchy = view === "funnels_hierarchy";
   const isBudgetHierarchy = view === "budget_monthly";
-  const dateWindowCol = isManagerHierarchy
+  const dateWindowCol = isManagerCourseView
+    ? "month"
+    : isManagerHierarchy
     ? (allCols.includes("month") ? "month" : "")
-    : (["\u041f\u0435\u0440\u0438\u043e\u0434", "\u041c\u0435\u0441\u044f\u0446", "month", "\u0413\u043e\u0434"].find((c) => allCols.includes(c)) || "");
-  const hasDateWindowControl = !!dateWindowCol;
+    : (["month", "\u041f\u0435\u0440\u0438\u043e\u0434", "\u041c\u0435\u0441\u044f\u0446", "\u0413\u043e\u0434"].find((c) => allCols.includes(c)) || "");
+  const isAssocDynamic = view === "assoc_dynamic";
+  const hasDateWindowControl = !!dateWindowCol || isAssocDynamic;
+  const hasPnlToggle = supportsPnlMode(view);
   const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let visibleRows: Record<string, unknown>[] = [];
   const postJson = async (url: string, body: unknown): Promise<{ ok: boolean; rows?: number; error?: string }> => {
@@ -1435,7 +1466,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     if (sortCol && !cols.includes(sortCol)) sortCol = cols[0] || "";
 
     let data = [...viewRows];
-    const effectiveDateCol = (pnlMode === "pnl" && allCols.includes("pay_month")) ? "pay_month" : dateWindowCol;
+    const effectiveDateCol = (pnlMode === "pnl" && allCols.includes("__pay_month")) ? "__pay_month" : dateWindowCol;
     if (hasDateWindowControl && effectiveDateCol && !isManagerCourseView) {
       data = filterRowsByDateRange(data, effectiveDateCol, dateFrom, dateTo);
     }
@@ -1666,7 +1697,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     if (isBudgetHierarchy && hasDateWindowControl) {
       const months = filterRowsByDateRange(
         viewRows.filter((r) => String(r["Level"] ?? "") === "Month"),
-        "Период",
+        effectiveDateCol || "month",
         dateFrom,
         dateTo,
       );
@@ -2226,10 +2257,14 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           ? `<span class="date-range-controls">
               <label>С: <input type="month" class="date-from-input" value="${dateFrom}" /></label>
               <label>По: <input type="month" class="date-to-input" value="${dateTo}" /></label>
-              <span class="pnl-toggle">
-                <button class="pnl-btn${pnlMode === "cohort" ? " active" : ""}" data-mode="cohort">Когорта</button>
-                <button class="pnl-btn${pnlMode !== "cohort" ? " active" : ""}" data-mode="pnl">PNL</button>
-              </span>
+              ${
+                hasPnlToggle
+                  ? `<span class="pnl-toggle">
+                       <button class="pnl-btn${pnlMode === "cohort" ? " active" : ""}" data-mode="cohort">Когорта</button>
+                       <button class="pnl-btn${pnlMode !== "cohort" ? " active" : ""}" data-mode="pnl">PNL</button>
+                     </span>`
+                  : ""
+              }
             </span>`
           : ""
       }
@@ -2353,16 +2388,38 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   if (filterInput) {
     filterInput.oninput = () => { filter = filterInput.value; draw(); };
   }
+
+  const rerenderForCurrentState = async (): Promise<void> => {
+    try {
+      const nextRows = await fetchJson<Record<string, unknown>[]>(viewPath(view, { pnlMode, dateFrom, dateTo }));
+      await renderTable(view, nextRows, dealsIndex, {
+        initialDateFrom: dateFrom,
+        initialDateTo: dateTo,
+        initialPnlMode: pnlMode,
+      });
+    } catch (e) {
+      if (status) status.textContent = `Ошибка загрузки: ${String(e)}`;
+    }
+  };
+
   if (dateFromInput) {
-    dateFromInput.onchange = () => { dateFrom = dateFromInput.value || ""; draw(); };
+    dateFromInput.onchange = () => {
+      dateFrom = dateFromInput.value || "";
+      if (isAssocDynamic) void rerenderForCurrentState();
+      else draw();
+    };
   }
   if (dateToInput) {
-    dateToInput.onchange = () => { dateTo = dateToInput.value || ""; draw(); };
+    dateToInput.onchange = () => {
+      dateTo = dateToInput.value || "";
+      if (isAssocDynamic) void rerenderForCurrentState();
+      else draw();
+    };
   }
   app.querySelectorAll<HTMLButtonElement>(".pnl-btn").forEach((btn) => {
     btn.onclick = () => {
-      pnlMode = (btn.getAttribute("data-mode") || "cohort") as "cohort" | "pnl";
-      draw();
+      pnlMode = (btn.getAttribute("data-mode") || "cohort") as PnlMode;
+      void rerenderForCurrentState();
     };
   });
   app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
