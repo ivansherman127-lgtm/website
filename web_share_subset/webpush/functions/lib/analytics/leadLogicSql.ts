@@ -40,14 +40,12 @@ type LeadLogicSql = {
 const LOGIC = leadLogic as LogicConfig;
 
 const INVALID_STAGE_TOKENS = [
+  "неквал",     // Некачественный лид and variants
+  "некачест",   // Некачественный
+  "дубл",       // Дубль / Дубликат
   "спам",
-  "дубль",
   "тест",
-  "некорректные данные",
-  "чс",
-  "неправильные данные",
-  "партнер или сотрудник cybered",
-  "партнеры, не нужно связываться",
+  "чс",         // ЧС (черный список)
 ];
 
 function sqlQuote(value: string): string {

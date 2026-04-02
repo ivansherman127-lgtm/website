@@ -1310,6 +1310,12 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
   }
   if (view === "assoc_dynamic") {
+    // Pre-populate so the column always appears in allCols even if the fetch fails
+    for (const r of viewRows) {
+      if (num(r["__assoc_event_detail"]) === 0 && String(r["Мероприятие"] ?? "").trim()) {
+        r["Новых с мероприятия"] = 0;
+      }
+    }
     try {
       const ecRows = await fetchJson<Record<string, unknown>[]>("data/bitrix_new_event_contacts_by_event.json");
       const ecMap = new Map<string, number>();
@@ -1318,15 +1324,13 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         const n = num(r["Новых с мероприятия"]);
         if (ev) ecMap.set(ev, n);
       }
-      if (ecMap.size > 0) {
-        for (const r of viewRows) {
-          if (num(r["__assoc_event_detail"]) === 0) {
-            const ev = String(r["Мероприятие"] ?? "").trim();
-            if (ev) r["Новых с мероприятия"] = ecMap.get(ev) ?? 0;
-          }
+      for (const r of viewRows) {
+        if (num(r["__assoc_event_detail"]) === 0) {
+          const ev = String(r["Мероприятие"] ?? "").trim();
+          if (ev) r["Новых с мероприятия"] = ecMap.get(ev) ?? 0;
         }
       }
-    } catch { /* ignore */ }
+    } catch { /* ignore — pre-populated 0 remains */ }
   }
   const allCols = viewRows.length ? Object.keys(viewRows[0]) : [];
   let cols = allCols;
@@ -1378,9 +1382,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const isManagerCourseView = isManagerHierarchy && view.endsWith("_course");
   const isFunnelHierarchy = view === "funnels_hierarchy";
   const isBudgetHierarchy = view === "budget_monthly";
-  const dateWindowCol = isManagerCourseView
-    ? "Месяц"
-    : (["Период", "Месяц", "month", "Год"].find((c) => allCols.includes(c)) || "");
+  const dateWindowCol = isManagerHierarchy
+    ? (allCols.includes("month") ? "month" : "")
+    : (["\u041f\u0435\u0440\u0438\u043e\u0434", "\u041c\u0435\u0441\u044f\u0446", "month", "\u0413\u043e\u0434"].find((c) => allCols.includes(c)) || "");
   const hasDateWindowControl = !!dateWindowCol;
   const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let visibleRows: Record<string, unknown>[] = [];
@@ -1502,7 +1506,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     if (isManagerHierarchy && hasDateWindowControl && view.endsWith("_month")) {
       const months = filterRowsByDateRange(
         viewRows.filter((r) => String(r["Level"] ?? "") === "Месяц"),
-        "Месяц",
+        "month",
         dateFrom,
         dateTo,
       );
@@ -1543,7 +1547,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
 
     if (isManagerCourseView && hasDateWindowControl) {
-      const monthRows = filterRowsByDateRange(managerCourseMonthRows, "Месяц", dateFrom, dateTo);
+      const monthRows = filterRowsByDateRange(managerCourseMonthRows, "month", dateFrom, dateTo);
       const byManager = new Map<string, Map<string, Record<string, unknown>[]>>();
       for (const r of monthRows) {
         const manager = String(r["Менеджер"] ?? "").trim() || "Unassigned";

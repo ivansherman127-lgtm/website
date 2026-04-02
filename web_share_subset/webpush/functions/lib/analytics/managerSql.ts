@@ -161,9 +161,10 @@ export function buildManagerByMonthSql(baseSql: string, filter: string): string 
        by_month AS (
          SELECT
            manager,
+           month,
            month_label,${AGGR}
          FROM filtered
-         GROUP BY manager, month_label
+         GROUP BY manager, month, month_label
        ),
        by_manager AS (
          SELECT
@@ -174,14 +175,16 @@ export function buildManagerByMonthSql(baseSql: string, filter: string): string 
        SELECT
          'Manager' AS "Level",
          manager AS "Менеджер",
-         '-' AS "Месяц",${KPI},
+         '-' AS "Месяц",
+         '' AS "month",${KPI},
          '' AS _sort_month
        FROM by_manager
        UNION ALL
        SELECT
          'Месяц' AS "Level",
          manager AS "Менеджер",
-         month_label AS "Месяц",${KPI},
+         month_label AS "Месяц",
+         month AS "month",${KPI},
          month_label AS _sort_month
        FROM by_month
        ORDER BY "Менеджер", "Level" DESC, _sort_month`;
@@ -236,6 +239,7 @@ export function buildManagerByCourseMonthSql(baseSql: string, filter: string): s
          'Код курса' AS "Level",
          manager AS "Менеджер",
          month_label AS "Месяц",
+         month AS "month",
          course_code AS "Код курса",
          COUNT(*) AS "Лиды",
          SUM(is_qual) AS "Квал",
@@ -254,6 +258,6 @@ export function buildManagerByCourseMonthSql(baseSql: string, filter: string): s
          CASE WHEN SUM(is_qual) = 0 THEN 0 ELSE SUM(is_revenue) * 1.0 / SUM(is_qual) END AS "Конверсия Квал→Оплата",
          CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
        FROM filtered
-       GROUP BY manager, month_label, course_code
+       GROUP BY manager, month, month_label, course_code
        ORDER BY manager, month_label DESC, course_code`;
 }
