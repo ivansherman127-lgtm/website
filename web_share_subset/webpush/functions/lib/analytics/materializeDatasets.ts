@@ -272,7 +272,6 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     ]).join(" OR ");
   }
   const managerInvalidExpr = `CASE WHEN (${managerInvalidCond}) THEN 1 ELSE 0 END`;
-  const hasRawP01 = await tableExists(db, "raw_bitrix_deals_p01");
   const hasSendsayContacts = await tableExists(db, "stg_sendsay_contacts");
   const totalEmailContactsExpr = hasSendsayContacts
     ? `(SELECT COUNT(*) FROM stg_sendsay_contacts WHERE COALESCE(email, '') <> '')`
