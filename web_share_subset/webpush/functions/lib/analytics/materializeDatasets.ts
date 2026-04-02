@@ -198,11 +198,6 @@ function buildYandexAssocQaHierarchyRows(
 
 export async function materializeSliceDatasets(db: D1Database): Promise<{ paths: string[] }> {
   const paths: string[] = [];
-  const bitrixLeadLogic = buildLeadLogicSql({
-    funnelExpr: `"Воронка"`,
-    stageExpr: `"Стадия сделки"`,
-    monthExpr: "month",
-  });
   // Bitrix invalid tokens are tracked in separate columns in the source data
   const BITRIX_INVALID_TOKENS = [
     "дубль",
@@ -245,17 +240,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
       `lower(COALESCE(p."Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
     ]).join(" OR ");
   }
-  const bitrixInvalidExpr = `CASE WHEN (${bitrixInvalidCond}) THEN 1 ELSE 0 END`;
-  const yandexLeadLogic = buildLeadLogicSql({
-    funnelExpr: "funnel",
-    stageExpr: "stage",
-    monthExpr: "yandex_month",
-  });
-  const managerLeadLogic = buildLeadLogicSql({
-    funnelExpr: `m."Воронка"`,
-    stageExpr: `m."Стадия сделки"`,
-    monthExpr: "m.month",
-  });
+  const bitrixInvalidExpr = hasTypyInMart
+    ? `CASE WHEN (${bitrixInvalidCond}) THEN 1 ELSE 0 END`
+    : `CASE WHEN 0 THEN 1 ELSE 0 END`;
   // Build manager invalid condition without referencing non-existent columns.
   const managerHasTypyInMart = hasTypyInMart; // mart_deals_enriched
   const managerHasTypyInRaw = hasTypyInRaw; // raw_bitrix_deals_p01
@@ -272,6 +259,34 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     ]).join(" OR ");
   }
   const managerInvalidExpr = `CASE WHEN (${managerInvalidCond}) THEN 1 ELSE 0 END`;
+  // Build lead-logic SQL after invalid-condition fragments are known so we can
+  // include raw/mart checks via the new `extraInvalidCond` parameter.
+  const bitrixLeadLogic = buildLeadLogicSql({
+    funnelExpr: `"Воронка"`,
+    stageExpr: `"Стадия сделки"`,
+    monthExpr: "month",
+    extraInvalidCond: hasTypyInMart ? bitrixInvalidCond : "",
+  });
+
+  const yandexExtraInvalidCond = hasTypyInMart
+    ? BITRIX_INVALID_TOKENS.flatMap((tok) => [
+        `lower(COALESCE(m."Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+        `lower(COALESCE(m."Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+      ]).join(" OR ")
+    : "";
+  const yandexLeadLogic = buildLeadLogicSql({
+    funnelExpr: "funnel",
+    stageExpr: "stage",
+    monthExpr: "yandex_month",
+    extraInvalidCond: yandexExtraInvalidCond,
+  });
+
+  const managerLeadLogic = buildLeadLogicSql({
+    funnelExpr: `m."Воронка"`,
+    stageExpr: `m."Стадия сделки"`,
+    monthExpr: "m.month",
+    extraInvalidCond: managerInvalidCond,
+  });
   const hasSendsayContacts = await tableExists(db, "stg_sendsay_contacts");
   const totalEmailContactsExpr = hasSendsayContacts
     ? `(SELECT COUNT(*) FROM stg_sendsay_contacts WHERE COALESCE(email, '') <> '')`

@@ -23,6 +23,11 @@ type SqlBuildParams = {
   monthExpr: string;
 };
 
+type SqlBuildParamsWithInvalid = SqlBuildParams & {
+  // optional additional invalid-condition SQL fragment (already quoted/constructed)
+  extraInvalidCond?: string;
+};
+
 type LeadLogicSql = {
   qual: string;
   unqual: string;
@@ -35,13 +40,14 @@ type LeadLogicSql = {
 const LOGIC = leadLogic as LogicConfig;
 
 const INVALID_STAGE_TOKENS = [
-  "неквал",
-  "некачеств",
-  "дубл",
   "спам",
-  "чс",
+  "дубль",
   "тест",
-  "неправильн%данн%",
+  "некорректные данные",
+  "чс",
+  "неправильные данные",
+  "партнер или сотрудник cybered",
+  "партнеры, не нужно связываться",
 ];
 
 function sqlQuote(value: string): string {
@@ -68,7 +74,7 @@ function joinConds(conds: string[]): string {
   return conds.length ? conds.map((c) => `(${c})`).join(" OR ") : "0";
 }
 
-export function buildLeadLogicSql(params: SqlBuildParams): LeadLogicSql {
+export function buildLeadLogicSql(params: SqlBuildParamsWithInvalid): LeadLogicSql {
   const funnelNorm = buildAliasCase(params.funnelExpr, LOGIC.normalization?.funnel_aliases);
   const stageNorm = buildAliasCase(params.stageExpr, LOGIC.normalization?.stage_aliases);
 
@@ -106,9 +112,14 @@ export function buildLeadLogicSql(params: SqlBuildParams): LeadLogicSql {
     }
   }
 
-  const invalidCond = INVALID_STAGE_TOKENS
+  // Stage-based invalid tokens
+  const stageInvalidCond = INVALID_STAGE_TOKENS
     .map((tok) => `lower(COALESCE(${params.stageExpr}, '')) LIKE ${sqlQuote(`%${tok}%`)}`)
     .join(" OR ");
+
+  // Optionally include an extra invalid-condition (e.g. checks against raw Bitrix columns)
+  const extraInvalid = typeof params.extraInvalidCond === "string" && params.extraInvalidCond.trim() ? `(${params.extraInvalidCond})` : "";
+  const invalidCond = extraInvalid ? `(${stageInvalidCond}) OR ${extraInvalid}` : stageInvalidCond;
 
   const qualCondSql = joinConds(qualConds);
   const unqualCondSql = joinConds(unqualConds);
