@@ -5,7 +5,7 @@ set -euo pipefail
 # Non-interactive script to install Nginx, configure a reverse proxy for
 # new.cyber-ed.ru, and obtain a Let's Encrypt certificate via Certbot.
 #
-# Usage:
+# Usage
 #   sudo SUBDOMAIN=new.cyber-ed.ru CERTBOT_EMAIL=you@example.com bash setup-proxy-new.cyber-ed.ru.sh
 #   or
 #   sudo bash setup-proxy-new.cyber-ed.ru.sh new.cyber-ed.ru you@example.com
