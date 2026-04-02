@@ -8,6 +8,15 @@ import { buildBitrixContactsUidRows } from "./bitrixContactsUid";
 import { buildLeadLogicSql } from "./leadLogicSql";
 import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS, YANDEX_KNOWN_GROUPS, mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
 import managerFirstlineNames from "../../config/manager_firstline.json";
+import {
+  sqlMonthLabel,
+  buildManagerBaseSql,
+  buildManagerByMonthSql,
+  buildManagerByCourseSql,
+  buildManagerByCourseMonthSql,
+  type ManagerBaseExprs,
+} from "./managerSql";
+import { buildAssocQaSql, buildAssocQaByAdSql, buildAdPerfSql, type AssocRevenueExprs } from "./assocRevenueSql";
 
 async function tableExists(db: D1Database, tableName: string): Promise<boolean> {
   const row = await db
@@ -15,6 +24,20 @@ async function tableExists(db: D1Database, tableName: string): Promise<boolean> 
     .bind(tableName)
     .first<{ name: string }>();
   return !!row?.name;
+}
+
+async function columnExists(db: D1Database, tableName: string, columnName: string): Promise<boolean> {
+  try {
+    const row = await db
+      .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1`)
+      .bind(tableName)
+      .first<{ sql: string }>();
+    if (!row?.sql) return false;
+    const sql = String(row.sql);
+    return sql.includes(columnName) || sql.includes(`"${columnName}"`) || sql.includes(`'${columnName}'`);
+  } catch {
+    return false;
+  }
 }
 
 function jsonCell(v: unknown): unknown {
@@ -196,100 +219,109 @@ function buildYandexAssocQaHierarchyRows(
   return out;
 }
 
+// Bitrix invalid-token list (used for column-based quality checks).
+const BITRIX_INVALID_TOKENS = [
+  "спам",
+  "дубль",
+  "тест",
+  "некорректные данные",
+  "чс",
+  "неправильные данные",
+  "партнер или сотрудник cybered",
+  "партнеры, не нужно связываться",
+];
+
+/**
+ * Builds an OR-joined SQL condition checking the two invalid-type columns.
+ * @param tableAlias - Table alias prefix: "" (no prefix), "m.", or "p."
+ * @param pattern    - "instr" (default) uses instr(); "like" uses LIKE with % wildcards.
+ */
+function buildInvalidTokenCond(
+  tokens: string[],
+  tableAlias: "" | "m." | "p.",
+  pattern: "instr" | "like" = "instr",
+): string {
+  const col1 = `${tableAlias}"Типы некачественного лида"`;
+  const col2 = `${tableAlias}"Типы некачественных лидов"`;
+  return tokens
+    .flatMap((tok) => {
+      if (pattern === "like") {
+        return [
+          `lower(COALESCE(${col1}, '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+          `lower(COALESCE(${col2}, '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+        ];
+      }
+      return [
+        `instr(lower(COALESCE(${col1}, '')), ${sqlQuote(tok)}) > 0`,
+        `instr(lower(COALESCE(${col2}, '')), ${sqlQuote(tok)}) > 0`,
+      ];
+    })
+    .join(" OR ");
+}
+
 export async function materializeSliceDatasets(db: D1Database): Promise<{ paths: string[] }> {
   const paths: string[] = [];
-  // Bitrix invalid tokens are tracked in separate columns in the source data.
-  // Use the explicit list (lowercased) and search with instr() to avoid complex LIKE/GLOB patterns.
-  const BITRIX_INVALID_TOKENS = [
-    "спам",
-    "дубль",
-    "тест",
-    "некорректные данные",
-    "чс",
-    "неправильные данные",
-    "партнер или сотрудник cybered",
-    "партнеры, не нужно связываться",
-  ];
-  async function columnExists(db: D1Database, tableName: string, columnName: string): Promise<boolean> {
-    try {
-      const row = await db
-        .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1`)
-        .bind(tableName)
-        .first<{ sql: string }>();
-      if (!row?.sql) return false;
-      const sql = String(row.sql);
-      return sql.includes(columnName) || sql.includes(`"${columnName}"`) || sql.includes(`'${columnName}'`);
-    } catch {
-      return false;
-    }
-  }
+  type RR = Record<string, unknown>;
 
-  // Detect whether the invalid-token columns exist in mart_deals_enriched or raw_bitrix_deals_p01
-  const hasTypyInMart = (await columnExists(db, "mart_deals_enriched", "Типы некачественного лида")) || (await columnExists(db, "mart_deals_enriched", "Типы некачественных лидов"));
-  const hasRawP01 = await tableExists(db, "raw_bitrix_deals_p01");
-  const hasTypyInRaw = hasRawP01 && ((await columnExists(db, "raw_bitrix_deals_p01", "Типы некачественного лида")) || (await columnExists(db, "raw_bitrix_deals_p01", "Типы некачественных лидов")));
+  // ── Stage 0: Schema detection (parallel within each stage) ──────────────────
+  const [hasTypyInMart1, hasTypyInMart2, hasRawP01, hasSendsayContacts, hasContactsUid] =
+    await Promise.all([
+      columnExists(db, "mart_deals_enriched", "Типы некачественного лида"),
+      columnExists(db, "mart_deals_enriched", "Типы некачественных лидов"),
+      tableExists(db, "raw_bitrix_deals_p01"),
+      tableExists(db, "stg_sendsay_contacts"),
+      tableExists(db, "stg_contacts_uid"),
+    ]);
+  const hasTypyInMart = hasTypyInMart1 || hasTypyInMart2;
 
-  let bitrixInvalidCond = "0";
-  if (hasTypyInMart) {
-    bitrixInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
-      `instr(lower(COALESCE("Типы некачественного лида", '')), ${sqlQuote(tok)}) > 0`,
-      `instr(lower(COALESCE("Типы некачественных лидов", '')), ${sqlQuote(tok)}) > 0`,
-    ]).join(" OR ");
-  } else if (hasTypyInRaw) {
-    // Fall back to raw table columns when mart_deals_enriched lacks them
-    bitrixInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
-      `instr(lower(COALESCE(p."Типы некачественного лида", '')), ${sqlQuote(tok)}) > 0`,
-      `instr(lower(COALESCE(p."Типы некачественных лидов", '')), ${sqlQuote(tok)}) > 0`,
-    ]).join(" OR ");
-  }
+  const [hasTypyInRaw1, hasTypyInRaw2] = hasRawP01
+    ? await Promise.all([
+        columnExists(db, "raw_bitrix_deals_p01", "Типы некачественного лида"),
+        columnExists(db, "raw_bitrix_deals_p01", "Типы некачественных лидов"),
+      ])
+    : ([false, false] as const);
+  const hasTypyInRaw = hasTypyInRaw1 || hasTypyInRaw2;
+
+  // ── Build SQL expression fragments ──────────────────────────────────────────
+  const bitrixInvalidCond = hasTypyInMart
+    ? buildInvalidTokenCond(BITRIX_INVALID_TOKENS, "")
+    : hasTypyInRaw
+    ? buildInvalidTokenCond(BITRIX_INVALID_TOKENS, "p.")
+    : "0";
   const bitrixInvalidExpr = hasTypyInMart
     ? `CASE WHEN (${bitrixInvalidCond}) THEN 1 ELSE 0 END`
     : `CASE WHEN 0 THEN 1 ELSE 0 END`;
-  // Build manager invalid condition without referencing non-existent columns.
-  const managerHasTypyInMart = hasTypyInMart; // mart_deals_enriched
-  const managerHasTypyInRaw = hasTypyInRaw; // raw_bitrix_deals_p01
-  let managerInvalidCond = "0";
-  if (managerHasTypyInMart) {
-    managerInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
-      `instr(lower(COALESCE(m."Типы некачественного лида", '')), ${sqlQuote(tok)}) > 0`,
-      `instr(lower(COALESCE(m."Типы некачественных лидов", '')), ${sqlQuote(tok)}) > 0`,
-    ]).join(" OR ");
-  } else if (managerHasTypyInRaw) {
-    managerInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
-      `instr(lower(COALESCE(p."Типы некачественного лида", '')), ${sqlQuote(tok)}) > 0`,
-      `instr(lower(COALESCE(p."Типы некачественных лидов", '')), ${sqlQuote(tok)}) > 0`,
-    ]).join(" OR ");
-  }
+
+  const managerInvalidCond = hasTypyInMart
+    ? buildInvalidTokenCond(BITRIX_INVALID_TOKENS, "m.")
+    : hasTypyInRaw
+    ? buildInvalidTokenCond(BITRIX_INVALID_TOKENS, "p.")
+    : "0";
   const managerInvalidExpr = `CASE WHEN (${managerInvalidCond}) THEN 1 ELSE 0 END`;
-  // Build lead-logic SQL after invalid-condition fragments are known so we can
-  // include raw/mart checks via the new `extraInvalidCond` parameter.
+
+  const yandexExtraInvalidCond = hasTypyInMart
+    ? buildInvalidTokenCond(BITRIX_INVALID_TOKENS, "m.", "like")
+    : "";
+
   const bitrixLeadLogic = buildLeadLogicSql({
     funnelExpr: `"Воронка"`,
     stageExpr: `"Стадия сделки"`,
     monthExpr: "month",
     extraInvalidCond: hasTypyInMart ? bitrixInvalidCond : "",
   });
-
-  const yandexExtraInvalidCond = hasTypyInMart
-    ? BITRIX_INVALID_TOKENS.flatMap((tok) => [
-        `lower(COALESCE(m."Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-        `lower(COALESCE(m."Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-      ]).join(" OR ")
-    : "";
   const yandexLeadLogic = buildLeadLogicSql({
     funnelExpr: "funnel",
     stageExpr: "stage",
     monthExpr: "yandex_month",
     extraInvalidCond: yandexExtraInvalidCond,
   });
-
   const managerLeadLogic = buildLeadLogicSql({
     funnelExpr: `m."Воронка"`,
     stageExpr: `m."Стадия сделки"`,
     monthExpr: "m.month",
     extraInvalidCond: managerInvalidCond,
   });
-  const hasSendsayContacts = await tableExists(db, "stg_sendsay_contacts");
+
   const totalEmailContactsExpr = hasSendsayContacts
     ? `(SELECT COUNT(*) FROM stg_sendsay_contacts WHERE COALESCE(email, '') <> '')`
     : `(SELECT COUNT(DISTINCT "Контакт: ID") FROM mart_deals_enriched WHERE COALESCE("Контакт: ID", '') <> '')`;
@@ -297,8 +329,43 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     ? `(SELECT COUNT(*) FROM stg_sendsay_contacts WHERE COALESCE(email, '') <> '' AND COALESCE(TRIM(error_message), '') = '')`
     : totalEmailContactsExpr;
 
-  const q1 = await db
-    .prepare(
+  // Yandex SQL expression helpers
+  const sourceYandexAdExpr = sqlExtractYandexAdId(`src."UTM Content"`);
+  const validSourceYandexAdExpr = `LENGTH(${sourceYandexAdExpr}) = 11 AND SUBSTR(${sourceYandexAdExpr}, 1, 2) = '17' AND ${sourceYandexAdExpr} NOT GLOB '*[^0-9]*'`;
+  const groupedStatsProjectExpr = buildYandexProjectGroupSqlExpr(`"Название кампании"`);
+  // ym.project_name is already a mapped group name (produced by groupedStatsProjectExpr in yandex_map).
+  // Re-applying the alias CASE would fail to match group names and return UNMAPPED everywhere.
+  // Just pass through the already-mapped value, falling back to UNMAPPED for NULL/empty only.
+  const groupedMappedProjectExpr = `COALESCE(NULLIF(TRIM(COALESCE(ym.project_name, '')), ''), 'UNMAPPED')`;
+  const assocExprs: AssocRevenueExprs = {
+    sourceYandexAdExpr,
+    validSourceYandexAdExpr,
+    groupedStatsProjectExpr,
+    groupedMappedProjectExpr,
+  };
+
+  // Manager SQL
+  // SQLite lower()/upper() do not reliably normalize Cyrillic in D1.
+  // Use exact trimmed names to keep manager datasets populated.
+  const firstlineList = Array.isArray(managerFirstlineNames)
+    ? managerFirstlineNames.map((s) => String(s ?? "").trim()).filter(Boolean)
+    : [];
+  const firstlineFilter = firstlineList.length
+    ? `trim(manager) IN (${firstlineList.map((n) => sqlQuote(n)).join(", ")})`
+    : `0`;
+  const salesFilter = `trim(manager) IN ('Анастасия Крисанова', 'Василий Гореленков', 'Глеб Барбазанов', 'Елена Лобода')`;
+  const managerBaseExprs: ManagerBaseExprs = {
+    qual: managerLeadLogic.qual,
+    unqual: managerLeadLogic.unqual,
+    refusal: managerLeadLogic.refusal,
+    invalidExpr: managerInvalidExpr,
+    inWork: managerLeadLogic.inWork,
+  };
+  const managerBaseSql = buildManagerBaseSql(hasRawP01, managerBaseExprs);
+
+  // ── Batch 1: Global channel + budget + Bitrix month totals (parallel reads) ─
+  const [r_q1, r_q2, r_q3, r_budget, r_bitrixMonthTotal] = await Promise.all([
+    db.prepare(
       `SELECT month,
               COALESCE("UTM Source", '') AS utm_source,
               COALESCE("UTM Medium", '') AS utm_medium,
@@ -308,13 +375,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        FROM mart_deals_enriched
        GROUP BY month, COALESCE("UTM Source", ''), COALESCE("UTM Medium", '')
        ORDER BY month, revenue DESC`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "global/month_channel_bitrix.json", rowsToJson((q1.results ?? []) as Record<string, unknown>[]));
-  paths.push("global/month_channel_bitrix.json");
-
-  const q2 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `SELECT month,
               COUNT(*) AS rows_count,
               SUM(COALESCE("Расход, ₽", 0)) AS yandex_spend,
@@ -323,13 +385,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        FROM stg_yandex_stats
        GROUP BY month
        ORDER BY month`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "global/month_channel_yandex.json", rowsToJson((q2.results ?? []) as Record<string, unknown>[]));
-  paths.push("global/month_channel_yandex.json");
-
-  const q3 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `SELECT month,
               COUNT(*) AS sends,
               SUM(COALESCE("Отправлено", 0)) AS sent_total,
@@ -339,13 +396,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        FROM stg_email_sends
        GROUP BY month
        ORDER BY month`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "global/month_channel_sendsay.json", rowsToJson((q3.results ?? []) as Record<string, unknown>[]));
-  paths.push("global/month_channel_sendsay.json");
-
-  const budgetMonthly = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `WITH paid_revenue_raw AS (
          SELECT
            CASE
@@ -414,13 +466,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          WHERE COALESCE(pbc.pay_month, '') <> ''
        ) q
        ORDER BY month DESC, _sort_level ASC, _sort_lead_month DESC`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "global/budget_monthly.json", rowsToJson((budgetMonthly.results ?? []) as Record<string, unknown>[]));
-  paths.push("global/budget_monthly.json");
-
-  const bitrixMonthTotal = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `WITH flags AS (
          SELECT
            month,
@@ -456,13 +503,34 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        FROM flags
        GROUP BY month
        ORDER BY month`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "bitrix_month_total_full.json", rowsToJson((bitrixMonthTotal.results ?? []) as Record<string, unknown>[]));
-  paths.push("bitrix_month_total_full.json");
+    ).all<RR>(),
+  ]);
+  await Promise.all([
+    upsertDataset(db, "global/month_channel_bitrix.json", rowsToJson(r_q1.results ?? [])),
+    upsertDataset(db, "global/month_channel_yandex.json", rowsToJson(r_q2.results ?? [])),
+    upsertDataset(db, "global/month_channel_sendsay.json", rowsToJson(r_q3.results ?? [])),
+    upsertDataset(db, "global/budget_monthly.json", rowsToJson(r_budget.results ?? [])),
+    upsertDataset(db, "bitrix_month_total_full.json", rowsToJson(r_bitrixMonthTotal.results ?? [])),
+  ]);
+  paths.push(
+    "global/month_channel_bitrix.json",
+    "global/month_channel_yandex.json",
+    "global/month_channel_sendsay.json",
+    "global/budget_monthly.json",
+    "bitrix_month_total_full.json",
+  );
 
-  const bitrixWeekFunnelTotal = await db
-    .prepare(
+  // ── Batch 2: Weekly + email + contacts + funnel/code (parallel reads) ────────
+  const [
+    r_bitrixWeek,
+    r_yandexWeek,
+    r_emailOps,
+    r_emailHier,
+    r_bitrixContactsUid,
+    r_dashContactsCount,
+    r_bitrixFunnelCode,
+  ] = await Promise.all([
+    db.prepare(
       `WITH src AS (
          SELECT
            CASE
@@ -533,13 +601,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          AND created_dt >= date((SELECT latest_created_dt FROM latest), '-6 day')
        GROUP BY week_start, funnel_group
        ORDER BY week_start, funnel_group`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "bitrix_week_funnel_total.json", rowsToJson((bitrixWeekFunnelTotal.results ?? []) as Record<string, unknown>[]));
-  paths.push("bitrix_week_funnel_total.json");
-
-  const yandexWeekCampaignTotal = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `WITH ysrc AS (
          SELECT
            ${buildYandexProjectGroupSqlExpr("l.project_name")} AS campaign_name,
@@ -670,13 +733,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          AND b.created_dt >= date((SELECT latest_created_dt FROM latest), '-6 day')
        GROUP BY b.week_start, b.campaign_name, b.campaign_id, sa.spend_alloc
        ORDER BY b.week_start, b.campaign_name, b.campaign_id`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "yandex_week_campaign_total.json", rowsToJson((yandexWeekCampaignTotal.results ?? []) as Record<string, unknown>[]));
-  paths.push("yandex_week_campaign_total.json");
-
-  const emailOperationalSummary = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `WITH deals_by_campaign AS (
          SELECT
            lower(trim(COALESCE("UTM Campaign", ''))) AS utm_campaign_key,
@@ -712,21 +770,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        ),
        month_rows AS (
          SELECT
-           CASE strftime('%m', month || '-01')
-             WHEN '01' THEN 'Январь, ' || strftime('%Y', month || '-01')
-             WHEN '02' THEN 'Февраль, ' || strftime('%Y', month || '-01')
-             WHEN '03' THEN 'Март, ' || strftime('%Y', month || '-01')
-             WHEN '04' THEN 'Апрель, ' || strftime('%Y', month || '-01')
-             WHEN '05' THEN 'Май, ' || strftime('%Y', month || '-01')
-             WHEN '06' THEN 'Июнь, ' || strftime('%Y', month || '-01')
-             WHEN '07' THEN 'Июль, ' || strftime('%Y', month || '-01')
-             WHEN '08' THEN 'Август, ' || strftime('%Y', month || '-01')
-             WHEN '09' THEN 'Сентябрь, ' || strftime('%Y', month || '-01')
-             WHEN '10' THEN 'Октябрь, ' || strftime('%Y', month || '-01')
-             WHEN '11' THEN 'Ноябрь, ' || strftime('%Y', month || '-01')
-             WHEN '12' THEN 'Декабрь, ' || strftime('%Y', month || '-01')
-             ELSE month
-           END AS "Период",
+           ${sqlMonthLabel("month")} AS "Период",
            sent_total,
            delivered_total,
            opens_total,
@@ -751,13 +795,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          month
        FROM month_rows
        ORDER BY month DESC`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "email_operational_summary.json", rowsToJson((emailOperationalSummary.results ?? []) as Record<string, unknown>[]));
-  paths.push("email_operational_summary.json");
-
-  const emailHierarchyBySend = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `WITH email_pools AS (
          SELECT DISTINCT
            lower(trim(COALESCE("UTM Campaign", ''))) AS utm_key,
@@ -826,21 +865,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        ),
        month_rows AS (
          SELECT
-           CASE strftime('%m', month || '-01')
-             WHEN '01' THEN 'Январь, ' || strftime('%Y', month || '-01')
-             WHEN '02' THEN 'Февраль, ' || strftime('%Y', month || '-01')
-             WHEN '03' THEN 'Март, ' || strftime('%Y', month || '-01')
-             WHEN '04' THEN 'Апрель, ' || strftime('%Y', month || '-01')
-             WHEN '05' THEN 'Май, ' || strftime('%Y', month || '-01')
-             WHEN '06' THEN 'Июнь, ' || strftime('%Y', month || '-01')
-             WHEN '07' THEN 'Июль, ' || strftime('%Y', month || '-01')
-             WHEN '08' THEN 'Август, ' || strftime('%Y', month || '-01')
-             WHEN '09' THEN 'Сентябрь, ' || strftime('%Y', month || '-01')
-             WHEN '10' THEN 'Октябрь, ' || strftime('%Y', month || '-01')
-             WHEN '11' THEN 'Ноябрь, ' || strftime('%Y', month || '-01')
-             WHEN '12' THEN 'Декабрь, ' || strftime('%Y', month || '-01')
-             ELSE month
-           END AS month_label,
+           ${sqlMonthLabel("month")} AS month_label,
            month,
            SUM(sends) AS sends,
            SUM(sent_total) AS sent_total,
@@ -867,21 +892,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        send_rows_labeled AS (
          SELECT
            'Send' AS "Level",
-           CASE strftime('%m', month || '-01')
-             WHEN '01' THEN 'Январь, ' || strftime('%Y', month || '-01')
-             WHEN '02' THEN 'Февраль, ' || strftime('%Y', month || '-01')
-             WHEN '03' THEN 'Март, ' || strftime('%Y', month || '-01')
-             WHEN '04' THEN 'Апрель, ' || strftime('%Y', month || '-01')
-             WHEN '05' THEN 'Май, ' || strftime('%Y', month || '-01')
-             WHEN '06' THEN 'Июнь, ' || strftime('%Y', month || '-01')
-             WHEN '07' THEN 'Июль, ' || strftime('%Y', month || '-01')
-             WHEN '08' THEN 'Август, ' || strftime('%Y', month || '-01')
-             WHEN '09' THEN 'Сентябрь, ' || strftime('%Y', month || '-01')
-             WHEN '10' THEN 'Октябрь, ' || strftime('%Y', month || '-01')
-             WHEN '11' THEN 'Ноябрь, ' || strftime('%Y', month || '-01')
-             WHEN '12' THEN 'Декабрь, ' || strftime('%Y', month || '-01')
-             ELSE month
-           END AS "Месяц",
+           ${sqlMonthLabel("month")} AS "Месяц",
            COALESCE(NULLIF(trim(release_name), ''), 'Unmatched') AS "Название выпуска",
            COALESCE(NULLIF(trim(utm_campaign), ''), 'Unmatched') AS utm_campaign,
            subject AS "Тема",
@@ -1008,31 +1019,11 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          month
        FROM send_rows_labeled
        ORDER BY month DESC, "Level" ASC, "Название выпуска" ASC`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "email_hierarchy_by_send.json", rowsToJson((emailHierarchyBySend.results ?? []) as Record<string, unknown>[]));
-  paths.push("email_hierarchy_by_send.json");
-
-  const bitrixContactsUid = await buildBitrixContactsUidRows(db);
-  await upsertDataset(db, "bitrix_contacts_uid.json", rowsToJson(bitrixContactsUid as Record<string, unknown>[]));
-  paths.push("bitrix_contacts_uid.json");
-
-  const dashboardContactsTotalRows: Record<string, unknown>[] = [{
-    bitrix_contacts_actual: bitrixContactsUid.length,
-    email_contacts_actual: 0,
-    contacts_actual_total: bitrixContactsUid.length,
-  }];
-  const dashboardContactsTotal = await db
-    .prepare(`SELECT ${goodEmailContactsExpr} AS email_contacts_actual`)
-    .first<{ email_contacts_actual: number }>();
-  const emailContactsActual = Number(dashboardContactsTotal?.email_contacts_actual ?? 0) || 0;
-  dashboardContactsTotalRows[0].email_contacts_actual = emailContactsActual;
-  dashboardContactsTotalRows[0].contacts_actual_total = dashboardContactsTotalRows[0].bitrix_contacts_actual + emailContactsActual;
-  await upsertDataset(db, "dashboard_contacts_total.json", rowsToJson(dashboardContactsTotalRows));
-  paths.push("dashboard_contacts_total.json");
-
-  const bitrixFunnelMonthCode = await db
-    .prepare(
+    ).all<RR>(),
+    buildBitrixContactsUidRows(db),
+    db.prepare(`SELECT ${goodEmailContactsExpr} AS email_contacts_actual`)
+      .first<{ email_contacts_actual: number }>(),
+    db.prepare(
       `WITH flags AS (
          SELECT
            COALESCE(NULLIF(trim(funnel_group), ''), 'Другое') AS funnel_group,
@@ -1068,484 +1059,94 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        FROM flags
        GROUP BY funnel_group, month, course_code
        ORDER BY funnel_group, month, course_code`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "bitrix_funnel_month_code_full.json", rowsToJson((bitrixFunnelMonthCode.results ?? []) as Record<string, unknown>[]));
-  paths.push("bitrix_funnel_month_code_full.json");
+    ).all<RR>(),
+  ]);
 
-  const managerBaseSql = hasRawP01
-    ? `WITH base AS (
-         SELECT
-           COALESCE(trim(p."Ответственный"), '') AS manager,
-           m.month,
-           CASE strftime('%m', m.month || '-01')
-             WHEN '01' THEN 'Январь, ' || strftime('%Y', m.month || '-01')
-             WHEN '02' THEN 'Февраль, ' || strftime('%Y', m.month || '-01')
-             WHEN '03' THEN 'Март, ' || strftime('%Y', m.month || '-01')
-             WHEN '04' THEN 'Апрель, ' || strftime('%Y', m.month || '-01')
-             WHEN '05' THEN 'Май, ' || strftime('%Y', m.month || '-01')
-             WHEN '06' THEN 'Июнь, ' || strftime('%Y', m.month || '-01')
-             WHEN '07' THEN 'Июль, ' || strftime('%Y', m.month || '-01')
-             WHEN '08' THEN 'Август, ' || strftime('%Y', m.month || '-01')
-             WHEN '09' THEN 'Сентябрь, ' || strftime('%Y', m.month || '-01')
-             WHEN '10' THEN 'Октябрь, ' || strftime('%Y', m.month || '-01')
-             WHEN '11' THEN 'Ноябрь, ' || strftime('%Y', m.month || '-01')
-             WHEN '12' THEN 'Декабрь, ' || strftime('%Y', m.month || '-01')
-             ELSE m.month
-           END AS month_label,
-           COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
-           COALESCE(m."ID", '') AS deal_id,
-           COALESCE(m.revenue_amount, 0) AS revenue_amount,
-           ${managerLeadLogic.qual} AS is_qual,
-           ${managerLeadLogic.unqual} AS is_unqual,
-           ${managerLeadLogic.refusal} AS is_refusal,
-           ${managerInvalidExpr} AS is_invalid,
-           ${managerLeadLogic.inWork} AS is_in_work,
-           CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
-         FROM mart_deals_enriched m
-         LEFT JOIN raw_bitrix_deals_p01 p ON p."ID" = m."ID"
-         WHERE COALESCE(m.month, '') <> ''
-       )`
-    : `WITH base AS (
-         SELECT
-           'Unassigned' AS manager,
-           m.month,
-           CASE strftime('%m', m.month || '-01')
-             WHEN '01' THEN 'Январь, ' || strftime('%Y', m.month || '-01')
-             WHEN '02' THEN 'Февраль, ' || strftime('%Y', m.month || '-01')
-             WHEN '03' THEN 'Март, ' || strftime('%Y', m.month || '-01')
-             WHEN '04' THEN 'Апрель, ' || strftime('%Y', m.month || '-01')
-             WHEN '05' THEN 'Май, ' || strftime('%Y', m.month || '-01')
-             WHEN '06' THEN 'Июнь, ' || strftime('%Y', m.month || '-01')
-             WHEN '07' THEN 'Июль, ' || strftime('%Y', m.month || '-01')
-             WHEN '08' THEN 'Август, ' || strftime('%Y', m.month || '-01')
-             WHEN '09' THEN 'Сентябрь, ' || strftime('%Y', m.month || '-01')
-             WHEN '10' THEN 'Октябрь, ' || strftime('%Y', m.month || '-01')
-             WHEN '11' THEN 'Ноябрь, ' || strftime('%Y', m.month || '-01')
-             WHEN '12' THEN 'Декабрь, ' || strftime('%Y', m.month || '-01')
-             ELSE m.month
-           END AS month_label,
-           COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
-           COALESCE(m."ID", '') AS deal_id,
-           COALESCE(m.revenue_amount, 0) AS revenue_amount,
-           0 AS is_qual,
-           0 AS is_unqual,
-           0 AS is_refusal,
-           0 AS is_invalid,
-           0 AS is_in_work,
-           CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
-         FROM mart_deals_enriched m
-         WHERE COALESCE(m.month, '') <> ''
-       )`;
+  const bitrixContactsUidRows = r_bitrixContactsUid as RR[];
+  const emailContactsActual = Number(r_dashContactsCount?.email_contacts_actual ?? 0) || 0;
+  const dashboardContactsTotalRows: RR[] = [{
+    bitrix_contacts_actual: bitrixContactsUidRows.length,
+    email_contacts_actual: emailContactsActual,
+    contacts_actual_total: bitrixContactsUidRows.length + emailContactsActual,
+  }];
 
-  // SQLite lower()/upper() do not reliably normalize Cyrillic in D1.
-  // Use exact trimmed names to keep manager datasets populated.
-  const firstlineList = Array.isArray(managerFirstlineNames) ? managerFirstlineNames.map((s) => String(s ?? "").trim()).filter(Boolean) : [];
-  const firstlineFilter = firstlineList.length
-    ? `trim(manager) IN (${firstlineList.map((n) => sqlQuote(n)).join(", ")})`
-    : `0`;
-  const salesFilter = `trim(manager) IN ('Анастасия Крисанова', 'Василий Гореленков', 'Глеб Барбазанов', 'Елена Лобода')`;
+  await Promise.all([
+    upsertDataset(db, "bitrix_week_funnel_total.json", rowsToJson(r_bitrixWeek.results ?? [])),
+    upsertDataset(db, "yandex_week_campaign_total.json", rowsToJson(r_yandexWeek.results ?? [])),
+    upsertDataset(db, "email_operational_summary.json", rowsToJson(r_emailOps.results ?? [])),
+    upsertDataset(db, "email_hierarchy_by_send.json", rowsToJson(r_emailHier.results ?? [])),
+    upsertDataset(db, "bitrix_contacts_uid.json", rowsToJson(bitrixContactsUidRows)),
+    upsertDataset(db, "dashboard_contacts_total.json", rowsToJson(dashboardContactsTotalRows)),
+    upsertDataset(db, "bitrix_funnel_month_code_full.json", rowsToJson(r_bitrixFunnelCode.results ?? [])),
+  ]);
+  paths.push(
+    "bitrix_week_funnel_total.json",
+    "yandex_week_campaign_total.json",
+    "email_operational_summary.json",
+    "email_hierarchy_by_send.json",
+    "bitrix_contacts_uid.json",
+    "dashboard_contacts_total.json",
+    "bitrix_funnel_month_code_full.json",
+  );
 
-  const managerFirstlineByMonth = await db
-    .prepare(
-      `${managerBaseSql},
-       filtered AS (
-         SELECT * FROM base WHERE ${firstlineFilter}
-       ),
-       by_month AS (
-         SELECT
-           manager,
-           month_label,
-           COUNT(*) AS leads,
-           SUM(is_qual) AS qual,
-           SUM(is_unqual) AS unqual,
-           SUM(is_refusal) AS refusal,
-           SUM(is_in_work) AS in_work,
-           SUM(is_invalid) AS invalid_leads,
-           SUM(is_revenue) AS paid_deals,
-           SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
-         FROM filtered
-         GROUP BY manager, month_label
-       ),
-       by_manager AS (
-         SELECT
-           manager,
-           COUNT(*) AS leads,
-           SUM(is_qual) AS qual,
-           SUM(is_unqual) AS unqual,
-           SUM(is_refusal) AS refusal,
-           SUM(is_in_work) AS in_work,
-           SUM(is_invalid) AS invalid_leads,
-           SUM(is_revenue) AS paid_deals,
-           SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
-         FROM filtered
-         GROUP BY manager
-       )
-       SELECT
-         'Manager' AS "Level",
-         manager AS "Менеджер",
-         '-' AS "Месяц",
-         leads AS "Лиды",
-         qual AS "Квал",
-         unqual AS "Неквал",
-         refusal AS "Отказы",
-         in_work AS "В работе",
-         invalid_leads AS "Невалидные_лиды",
-         paid_deals AS "Сделок_с_выручкой",
-         revenue AS "Выручка",
-         fl_ids AS "fl_IDs",
-         CASE WHEN leads = 0 THEN 0 ELSE qual * 1.0 / leads END AS "Конверсия в Квал",
-         CASE WHEN leads = 0 THEN 0 ELSE unqual * 1.0 / leads END AS "Конверсия в Неквал",
-         CASE WHEN leads = 0 THEN 0 ELSE refusal * 1.0 / leads END AS "Конверсия в Отказ",
-         CASE WHEN leads = 0 THEN 0 ELSE in_work * 1.0 / leads END AS "Конверсия в работе",
-         CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средний_чек",
-         '' AS _sort_month
-       FROM by_manager
-       UNION ALL
-       SELECT
-         'Месяц' AS "Level",
-         manager AS "Менеджер",
-         month_label AS "Месяц",
-         leads AS "Лиды",
-         qual AS "Квал",
-         unqual AS "Неквал",
-         refusal AS "Отказы",
-         in_work AS "В работе",
-         invalid_leads AS "Невалидные_лиды",
-         paid_deals AS "Сделок_с_выручкой",
-         revenue AS "Выручка",
-         fl_ids AS "fl_IDs",
-         CASE WHEN leads = 0 THEN 0 ELSE qual * 1.0 / leads END AS "Конверсия в Квал",
-         CASE WHEN leads = 0 THEN 0 ELSE unqual * 1.0 / leads END AS "Конверсия в Неквал",
-         CASE WHEN leads = 0 THEN 0 ELSE refusal * 1.0 / leads END AS "Конверсия в Отказ",
-         CASE WHEN leads = 0 THEN 0 ELSE in_work * 1.0 / leads END AS "Конверсия в работе",
-         CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средний_чек",
-         month_label AS _sort_month
-       FROM by_month
-       ORDER BY "Менеджер", "Level" DESC, _sort_month`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "manager_firstline_by_month.json", rowsToJson((managerFirstlineByMonth.results ?? []) as Record<string, unknown>[]));
-  paths.push("manager_firstline_by_month.json");
+  // ── Batch 3: Manager reports — 6 queries in parallel ─────────────────────────
+  const [
+    r_mgr_fl_month,
+    r_mgr_fl_course,
+    r_mgr_fl_course_month,
+    r_mgr_sales_month,
+    r_mgr_sales_course,
+    r_mgr_sales_course_month,
+  ] = await Promise.all([
+    db.prepare(buildManagerByMonthSql(managerBaseSql, firstlineFilter)).all<RR>(),
+    db.prepare(buildManagerByCourseSql(managerBaseSql, firstlineFilter)).all<RR>(),
+    db.prepare(buildManagerByCourseMonthSql(managerBaseSql, firstlineFilter)).all<RR>(),
+    db.prepare(buildManagerByMonthSql(managerBaseSql, salesFilter)).all<RR>(),
+    db.prepare(buildManagerByCourseSql(managerBaseSql, salesFilter)).all<RR>(),
+    db.prepare(buildManagerByCourseMonthSql(managerBaseSql, salesFilter)).all<RR>(),
+  ]);
+  await Promise.all([
+    upsertDataset(db, "manager_firstline_by_month.json", rowsToJson(r_mgr_fl_month.results ?? [])),
+    upsertDataset(db, "manager_firstline_by_course.json", rowsToJson(r_mgr_fl_course.results ?? [])),
+    upsertDataset(db, "manager_firstline_by_course_month.json", rowsToJson(r_mgr_fl_course_month.results ?? [])),
+    upsertDataset(db, "manager_sales_by_month.json", rowsToJson(r_mgr_sales_month.results ?? [])),
+    upsertDataset(db, "manager_sales_by_course.json", rowsToJson(r_mgr_sales_course.results ?? [])),
+    upsertDataset(db, "manager_sales_by_course_month.json", rowsToJson(r_mgr_sales_course_month.results ?? [])),
+  ]);
+  paths.push(
+    "manager_firstline_by_month.json",
+    "manager_firstline_by_course.json",
+    "manager_firstline_by_course_month.json",
+    "manager_sales_by_month.json",
+    "manager_sales_by_course.json",
+    "manager_sales_by_course_month.json",
+  );
 
-  const managerFirstlineByCourse = await db
-    .prepare(
-      `${managerBaseSql},
-       filtered AS (
-         SELECT * FROM base WHERE ${firstlineFilter}
-       ),
-       by_course AS (
-         SELECT
-           manager,
-           course_code,
-           COUNT(*) AS leads,
-           SUM(is_qual) AS qual,
-           SUM(is_unqual) AS unqual,
-           SUM(is_refusal) AS refusal,
-           SUM(is_in_work) AS in_work,
-           SUM(is_invalid) AS invalid_leads,
-           SUM(is_revenue) AS paid_deals,
-           SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
-         FROM filtered
-         GROUP BY manager, course_code
-       ),
-       by_manager AS (
-         SELECT
-           manager,
-           COUNT(*) AS leads,
-           SUM(is_qual) AS qual,
-           SUM(is_unqual) AS unqual,
-           SUM(is_refusal) AS refusal,
-           SUM(is_in_work) AS in_work,
-           SUM(is_invalid) AS invalid_leads,
-           SUM(is_revenue) AS paid_deals,
-           SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
-         FROM filtered
-         GROUP BY manager
-       )
-       SELECT
-         'Manager' AS "Level",
-         manager AS "Менеджер",
-         '-' AS "Код курса",
-         leads AS "Лиды",
-         qual AS "Квал",
-         unqual AS "Неквал",
-         refusal AS "Отказы",
-         in_work AS "В работе",
-         invalid_leads AS "Невалидные_лиды",
-         paid_deals AS "Сделок_с_выручкой",
-         revenue AS "Выручка",
-         fl_ids AS "fl_IDs",
-         CASE WHEN leads = 0 THEN 0 ELSE qual * 1.0 / leads END AS "Конверсия в Квал",
-         CASE WHEN leads = 0 THEN 0 ELSE unqual * 1.0 / leads END AS "Конверсия в Неквал",
-         CASE WHEN leads = 0 THEN 0 ELSE refusal * 1.0 / leads END AS "Конверсия в Отказ",
-         CASE WHEN leads = 0 THEN 0 ELSE in_work * 1.0 / leads END AS "Конверсия в работе",
-         CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средний_чек"
-       FROM by_manager
-       UNION ALL
-       SELECT
-         'Код курса' AS "Level",
-         manager AS "Менеджер",
-         course_code AS "Код курса",
-         leads AS "Лиды",
-         qual AS "Квал",
-         unqual AS "Неквал",
-         refusal AS "Отказы",
-         in_work AS "В работе",
-         invalid_leads AS "Невалидные_лиды",
-         paid_deals AS "Сделок_с_выручкой",
-         revenue AS "Выручка",
-         fl_ids AS "fl_IDs",
-         CASE WHEN leads = 0 THEN 0 ELSE qual * 1.0 / leads END AS "Конверсия в Квал",
-         CASE WHEN leads = 0 THEN 0 ELSE unqual * 1.0 / leads END AS "Конверсия в Неквал",
-         CASE WHEN leads = 0 THEN 0 ELSE refusal * 1.0 / leads END AS "Конверсия в Отказ",
-         CASE WHEN leads = 0 THEN 0 ELSE in_work * 1.0 / leads END AS "Конверсия в работе",
-         CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средний_чек"
-       FROM by_course
-       ORDER BY "Менеджер", "Level" DESC, "Код курса"`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "manager_firstline_by_course.json", rowsToJson((managerFirstlineByCourse.results ?? []) as Record<string, unknown>[]));
-  paths.push("manager_firstline_by_course.json");
-
-  const managerFirstlineByCourseMonth = await db
-    .prepare(
-      `${managerBaseSql},
-       filtered AS (
-         SELECT * FROM base WHERE ${firstlineFilter}
-       )
-       SELECT
-         'Код курса' AS "Level",
-         manager AS "Менеджер",
-         month_label AS "Месяц",
-         course_code AS "Код курса",
-         COUNT(*) AS "Лиды",
-         SUM(is_qual) AS "Квал",
-         SUM(is_unqual) AS "Неквал",
-         SUM(is_refusal) AS "Отказы",
-         SUM(is_in_work) AS "В работе",
-         SUM(is_invalid) AS "Невалидные_лиды",
-         SUM(is_revenue) AS "Сделок_с_выручкой",
-         SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
-         SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS "fl_IDs",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
-         CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
-       FROM filtered
-       GROUP BY manager, month_label, course_code
-       ORDER BY manager, month_label DESC, course_code`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "manager_firstline_by_course_month.json", rowsToJson((managerFirstlineByCourseMonth.results ?? []) as Record<string, unknown>[]));
-  paths.push("manager_firstline_by_course_month.json");
-
-  const managerSalesByMonth = await db
-    .prepare(
-      `${managerBaseSql},
-       filtered AS (
-         SELECT * FROM base WHERE ${salesFilter}
-       ),
-       by_month AS (
-         SELECT
-           manager,
-           month_label,
-           COUNT(*) AS leads,
-           SUM(is_qual) AS qual,
-           SUM(is_unqual) AS unqual,
-           SUM(is_refusal) AS refusal,
-           SUM(is_in_work) AS in_work,
-           SUM(is_invalid) AS invalid_leads,
-           SUM(is_revenue) AS paid_deals,
-           SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
-         FROM filtered
-         GROUP BY manager, month_label
-       ),
-       by_manager AS (
-         SELECT
-           manager,
-           COUNT(*) AS leads,
-           SUM(is_qual) AS qual,
-           SUM(is_unqual) AS unqual,
-           SUM(is_refusal) AS refusal,
-           SUM(is_in_work) AS in_work,
-           SUM(is_invalid) AS invalid_leads,
-           SUM(is_revenue) AS paid_deals,
-           SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
-         FROM filtered
-         GROUP BY manager
-       )
-       SELECT
-         'Manager' AS "Level",
-         manager AS "Менеджер",
-         '-' AS "Месяц",
-         leads AS "Лиды",
-         qual AS "Квал",
-         unqual AS "Неквал",
-         refusal AS "Отказы",
-         in_work AS "В работе",
-         invalid_leads AS "Невалидные_лиды",
-         paid_deals AS "Сделок_с_выручкой",
-         revenue AS "Выручка",
-         fl_ids AS "fl_IDs",
-         CASE WHEN leads = 0 THEN 0 ELSE qual * 1.0 / leads END AS "Конверсия в Квал",
-         CASE WHEN leads = 0 THEN 0 ELSE unqual * 1.0 / leads END AS "Конверсия в Неквал",
-         CASE WHEN leads = 0 THEN 0 ELSE refusal * 1.0 / leads END AS "Конверсия в Отказ",
-         CASE WHEN leads = 0 THEN 0 ELSE in_work * 1.0 / leads END AS "Конверсия в работе",
-         CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средний_чек",
-         '' AS _sort_month
-       FROM by_manager
-       UNION ALL
-       SELECT
-         'Месяц' AS "Level",
-         manager AS "Менеджер",
-         month_label AS "Месяц",
-         leads AS "Лиды",
-         qual AS "Квал",
-         unqual AS "Неквал",
-         refusal AS "Отказы",
-         in_work AS "В работе",
-         invalid_leads AS "Невалидные_лиды",
-         paid_deals AS "Сделок_с_выручкой",
-         revenue AS "Выручка",
-         fl_ids AS "fl_IDs",
-         CASE WHEN leads = 0 THEN 0 ELSE qual * 1.0 / leads END AS "Конверсия в Квал",
-         CASE WHEN leads = 0 THEN 0 ELSE unqual * 1.0 / leads END AS "Конверсия в Неквал",
-         CASE WHEN leads = 0 THEN 0 ELSE refusal * 1.0 / leads END AS "Конверсия в Отказ",
-         CASE WHEN leads = 0 THEN 0 ELSE in_work * 1.0 / leads END AS "Конверсия в работе",
-         CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средний_чек",
-         month_label AS _sort_month
-       FROM by_month
-       ORDER BY "Менеджер", "Level" DESC, _sort_month`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "manager_sales_by_month.json", rowsToJson((managerSalesByMonth.results ?? []) as Record<string, unknown>[]));
-  paths.push("manager_sales_by_month.json");
-
-  const managerSalesByCourse = await db
-    .prepare(
-      `${managerBaseSql},
-       filtered AS (
-         SELECT * FROM base WHERE ${salesFilter}
-       ),
-       by_course AS (
-         SELECT
-           manager,
-           course_code,
-           COUNT(*) AS leads,
-           SUM(is_qual) AS qual,
-           SUM(is_unqual) AS unqual,
-           SUM(is_refusal) AS refusal,
-           SUM(is_in_work) AS in_work,
-           SUM(is_invalid) AS invalid_leads,
-           SUM(is_revenue) AS paid_deals,
-           SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
-         FROM filtered
-         GROUP BY manager, course_code
-       ),
-       by_manager AS (
-         SELECT
-           manager,
-           COUNT(*) AS leads,
-           SUM(is_qual) AS qual,
-           SUM(is_unqual) AS unqual,
-           SUM(is_refusal) AS refusal,
-           SUM(is_in_work) AS in_work,
-           SUM(is_invalid) AS invalid_leads,
-           SUM(is_revenue) AS paid_deals,
-           SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
-           SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS fl_ids
-         FROM filtered
-         GROUP BY manager
-       )
-       SELECT
-         'Manager' AS "Level",
-         manager AS "Менеджер",
-         '-' AS "Код курса",
-         leads AS "Лиды",
-         qual AS "Квал",
-         unqual AS "Неквал",
-         refusal AS "Отказы",
-         in_work AS "В работе",
-         invalid_leads AS "Невалидные_лиды",
-         paid_deals AS "Сделок_с_выручкой",
-         revenue AS "Выручка",
-         fl_ids AS "fl_IDs",
-         CASE WHEN leads = 0 THEN 0 ELSE qual * 1.0 / leads END AS "Конверсия в Квал",
-         CASE WHEN leads = 0 THEN 0 ELSE unqual * 1.0 / leads END AS "Конверсия в Неквал",
-         CASE WHEN leads = 0 THEN 0 ELSE refusal * 1.0 / leads END AS "Конверсия в Отказ",
-         CASE WHEN leads = 0 THEN 0 ELSE in_work * 1.0 / leads END AS "Конверсия в работе",
-         CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средний_чек"
-       FROM by_manager
-       UNION ALL
-       SELECT
-         'Код курса' AS "Level",
-         manager AS "Менеджер",
-         course_code AS "Код курса",
-         leads AS "Лиды",
-         qual AS "Квал",
-         unqual AS "Неквал",
-         refusal AS "Отказы",
-         in_work AS "В работе",
-         invalid_leads AS "Невалидные_лиды",
-         paid_deals AS "Сделок_с_выручкой",
-         revenue AS "Выручка",
-         fl_ids AS "fl_IDs",
-         CASE WHEN leads = 0 THEN 0 ELSE qual * 1.0 / leads END AS "Конверсия в Квал",
-         CASE WHEN leads = 0 THEN 0 ELSE unqual * 1.0 / leads END AS "Конверсия в Неквал",
-         CASE WHEN leads = 0 THEN 0 ELSE refusal * 1.0 / leads END AS "Конверсия в Отказ",
-         CASE WHEN leads = 0 THEN 0 ELSE in_work * 1.0 / leads END AS "Конверсия в работе",
-         CASE WHEN paid_deals = 0 THEN 0 ELSE revenue * 1.0 / paid_deals END AS "Средний_чек"
-       FROM by_course
-       ORDER BY "Менеджер", "Level" DESC, "Код курса"`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "manager_sales_by_course.json", rowsToJson((managerSalesByCourse.results ?? []) as Record<string, unknown>[]));
-  paths.push("manager_sales_by_course.json");
-
-  const managerSalesByCourseMonth = await db
-    .prepare(
-      `${managerBaseSql},
-       filtered AS (
-         SELECT * FROM base WHERE ${salesFilter}
-       )
-       SELECT
-         'Код курса' AS "Level",
-         manager AS "Менеджер",
-         month_label AS "Месяц",
-         course_code AS "Код курса",
-         COUNT(*) AS "Лиды",
-         SUM(is_qual) AS "Квал",
-         SUM(is_unqual) AS "Неквал",
-         SUM(is_refusal) AS "Отказы",
-         SUM(is_in_work) AS "В работе",
-         SUM(is_invalid) AS "Невалидные_лиды",
-         SUM(is_revenue) AS "Сделок_с_выручкой",
-         SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
-         SUBSTR(GROUP_CONCAT(deal_id), 1, 50000) AS "fl_IDs",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
-         CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
-         CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
-       FROM filtered
-       GROUP BY manager, month_label, course_code
-       ORDER BY manager, month_label DESC, course_code`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "manager_sales_by_course_month.json", rowsToJson((managerSalesByCourseMonth.results ?? []) as Record<string, unknown>[]));
-  paths.push("manager_sales_by_course_month.json");
-
-  const yandexMonthKpis = await db
-    .prepare(
+  // ── Batch 4: Yandex KPIs + hierarchy + project revenue + cohort + QA (parallel) ─
+  const [
+    r_yandexMonthKpis,
+    r_yandexCampaignKpis,
+    r_ydHierarchy,
+    r_q4,
+    r_q5,
+    r_q6,
+    r_q7,
+    r_q8,
+    r_q9,
+    r_q10,
+    r_q11,
+    r_assocQa,
+    r_assocQaByAd,
+    r_adPerf,
+    r_qa1,
+    r_qa2,
+    r_qa3,
+    r_qa4,
+    r_qa5,
+    r_qa6,
+    r_qa7,
+  ] = await Promise.all([
+    db.prepare(
       `WITH ystats AS (
          SELECT
            month,
@@ -1591,13 +1192,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        LEFT JOIN leads l ON l.month = m.month
        LEFT JOIN ystats y ON y.month = m.month
        ORDER BY m.month`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "global/yandex_month_kpis.json", rowsToJson((yandexMonthKpis.results ?? []) as Record<string, unknown>[]));
-  paths.push("global/yandex_month_kpis.json");
-
-  const yandexCampaignKpis = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `WITH ystats AS (
          SELECT
            COALESCE("Название кампании", '') AS campaign_name,
@@ -1651,18 +1247,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        LEFT JOIN ystats y
          ON y.campaign_name = d.campaign_name AND y.campaign_id = d.campaign_id AND y.month = d.month
        ORDER BY d.month, d.campaign_name`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "global/yandex_campaign_kpis.json", rowsToJson((yandexCampaignKpis.results ?? []) as Record<string, unknown>[]));
-  paths.push("global/yandex_campaign_kpis.json");
-
-  const ydHierarchyRows = await buildYdHierarchyRows(db);
-
-  await upsertDataset(db, "yd_hierarchy.json", rowsToJson(ydHierarchyRows as Record<string, unknown>[]));
-  paths.push("yd_hierarchy.json");
-
-  const q4 = await db
-    .prepare(
+    ).all<RR>(),
+    buildYdHierarchyRows(db),
+    db.prepare(
       `SELECT COALESCE(funnel_group, '') AS funnel,
               COALESCE("Стадия сделки", '') AS stage,
               COUNT(DISTINCT ID) AS deals,
@@ -1671,13 +1258,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        FROM mart_deals_enriched
        GROUP BY COALESCE(funnel_group, ''), COALESCE("Стадия сделки", '')
        ORDER BY revenue DESC`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "global/funnel_stage.json", rowsToJson((q4.results ?? []) as Record<string, unknown>[]));
-  paths.push("global/funnel_stage.json");
-
-  const q5 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `SELECT COALESCE(event_class, 'Другое') AS event_class,
               COALESCE(NULLIF(course_code_norm, ''), 'Другое') AS course_code_norm,
               COUNT(DISTINCT ID) AS deals,
@@ -1686,13 +1268,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        FROM mart_deals_enriched
        GROUP BY COALESCE(event_class, 'Другое'), COALESCE(NULLIF(course_code_norm, ''), 'Другое')
        ORDER BY revenue DESC`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "global/event_course.json", rowsToJson((q5.results ?? []) as Record<string, unknown>[]));
-  paths.push("global/event_course.json");
-
-  const q6 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `SELECT "Контакт: ID" AS contact_id,
               COUNT(DISTINCT ID) AS deals_total,
               SUM(CASE WHEN is_revenue_variant3 = 1 THEN 1 ELSE 0 END) AS paid_deals,
@@ -1704,17 +1281,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        WHERE COALESCE("Контакт: ID", '') <> ''
        GROUP BY "Контакт: ID"
        ORDER BY revenue DESC`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(
-    db,
-    "cohorts/attacking_january/cohort_assoc_contacts.json",
-    rowsToJson((q6.results ?? []) as Record<string, unknown>[]),
-  );
-  paths.push("cohorts/attacking_january/cohort_assoc_contacts.json");
-
-  const q7 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `SELECT COALESCE(event_class, 'Другое') AS event_class,
               COALESCE(NULLIF(course_code_norm, ''), 'Другое') AS course_code_norm,
               COUNT(DISTINCT ID) AS deals,
@@ -1723,30 +1291,16 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        FROM mart_attacking_january_cohort_deals
        GROUP BY COALESCE(event_class, 'Другое'), COALESCE(NULLIF(course_code_norm, ''), 'Другое')
        ORDER BY revenue DESC`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(
-    db,
-    "cohorts/attacking_january/cohort_assoc_event_course.json",
-    rowsToJson((q7.results ?? []) as Record<string, unknown>[]),
-  );
-  paths.push("cohorts/attacking_january/cohort_assoc_event_course.json");
-
-  const q8 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `SELECT (SELECT COUNT(*) FROM mart_yandex_leads_raw) AS leads_raw,
               (SELECT COUNT(*) FROM mart_yandex_leads_dedup) AS leads_dedup,
               (SELECT COALESCE(SUM(is_paid_deal),0) FROM mart_yandex_leads_raw) AS paid_deals_raw,
               (SELECT COALESCE(SUM(paid_deals),0) FROM mart_yandex_leads_dedup) AS paid_deals_dedup,
               (SELECT COALESCE(SUM(revenue_amount),0) FROM mart_yandex_leads_raw) AS revenue_raw,
               (SELECT COALESCE(SUM(revenue),0) FROM mart_yandex_leads_dedup) AS revenue_dedup`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "global/yandex_dedup_summary.json", rowsToJson((q8.results ?? []) as Record<string, unknown>[]));
-  paths.push("global/yandex_dedup_summary.json");
-
-  const q9 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `SELECT r.project_name,
               r.yandex_month AS month,
               r.leads_raw,
@@ -1760,17 +1314,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        LEFT JOIN mart_yandex_revenue_projects_dedup d
          ON r.project_name = d.project_name AND r.yandex_month = d.yandex_month
        ORDER BY r.revenue_raw DESC`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(
-    db,
-    "global/yandex_projects_revenue_raw_vs_dedup.json",
-    rowsToJson((q9.results ?? []) as Record<string, unknown>[]),
-  );
-  paths.push("global/yandex_projects_revenue_raw_vs_dedup.json");
-
-  const q10 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `WITH matched AS (
          SELECT yandex_month AS month,
                 SUM(leads_raw) AS leads_raw,
@@ -1802,17 +1347,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        LEFT JOIN matched ma ON ma.month = m.month
        LEFT JOIN ystats ys ON ys.month = m.month
        ORDER BY m.month`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(
-    db,
-    "global/yandex_projects_revenue_by_month.json",
-    rowsToJson((q10.results ?? []) as Record<string, unknown>[]),
-  );
-  paths.push("global/yandex_projects_revenue_by_month.json");
-
-  const q11 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `SELECT project_name,
               SUM(leads_raw) AS leads_raw,
               SUM(paid_deals_raw) AS payments_count,
@@ -1822,439 +1358,11 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        FROM mart_yandex_revenue_projects_raw
        GROUP BY project_name
        ORDER BY revenue_raw DESC`,
-    )
-    .all<Record<string, unknown>>();
-
-  // Build per-project associated revenue QA stats using the same logic as /api/assoc-revenue:
-  // derive the contact pool directly from mart_deals_enriched (Yandex-sourced deals) joined with
-  // stg_yandex_stats for project names, then find all variant3 paid deals for those contacts.
-  // This avoids the contact_id normalization mismatch that occurred when going through
-  // mart_yandex_leads_raw (where IDs were stored via idNorm, stripping ".0" suffixes, so the
-  // join back to mart_deals_enriched."Контакт: ID" returned zero rows).
-  //
-  // If stg_contacts_uid exists (maps contact_id → contact_uid one row per ID, built by matching
-  // emails/phones across Bitrix contacts before being pushed to D1), use it for proper dedup so
-  // that the same real person with multiple Bitrix contact_ids is counted once and all their
-  // deals are found.
-  const hasContactsUid = await tableExists(db, "stg_contacts_uid");
-  const sourceYandexAdExpr = sqlExtractYandexAdId(`src."UTM Content"`);
-  const validSourceYandexAdExpr = `LENGTH(${sourceYandexAdExpr}) = 11 AND SUBSTR(${sourceYandexAdExpr}, 1, 2) = '17' AND ${sourceYandexAdExpr} NOT GLOB '*[^0-9]*'`;
-  const groupedStatsProjectExpr = buildYandexProjectGroupSqlExpr(`"Название кампании"`);
-  // ym.project_name is already a mapped group name (produced by groupedStatsProjectExpr in yandex_map).
-  // Re-applying the alias CASE would fail to match group names and return UNMAPPED everywhere.
-  // Just pass through the already-mapped value, falling back to UNMAPPED for NULL/empty only.
-  const groupedMappedProjectExpr = `COALESCE(NULLIF(TRIM(COALESCE(ym.project_name, '')), ''), 'UNMAPPED')`;
-
-  const assocQaSql = hasContactsUid
-    ? `WITH
-       -- Build ad_id → project_name lookup from Yandex stats (same as assoc-revenue.ts).
-       yandex_map AS (
-         SELECT
-           REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
-           MIN(${groupedStatsProjectExpr}) AS project_name
-         FROM stg_yandex_stats
-         WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
-         GROUP BY 1
-       ),
-       -- All Yandex-sourced deals with their mapped project name.
-       -- contact_id is normalized (strip trailing ".0") so that IDs stored as floats
-       -- (e.g. "12345.0" from Excel/CSV import) match integer-formatted IDs in paid deals.
-       yandex_source_deals AS (
-         SELECT
-           REPLACE(TRIM(COALESCE(src."Контакт: ID", '')), '.0', '') AS contact_id,
-           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name
-         FROM mart_deals_enriched src
-         LEFT JOIN yandex_map ym
-           ON ym.ad_id = ${sourceYandexAdExpr}
-         WHERE LOWER(TRIM(COALESCE(src."UTM Source", ''))) LIKE 'y%'
-           AND LOWER(TRIM(COALESCE(src."UTM Source", ''))) <> 'yah'
-       ),
-       yandex_leads AS (
-         SELECT project_name, COUNT(*) AS yandex_leads_count
-         FROM yandex_source_deals
-         GROUP BY project_name
-       ),
-       -- Step 1: For each Yandex deal's contact_id, find the canonical contact_uid.
-       --   Uses a LEFT JOIN so that contacts not in stg_contacts_uid still appear
-       --   (they fall back to using their contact_id directly as the uid).
-       campaign_uid_pool AS (
-         SELECT DISTINCT
-           ysd.project_name,
-           COALESCE(cu.contact_uid, ysd.contact_id) AS contact_uid
-         FROM yandex_source_deals ysd
-         LEFT JOIN stg_contacts_uid cu ON cu.contact_id = ysd.contact_id
-         WHERE ysd.contact_id <> ''
-       ),
-       -- Step 2: Expand each contact_uid to ALL of its associated Bitrix contact_ids.
-       --   For UIDs found in stg_contacts_uid: cu2 returns every linked contact_id.
-       --   For IDs used as fallback UIDs: cu2 returns NULL, so we keep the original
-       --   contact_id (stored in contact_uid column) via COALESCE.
-       --   Normalize the resulting contact_id to handle float-formatted IDs.
-       all_pool_contact_ids AS (
-         SELECT DISTINCT
-           cup.project_name,
-           REPLACE(TRIM(COALESCE(cu2.contact_id, cup.contact_uid)), '.0', '') AS contact_id
-         FROM campaign_uid_pool cup
-         LEFT JOIN stg_contacts_uid cu2 ON cu2.contact_uid = cup.contact_uid
-         WHERE REPLACE(TRIM(COALESCE(cu2.contact_id, cup.contact_uid)), '.0', '') <> ''
-       ),
-       -- Step 3: All variant3 Bitrix deals for the full contact pool.
-       -- Normalize mart_deals_enriched contact IDs on the join to handle float formats.
-       contact_deals AS (
-         SELECT apc.project_name, d.ID AS deal_id, d.revenue_amount
-         FROM all_pool_contact_ids apc
-         JOIN mart_deals_enriched d
-           ON REPLACE(TRIM(COALESCE(d."Контакт: ID", '')), '.0', '') = apc.contact_id
-         WHERE d.is_revenue_variant3 = 1
-       ),
-       -- Pre-aggregate revenue per project to avoid Cartesian-product overcounting
-       -- when joining campaign_uid_pool (many contacts) with contact_deals (many deals).
-       project_assoc_revenue AS (
-         SELECT
-           project_name,
-           COUNT(DISTINCT deal_id) AS deal_count,
-           COALESCE(SUM(revenue_amount), 0) AS assoc_revenue
-         FROM contact_deals
-         GROUP BY project_name
-       )
-       SELECT
-         yl.project_name,
-         MAX(yl.yandex_leads_count) AS "Лиды_Yandex",
-         COUNT(DISTINCT cup.contact_uid) AS "Контактов_в_пуле",
-         COALESCE(MAX(par.deal_count), 0) AS "Сделок_Bitrix",
-         COALESCE(MAX(par.assoc_revenue), 0) AS assoc_revenue
-       FROM yandex_leads yl
-       LEFT JOIN campaign_uid_pool cup ON cup.project_name = yl.project_name
-       LEFT JOIN project_assoc_revenue par ON par.project_name = yl.project_name
-       GROUP BY yl.project_name
-       ORDER BY assoc_revenue DESC`
-    : `WITH
-       -- Build ad_id → project_name lookup from Yandex stats (same as assoc-revenue.ts).
-       yandex_map AS (
-         SELECT
-           REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
-           MIN(${groupedStatsProjectExpr}) AS project_name
-         FROM stg_yandex_stats
-         WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
-         GROUP BY 1
-       ),
-       -- All Yandex-sourced deals with their mapped project name.
-       -- contact_id is normalized (strip trailing ".0") so that IDs stored as floats
-       -- (e.g. "12345.0" from Excel/CSV import) match integer-formatted IDs in paid deals.
-       yandex_source_deals AS (
-         SELECT
-           REPLACE(TRIM(COALESCE(src."Контакт: ID", '')), '.0', '') AS contact_id,
-           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name
-         FROM mart_deals_enriched src
-         LEFT JOIN yandex_map ym
-           ON ym.ad_id = ${sourceYandexAdExpr}
-         WHERE LOWER(TRIM(COALESCE(src."UTM Source", ''))) LIKE 'y%'
-           AND LOWER(TRIM(COALESCE(src."UTM Source", ''))) <> 'yah'
-       ),
-       yandex_leads AS (
-         SELECT project_name, COUNT(*) AS yandex_leads_count
-         FROM yandex_source_deals
-         GROUP BY project_name
-       ),
-       -- Step 1: Unique contact_ids per project from Yandex-sourced deals.
-       campaign_contacts AS (
-         SELECT DISTINCT project_name, contact_id
-         FROM yandex_source_deals
-         WHERE contact_id <> ''
-       ),
-       -- Step 2: All variant3 Bitrix deals for those contacts (entire Bitrix history).
-       -- Normalize mart_deals_enriched contact IDs on the join to handle float formats.
-       contact_deals AS (
-         SELECT cc.project_name, d.ID AS deal_id, d.revenue_amount
-         FROM campaign_contacts cc
-         JOIN mart_deals_enriched d
-           ON REPLACE(TRIM(COALESCE(d."Контакт: ID", '')), '.0', '') = cc.contact_id
-         WHERE d.is_revenue_variant3 = 1
-       ),
-       -- Pre-aggregate revenue per project to avoid Cartesian-product overcounting
-       -- when joining campaign_contacts (many contacts) with contact_deals (many deals).
-       project_assoc_revenue AS (
-         SELECT
-           project_name,
-           COUNT(DISTINCT deal_id) AS deal_count,
-           COALESCE(SUM(revenue_amount), 0) AS assoc_revenue
-         FROM contact_deals
-         GROUP BY project_name
-       )
-       SELECT
-         yl.project_name,
-         MAX(yl.yandex_leads_count) AS "Лиды_Yandex",
-         COUNT(DISTINCT cc.contact_id) AS "Контактов_в_пуле",
-         COALESCE(MAX(par.deal_count), 0) AS "Сделок_Bitrix",
-         COALESCE(MAX(par.assoc_revenue), 0) AS assoc_revenue
-       FROM yandex_leads yl
-       LEFT JOIN campaign_contacts cc ON cc.project_name = yl.project_name
-       LEFT JOIN project_assoc_revenue par ON par.project_name = yl.project_name
-       GROUP BY yl.project_name
-       ORDER BY assoc_revenue DESC`;
-
-  const assocQaByAdSql = hasContactsUid
-    ? `WITH
-       yandex_map AS (
-         SELECT
-           REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
-           MIN(${groupedStatsProjectExpr}) AS project_name
-         FROM stg_yandex_stats
-         WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
-         GROUP BY 1
-       ),
-       yandex_source_deals AS (
-         SELECT
-           REPLACE(TRIM(COALESCE(src."Контакт: ID", '')), '.0', '') AS contact_id,
-           ${sourceYandexAdExpr} AS ad_id,
-           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name
-         FROM mart_deals_enriched src
-         LEFT JOIN yandex_map ym
-           ON ym.ad_id = ${sourceYandexAdExpr}
-         WHERE LOWER(TRIM(COALESCE(src."UTM Source", ''))) LIKE 'y%'
-           AND LOWER(TRIM(COALESCE(src."UTM Source", ''))) <> 'yah'
-           AND ${validSourceYandexAdExpr}
-       ),
-       yandex_leads AS (
-         SELECT project_name, ad_id, COUNT(*) AS yandex_leads_count
-         FROM yandex_source_deals
-         GROUP BY project_name, ad_id
-       ),
-       campaign_uid_pool AS (
-         SELECT DISTINCT
-           ysd.project_name,
-           ysd.ad_id,
-           COALESCE(cu.contact_uid, ysd.contact_id) AS contact_uid
-         FROM yandex_source_deals ysd
-         LEFT JOIN stg_contacts_uid cu ON cu.contact_id = ysd.contact_id
-         WHERE ysd.contact_id <> ''
-       ),
-       all_pool_contact_ids AS (
-         SELECT DISTINCT
-           cup.project_name,
-           cup.ad_id,
-           REPLACE(TRIM(COALESCE(cu2.contact_id, cup.contact_uid)), '.0', '') AS contact_id
-         FROM campaign_uid_pool cup
-         LEFT JOIN stg_contacts_uid cu2 ON cu2.contact_uid = cup.contact_uid
-         WHERE REPLACE(TRIM(COALESCE(cu2.contact_id, cup.contact_uid)), '.0', '') <> ''
-       ),
-       contact_deals AS (
-         SELECT apc.project_name, apc.ad_id, d.ID AS deal_id, d.revenue_amount
-         FROM all_pool_contact_ids apc
-         JOIN mart_deals_enriched d
-           ON REPLACE(TRIM(COALESCE(d."Контакт: ID", '')), '.0', '') = apc.contact_id
-         WHERE d.is_revenue_variant3 = 1
-       ),
-       ad_assoc_revenue AS (
-         SELECT
-           project_name,
-           ad_id,
-           COUNT(DISTINCT deal_id) AS deal_count,
-           COALESCE(SUM(revenue_amount), 0) AS assoc_revenue
-         FROM contact_deals
-         GROUP BY project_name, ad_id
-       )
-       SELECT
-         yl.project_name,
-         yl.ad_id,
-         MAX(yl.yandex_leads_count) AS "Лиды_Yandex",
-         COUNT(DISTINCT cup.contact_uid) AS "Контактов_в_пуле",
-         COALESCE(MAX(aar.deal_count), 0) AS "Сделок_Bitrix",
-         COALESCE(MAX(aar.assoc_revenue), 0) AS assoc_revenue
-       FROM yandex_leads yl
-       LEFT JOIN campaign_uid_pool cup
-         ON cup.project_name = yl.project_name AND cup.ad_id = yl.ad_id
-       LEFT JOIN ad_assoc_revenue aar
-         ON aar.project_name = yl.project_name AND aar.ad_id = yl.ad_id
-       GROUP BY yl.project_name, yl.ad_id
-       ORDER BY assoc_revenue DESC`
-    : `WITH
-       yandex_map AS (
-         SELECT
-           REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
-           MIN(${groupedStatsProjectExpr}) AS project_name
-         FROM stg_yandex_stats
-         WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
-         GROUP BY 1
-       ),
-       yandex_source_deals AS (
-         SELECT
-           REPLACE(TRIM(COALESCE(src."Контакт: ID", '')), '.0', '') AS contact_id,
-           ${sourceYandexAdExpr} AS ad_id,
-           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name
-         FROM mart_deals_enriched src
-         LEFT JOIN yandex_map ym
-           ON ym.ad_id = ${sourceYandexAdExpr}
-         WHERE LOWER(TRIM(COALESCE(src."UTM Source", ''))) LIKE 'y%'
-           AND LOWER(TRIM(COALESCE(src."UTM Source", ''))) <> 'yah'
-           AND ${validSourceYandexAdExpr}
-       ),
-       yandex_leads AS (
-         SELECT project_name, ad_id, COUNT(*) AS yandex_leads_count
-         FROM yandex_source_deals
-         GROUP BY project_name, ad_id
-       ),
-       campaign_contacts AS (
-         SELECT DISTINCT project_name, ad_id, contact_id
-         FROM yandex_source_deals
-         WHERE contact_id <> ''
-       ),
-       contact_deals AS (
-         SELECT cc.project_name, cc.ad_id, d.ID AS deal_id, d.revenue_amount
-         FROM campaign_contacts cc
-         JOIN mart_deals_enriched d
-           ON REPLACE(TRIM(COALESCE(d."Контакт: ID", '')), '.0', '') = cc.contact_id
-         WHERE d.is_revenue_variant3 = 1
-       ),
-       ad_assoc_revenue AS (
-         SELECT
-           project_name,
-           ad_id,
-           COUNT(DISTINCT deal_id) AS deal_count,
-           COALESCE(SUM(revenue_amount), 0) AS assoc_revenue
-         FROM contact_deals
-         GROUP BY project_name, ad_id
-       )
-       SELECT
-         yl.project_name,
-         yl.ad_id,
-         MAX(yl.yandex_leads_count) AS "Лиды_Yandex",
-         COUNT(DISTINCT cc.contact_id) AS "Контактов_в_пуле",
-         COALESCE(MAX(aar.deal_count), 0) AS "Сделок_Bitrix",
-         COALESCE(MAX(aar.assoc_revenue), 0) AS assoc_revenue
-       FROM yandex_leads yl
-       LEFT JOIN campaign_contacts cc
-         ON cc.project_name = yl.project_name AND cc.ad_id = yl.ad_id
-       LEFT JOIN ad_assoc_revenue aar
-         ON aar.project_name = yl.project_name AND aar.ad_id = yl.ad_id
-       GROUP BY yl.project_name, yl.ad_id
-       ORDER BY assoc_revenue DESC`;
-
-  const adPerfSql = `WITH
-       yandex_map AS (
-         SELECT
-           REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
-           MIN(${groupedStatsProjectExpr}) AS project_name
-         FROM stg_yandex_stats
-         WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
-         GROUP BY 1
-       ),
-       ystats AS (
-         SELECT
-           ${groupedStatsProjectExpr} AS project_name,
-           REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') AS ad_id,
-           MIN(NULLIF(TRIM(COALESCE("Заголовок", '')), '')) AS ad_title,
-           MIN(COALESCE(NULLIF(TRIM(COALESCE(month, "Месяц")), ''), '')) AS first_spend_month,
-           MAX(COALESCE(NULLIF(TRIM(COALESCE(month, "Месяц")), ''), '')) AS last_spend_month,
-           SUM(COALESCE("Клики", 0)) AS clicks,
-           SUM(COALESCE("Расход, ₽", 0)) AS spend
-         FROM stg_yandex_stats
-         WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
-         GROUP BY 1, 2
-       ),
-       ydeal AS (
-         SELECT
-           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name,
-           ${sourceYandexAdExpr} AS ad_id,
-           MIN(COALESCE(NULLIF(TRIM(COALESCE(src.month, '')), ''), '')) AS first_lead_month,
-           MAX(COALESCE(NULLIF(TRIM(COALESCE(src.month, '')), ''), '')) AS last_lead_month,
-           COUNT(*) AS leads_raw,
-           SUM(CASE WHEN COALESCE(src.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END) AS payments_count,
-           SUM(CASE WHEN COALESCE(src.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END) AS paid_deals_raw,
-           SUM(COALESCE(src.revenue_amount, 0)) AS revenue_raw
-         FROM mart_deals_enriched src
-         LEFT JOIN yandex_map ym
-           ON ym.ad_id = ${sourceYandexAdExpr}
-         WHERE LOWER(TRIM(COALESCE(src."UTM Source", ''))) LIKE 'y%'
-           AND LOWER(TRIM(COALESCE(src."UTM Source", ''))) <> 'yah'
-           AND ${validSourceYandexAdExpr}
-         GROUP BY 1, 2
-       ),
-       dims AS (
-         SELECT project_name, ad_id FROM ystats
-         UNION
-         SELECT project_name, ad_id FROM ydeal
-       )
-       SELECT
-         d.project_name,
-         d.ad_id,
-         COALESCE(ys.ad_title, '') AS ad_title,
-         COALESCE(NULLIF(ys.first_spend_month, ''), NULLIF(yd.first_lead_month, ''), '') AS first_month,
-         COALESCE(NULLIF(ys.last_spend_month, ''), NULLIF(yd.last_lead_month, ''), '') AS last_month,
-         COALESCE(yd.leads_raw, 0) AS leads_raw,
-         COALESCE(yd.payments_count, 0) AS payments_count,
-         COALESCE(yd.paid_deals_raw, 0) AS paid_deals_raw,
-         COALESCE(yd.revenue_raw, 0) AS revenue_raw,
-         COALESCE(ys.clicks, 0) AS clicks,
-         COALESCE(ys.spend, 0) AS spend
-       FROM dims d
-       LEFT JOIN ystats ys ON ys.project_name = d.project_name AND ys.ad_id = d.ad_id
-       LEFT JOIN ydeal yd ON yd.project_name = d.project_name AND yd.ad_id = d.ad_id
-       ORDER BY spend DESC, d.ad_id`;
-
-  const q11assocQa = await db.prepare(assocQaSql).all<Record<string, unknown>>();
-  const assocQaRows = groupAssocQaRows(q11assocQa.results ?? []);
-  const q11assocQaByAd = await db.prepare(assocQaByAdSql).all<Record<string, unknown>>();
-  const q11adPerf = await db.prepare(adPerfSql).all<Record<string, unknown>>();
-
-  // Build the assoc revenue lookup map (feeds into yandex_projects_revenue_no_month.json).
-  const assocRevenueByProject = new Map<string, number>();
-  for (const r of assocQaRows) {
-    const pn = String(r.project_name ?? "").trim();
-    if (pn) assocRevenueByProject.set(pn, Number(r.assoc_revenue ?? 0) || 0);
-  }
-
-  // Materialize the per-project QA dataset.
-  const qaProjectRows = assocQaRows.map((r) => ({
-    "Проект": String(r.project_name ?? "").trim(),
-    "Лиды_Yandex": Number(r["Лиды_Yandex"] ?? 0) || 0,
-    "Контактов_в_пуле": Number(r["Контактов_в_пуле"] ?? 0) || 0,
-    "Сделок_Bitrix": Number(r["Сделок_Bitrix"] ?? 0) || 0,
-    "Ассоц. Выручка": Number(r.assoc_revenue ?? 0) || 0,
-  }));
-  const qaRows = buildYandexAssocQaHierarchyRows(qaProjectRows, q11assocQaByAd.results ?? []);
-  await upsertDataset(db, "qa/yandex_assoc_revenue_qa.json", rowsToJson(qaRows));
-  paths.push("qa/yandex_assoc_revenue_qa.json");
-
-  // Note: assoc_revenue is NOT included here. groupYandexProjectsNoMonth sums numeric fields,
-  // so if we passed assoc_revenue (which is already a per-group total) it would be multiplied
-  // by the number of raw campaign rows that map to the same group. Instead we apply it once
-  // per group after grouping, directly from assocRevenueByProject.
-  const q11rows = (q11.results ?? []).map((r) => ({
-    project_name: toKnownGroup(r.project_name),
-    leads_raw: Number(r.leads_raw ?? 0) || 0,
-    payments_count: Number(r.payments_count ?? 0) || 0,
-    paid_deals_raw: Number(r.paid_deals_raw ?? 0) || 0,
-    revenue_raw: Number(r.revenue_raw ?? 0) || 0,
-    spend: Number(r.spend ?? 0) || 0,
-    assoc_revenue: 0,
-  }));
-
-  const grouped = groupYandexProjectsNoMonth(q11rows).map((r) => ({
-    ...r,
-    assoc_revenue: Math.max(assocRevenueByProject.get(r.project_name) ?? 0, r.revenue_raw),
-  }));
-
-  // Enrich ad-perf rows with assoc_revenue from QA data; enforce assoc >= direct.
-  const assocByAd = new Map<string, number>();
-  for (const r of q11assocQaByAd.results ?? []) {
-    const key = `${toKnownGroup(r.project_name)}||${String(r.ad_id ?? "").trim()}`;
-    assocByAd.set(key, Number(r.assoc_revenue ?? 0) || 0);
-  }
-  const adPerfEnriched = (q11adPerf.results ?? []).map((r) => {
-    const proj = toKnownGroup(r.project_name);
-    const adId = String(r.ad_id ?? "").trim();
-    const assocRev = assocByAd.get(`${proj}||${adId}`) ?? 0;
-    const directRev = Number(r.revenue_raw ?? 0) || 0;
-    return { ...r, assoc_revenue: Math.max(assocRev, directRev) };
-  });
-  const groupedWithDetails = buildYandexNoMonthHierarchyRows(grouped as Record<string, unknown>[], adPerfEnriched);
-  await upsertDataset(db, "global/yandex_projects_revenue_no_month.json", rowsToJson(groupedWithDetails));
-  paths.push("global/yandex_projects_revenue_no_month.json");
-
-
-  const qa1 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(buildAssocQaSql(hasContactsUid, assocExprs)).all<RR>(),
+    db.prepare(buildAssocQaByAdSql(hasContactsUid, assocExprs)).all<RR>(),
+    db.prepare(buildAdPerfSql(assocExprs)).all<RR>(),
+    db.prepare(
       `SELECT COUNT(*) AS revenue_deals,
               SUM(CASE WHEN COALESCE(event_class, 'Другое') = 'Другое' THEN 1 ELSE 0 END) AS other_deals,
               CASE WHEN COUNT(*) = 0 THEN 0
@@ -2262,13 +1370,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
               END AS other_share
        FROM mart_deals_enriched
        WHERE is_revenue_variant3 = 1`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "qa/other_share_global.json", rowsToJson((qa1.results ?? []) as Record<string, unknown>[]));
-  paths.push("qa/other_share_global.json");
-
-  const qa2 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `SELECT ID,
               "Контакт: ID" AS contact_id,
               "Название сделки" AS deal_name,
@@ -2283,24 +1386,14 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        WHERE is_revenue_variant3 = 1 AND COALESCE(event_class, 'Другое') = 'Другое'
        ORDER BY revenue_amount DESC
        LIMIT 50`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "qa/other_top50_cohort.json", rowsToJson((qa2.results ?? []) as Record<string, unknown>[]));
-  paths.push("qa/other_top50_cohort.json");
-
-  const qa3 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `SELECT COUNT(*) AS rows_in_mart,
               COUNT(DISTINCT ID) AS distinct_ids,
               COUNT(*) - COUNT(DISTINCT ID) AS duplicate_rows
        FROM mart_deals_enriched`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "qa/dedup_check.json", rowsToJson((qa3.results ?? []) as Record<string, unknown>[]));
-  paths.push("qa/dedup_check.json");
-
-  const qa4 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `SELECT lead_key,
               COUNT(*) AS rows_count,
               COUNT(DISTINCT project_name) AS projects_count,
@@ -2310,17 +1403,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        HAVING COUNT(*) > 1
        ORDER BY rows_count DESC, revenue_raw DESC
        LIMIT 100`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(
-    db,
-    "qa/yandex_dedup_keys_top_collisions.json",
-    rowsToJson((qa4.results ?? []) as Record<string, unknown>[]),
-  );
-  paths.push("qa/yandex_dedup_keys_top_collisions.json");
-
-  const qa5 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `SELECT s.leads_raw,
               s.leads_dedup,
               (s.leads_raw - s.leads_dedup) AS leads_delta,
@@ -2339,13 +1423,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            (SELECT COALESCE(SUM(revenue_amount),0) FROM mart_yandex_leads_raw) AS revenue_raw,
            (SELECT COALESCE(SUM(revenue),0) FROM mart_yandex_leads_dedup) AS revenue_dedup
        ) s`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(db, "qa/yandex_raw_vs_dedup_delta.json", rowsToJson((qa5.results ?? []) as Record<string, unknown>[]));
-  paths.push("qa/yandex_raw_vs_dedup_delta.json");
-
-  const qa6 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `SELECT COALESCE(y."Название кампании", '') AS project_name,
               COALESCE(y."№ Кампании", '') AS campaign_id,
               COALESCE(y.month, '') AS month,
@@ -2358,17 +1437,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        )
        GROUP BY COALESCE(y."Название кампании", ''), COALESCE(y."№ Кампании", ''), COALESCE(y.month, '')
        ORDER BY yandex_rows DESC`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(
-    db,
-    "qa/yandex_unmatched_to_bitrix.json",
-    rowsToJson((qa6.results ?? []) as Record<string, unknown>[]),
-  );
-  paths.push("qa/yandex_unmatched_to_bitrix.json");
-
-  const qa7 = await db
-    .prepare(
+    ).all<RR>(),
+    db.prepare(
       `WITH grouped AS (
          SELECT COALESCE(project_name, '') AS project_name,
                 COALESCE(campaign_id, '') AS campaign_id,
@@ -2397,14 +1467,105 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        FROM ranked
        WHERE rn = 1
        ORDER BY yandex_rows DESC, map_confidence DESC`,
-    )
-    .all<Record<string, unknown>>();
-  await upsertDataset(
-    db,
+    ).all<RR>(),
+  ]);
+
+  // ── Post-process assoc-revenue results ──────────────────────────────────────
+  const assocQaRows = groupAssocQaRows(r_assocQa.results ?? []);
+
+  // Build the assoc revenue lookup map (feeds into yandex_projects_revenue_no_month.json).
+  const assocRevenueByProject = new Map<string, number>();
+  for (const r of assocQaRows) {
+    const pn = String(r.project_name ?? "").trim();
+    if (pn) assocRevenueByProject.set(pn, Number(r.assoc_revenue ?? 0) || 0);
+  }
+
+  // Materialize the per-project QA dataset.
+  const qaProjectRows = assocQaRows.map((r) => ({
+    "Проект": String(r.project_name ?? "").trim(),
+    "Лиды_Yandex": Number(r["Лиды_Yandex"] ?? 0) || 0,
+    "Контактов_в_пуле": Number(r["Контактов_в_пуле"] ?? 0) || 0,
+    "Сделок_Bitrix": Number(r["Сделок_Bitrix"] ?? 0) || 0,
+    "Ассоц. Выручка": Number(r.assoc_revenue ?? 0) || 0,
+  }));
+  const qaRows = buildYandexAssocQaHierarchyRows(qaProjectRows, r_assocQaByAd.results ?? []);
+
+  // Note: assoc_revenue is NOT included here. groupYandexProjectsNoMonth sums numeric fields,
+  // so if we passed assoc_revenue (which is already a per-group total) it would be multiplied
+  // by the number of raw campaign rows that map to the same group. Instead we apply it once
+  // per group after grouping, directly from assocRevenueByProject.
+  const q11rows = (r_q11.results ?? []).map((r) => ({
+    project_name: toKnownGroup(r.project_name),
+    leads_raw: Number(r.leads_raw ?? 0) || 0,
+    payments_count: Number(r.payments_count ?? 0) || 0,
+    paid_deals_raw: Number(r.paid_deals_raw ?? 0) || 0,
+    revenue_raw: Number(r.revenue_raw ?? 0) || 0,
+    spend: Number(r.spend ?? 0) || 0,
+    assoc_revenue: 0,
+  }));
+  const grouped = groupYandexProjectsNoMonth(q11rows).map((r) => ({
+    ...r,
+    assoc_revenue: Math.max(assocRevenueByProject.get(r.project_name) ?? 0, r.revenue_raw),
+  }));
+
+  // Enrich ad-perf rows with assoc_revenue from QA data; enforce assoc >= direct.
+  const assocByAd = new Map<string, number>();
+  for (const r of r_assocQaByAd.results ?? []) {
+    const key = `${toKnownGroup(r.project_name)}||${String(r.ad_id ?? "").trim()}`;
+    assocByAd.set(key, Number(r.assoc_revenue ?? 0) || 0);
+  }
+  const adPerfEnriched = (r_adPerf.results ?? []).map((r) => {
+    const proj = toKnownGroup(r.project_name);
+    const adId = String(r.ad_id ?? "").trim();
+    const assocRev = assocByAd.get(`${proj}||${adId}`) ?? 0;
+    const directRev = Number(r.revenue_raw ?? 0) || 0;
+    return { ...r, assoc_revenue: Math.max(assocRev, directRev) };
+  });
+  const groupedWithDetails = buildYandexNoMonthHierarchyRows(grouped as RR[], adPerfEnriched);
+
+  // ── All remaining upserts in parallel ────────────────────────────────────────
+  await Promise.all([
+    upsertDataset(db, "global/yandex_month_kpis.json", rowsToJson(r_yandexMonthKpis.results ?? [])),
+    upsertDataset(db, "global/yandex_campaign_kpis.json", rowsToJson(r_yandexCampaignKpis.results ?? [])),
+    upsertDataset(db, "yd_hierarchy.json", rowsToJson(r_ydHierarchy as RR[])),
+    upsertDataset(db, "global/funnel_stage.json", rowsToJson(r_q4.results ?? [])),
+    upsertDataset(db, "global/event_course.json", rowsToJson(r_q5.results ?? [])),
+    upsertDataset(db, "cohorts/attacking_january/cohort_assoc_contacts.json", rowsToJson(r_q6.results ?? [])),
+    upsertDataset(db, "cohorts/attacking_january/cohort_assoc_event_course.json", rowsToJson(r_q7.results ?? [])),
+    upsertDataset(db, "global/yandex_dedup_summary.json", rowsToJson(r_q8.results ?? [])),
+    upsertDataset(db, "global/yandex_projects_revenue_raw_vs_dedup.json", rowsToJson(r_q9.results ?? [])),
+    upsertDataset(db, "global/yandex_projects_revenue_by_month.json", rowsToJson(r_q10.results ?? [])),
+    upsertDataset(db, "qa/yandex_assoc_revenue_qa.json", rowsToJson(qaRows)),
+    upsertDataset(db, "global/yandex_projects_revenue_no_month.json", rowsToJson(groupedWithDetails)),
+    upsertDataset(db, "qa/other_share_global.json", rowsToJson(r_qa1.results ?? [])),
+    upsertDataset(db, "qa/other_top50_cohort.json", rowsToJson(r_qa2.results ?? [])),
+    upsertDataset(db, "qa/dedup_check.json", rowsToJson(r_qa3.results ?? [])),
+    upsertDataset(db, "qa/yandex_dedup_keys_top_collisions.json", rowsToJson(r_qa4.results ?? [])),
+    upsertDataset(db, "qa/yandex_raw_vs_dedup_delta.json", rowsToJson(r_qa5.results ?? [])),
+    upsertDataset(db, "qa/yandex_unmatched_to_bitrix.json", rowsToJson(r_qa6.results ?? [])),
+    upsertDataset(db, "qa/yandex_campaign_mapping_seed.json", rowsToJson(r_qa7.results ?? [])),
+  ]);
+  paths.push(
+    "global/yandex_month_kpis.json",
+    "global/yandex_campaign_kpis.json",
+    "yd_hierarchy.json",
+    "global/funnel_stage.json",
+    "global/event_course.json",
+    "cohorts/attacking_january/cohort_assoc_contacts.json",
+    "cohorts/attacking_january/cohort_assoc_event_course.json",
+    "global/yandex_dedup_summary.json",
+    "global/yandex_projects_revenue_raw_vs_dedup.json",
+    "global/yandex_projects_revenue_by_month.json",
+    "qa/yandex_assoc_revenue_qa.json",
+    "global/yandex_projects_revenue_no_month.json",
+    "qa/other_share_global.json",
+    "qa/other_top50_cohort.json",
+    "qa/dedup_check.json",
+    "qa/yandex_dedup_keys_top_collisions.json",
+    "qa/yandex_raw_vs_dedup_delta.json",
+    "qa/yandex_unmatched_to_bitrix.json",
     "qa/yandex_campaign_mapping_seed.json",
-    rowsToJson((qa7.results ?? []) as Record<string, unknown>[]),
   );
-  paths.push("qa/yandex_campaign_mapping_seed.json");
 
   return { paths };
 }
