@@ -1309,6 +1309,25 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       managerCourseMonthRows = [];
     }
   }
+  if (view === "assoc_dynamic") {
+    try {
+      const ecRows = await fetchJson<Record<string, unknown>[]>("data/bitrix_new_event_contacts_by_event.json");
+      const ecMap = new Map<string, number>();
+      for (const r of ecRows) {
+        const ev = String(r["Мероприятие"] ?? "").trim();
+        const n = num(r["Новых с мероприятия"]);
+        if (ev) ecMap.set(ev, n);
+      }
+      if (ecMap.size > 0) {
+        for (const r of viewRows) {
+          if (num(r["__assoc_event_detail"]) === 0) {
+            const ev = String(r["Мероприятие"] ?? "").trim();
+            if (ev) r["Новых с мероприятия"] = ecMap.get(ev) ?? 0;
+          }
+        }
+      }
+    } catch { /* ignore */ }
+  }
   const allCols = viewRows.length ? Object.keys(viewRows[0]) : [];
   let cols = allCols;
   const initialDateCol = ["Период", "Месяц", "Год"].find((c) => cols.includes(c));
@@ -1600,6 +1619,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
           "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
           "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
+          "Неизвестно": items.reduce((a, x) => a + num(x["Неизвестно"]), 0),
           "Отказы": items.reduce((a, x) => a + num(x["Отказы"]), 0),
           "В работе": items.reduce((a, x) => a + num(x["В работе"]), 0),
           "Невалидные_лиды": items.reduce((a, x) => a + num(x["Невалидные_лиды"]), 0),
@@ -1625,6 +1645,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
             "Лиды": mItems.reduce((a, x) => a + num(x["Лиды"]), 0),
             "Квал": mItems.reduce((a, x) => a + num(x["Квал"]), 0),
             "Неквал": mItems.reduce((a, x) => a + num(x["Неквал"]), 0),
+            "Неизвестно": mItems.reduce((a, x) => a + num(x["Неизвестно"]), 0),
             "Отказы": mItems.reduce((a, x) => a + num(x["Отказы"]), 0),
             "В работе": mItems.reduce((a, x) => a + num(x["В работе"]), 0),
             "Невалидные_лиды": mItems.reduce((a, x) => a + num(x["Невалидные_лиды"]), 0),
@@ -1882,6 +1903,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     const table = app.querySelector(".table-scroll table");
     if (!table) return;
     table.innerHTML = `<thead><tr>${th}</tr></thead><tbody>${body}</tbody>`;
+    app.querySelectorAll<HTMLButtonElement>(".pnl-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.getAttribute("data-mode") === pnlMode);
+    });
     app.querySelectorAll<HTMLTableCellElement>("th[data-col]").forEach((h) => {
       h.style.color = h.getAttribute("data-col") === sortCol ? "var(--accent)" : "";
       h.onclick = (ev) => {

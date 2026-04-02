@@ -491,7 +491,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.qual} AS is_qual,
            ${bitrixLeadLogic.unqual} AS is_unqual,
            ${bitrixLeadLogic.refusal} AS is_refusal,
-           ${bitrixInvalidExpr} AS is_invalid,
+           ${bitrixLeadLogic.invalid} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
            ${buildPotentialCond(`"Стадия сделки"`)} AS is_potential,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
@@ -1050,7 +1050,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.qual} AS is_qual,
            ${bitrixLeadLogic.unqual} AS is_unqual,
            ${bitrixLeadLogic.refusal} AS is_refusal,
-           ${bitrixInvalidExpr} AS is_invalid,
+           ${bitrixLeadLogic.invalid} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
            ${buildPotentialCond(`"Стадия сделки"`)} AS is_potential,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
@@ -1064,6 +1064,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          COUNT(*) AS "Лиды",
          SUM(is_qual) AS "Квал",
          SUM(is_unqual) AS "Неквал",
+         SUM(CASE WHEN is_qual = 0 AND is_unqual = 0 THEN 1 ELSE 0 END) AS "Неизвестно",
          SUM(is_refusal) AS "Отказы",
          SUM(is_in_work) AS "В работе",
          SUM(is_invalid) AS "Невалидные_лиды",
@@ -1127,7 +1128,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     upsertDataset(db, "bitrix_contacts_uid.json", rowsToJson(bitrixContactsUidRows)),
     upsertDataset(db, "dashboard_contacts_total.json", rowsToJson(dashboardContactsTotalRows)),
     upsertDataset(db, "bitrix_funnel_month_code_full.json", rowsToJson(r_bitrixFunnelCode.results ?? [])),
-    upsertDataset(db, "bitrix_new_event_contacts_by_month.json", rowsToJson(r_newEventContacts.results ?? [])),
+    upsertDataset(db, "bitrix_new_event_contacts_by_event.json", rowsToJson(r_newEventContacts.results ?? [])),
   ]);
   paths.push(
     "bitrix_week_funnel_total.json",
@@ -1137,7 +1138,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     "bitrix_contacts_uid.json",
     "dashboard_contacts_total.json",
     "bitrix_funnel_month_code_full.json",
-    "bitrix_new_event_contacts_by_month.json",
+    "bitrix_new_event_contacts_by_event.json",
   );
 
   // ── Batch 3: Manager reports — 6 queries in parallel ─────────────────────────
