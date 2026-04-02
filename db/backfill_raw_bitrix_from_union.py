@@ -30,7 +30,7 @@ def _id(v: object) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Backfill raw_bitrix_deals from CSV union exports")
-    parser.add_argument("--db", default=None, help="SQLite DB path (default: deved.db)")
+    parser.add_argument("--db", default=None, help="SQLite DB path (default: website.db)")
     parser.add_argument("--source-batch", default=None, help="Optional batch key override")
     args = parser.parse_args()
 

@@ -45,7 +45,7 @@ def _load_union() -> pd.DataFrame:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Refresh relational raw_bitrix_deals from CSV union")
-    parser.add_argument("--db", default=None, help="SQLite DB path (default: deved.db)")
+    parser.add_argument("--db", default=None, help="SQLite DB path (default: website.db)")
     parser.add_argument("--source-batch", default=None, help="Optional batch key override")
     parser.add_argument("--dry-run", action="store_true", help="Only print insert/update/unchanged counts")
     args = parser.parse_args()

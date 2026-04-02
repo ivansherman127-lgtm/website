@@ -1,4 +1,4 @@
-name = "deved-webpush"
+name = "website-webpush"
 compatibility_date = "2025-03-01"
 main = "worker.ts"
 

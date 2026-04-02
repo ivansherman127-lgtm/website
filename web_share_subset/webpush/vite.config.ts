@@ -79,7 +79,7 @@ function sheetsPushPlugin(): Plugin {
             throw new Error("No rows to push");
           }
 
-          const tempPath = join(tmpdir(), `deved-push-${Date.now()}.json`);
+          const tempPath = join(tmpdir(), `website-push-${Date.now()}.json`);
           await writeFile(tempPath, JSON.stringify(rows), "utf-8");
 
           const credsCandidate = resolve(ROOT, "keys", "cybered-490317-a7b083e70c85.json");

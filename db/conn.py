@@ -1,14 +1,14 @@
 """
-Database connection factory for deved SQLite DB.
+Database connection factory for website SQLite DB.
 Use get_engine() for pandas/sqlalchemy; get_conn() for raw sqlite3.
 """
 from pathlib import Path
 import os
 from typing import Optional
 
-# Default DB path: project root / deved.db
+# Default DB path: project root / website.db
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_DB_PATH = os.environ.get("DEVED_DB_PATH", str(_PROJECT_ROOT / "deved.db"))
+DEFAULT_DB_PATH = os.environ.get("WEBSITE_DB_PATH", str(_PROJECT_ROOT / "website.db"))
 
 
 def get_engine(db_path: Optional[str] = None):

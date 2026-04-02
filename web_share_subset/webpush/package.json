@@ -1,13 +1,18 @@
 {
-  "name": "deved-slices-dashboard",
+  "name": "website-slices-dashboard",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "VITE_DATA_SOURCE=d1 vite",
+    "dev:utm": "vite --config vite.config.utm.ts",
     "prebuild": "rm -f public/data/attacking_january_associative_deals_base.json",
     "build": "VITE_DATA_SOURCE=d1 vite build",
+    "build:utm": "vite build --config vite.config.utm.ts",
+    "postbuild:utm": "cp dist-utm/utm.html dist-utm/index.html",
     "preview": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",
+    "worker:dev:utm": "npm run build:utm && wrangler dev --config wrangler.utm.jsonc",
+    "worker:deploy:utm": "npm run build:utm && wrangler deploy --config wrangler.utm.jsonc",
     "worker:dev": "npm run build && wrangler dev",
     "worker:deploy": "npm run build && wrangler deploy"
   },

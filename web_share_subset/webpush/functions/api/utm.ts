@@ -22,6 +22,7 @@ const MEDIUM_MAP = new Map<string, MediumEntry>(MEDIUM_CONFIG.map(m => [m.value,
 
 type UtmRow = {
   "Дата создания": string;
+  "Создал"?: string;
   "UTM Source": string;
   "UTM Medium": string;
   "UTM Campaign": string;
@@ -72,7 +73,8 @@ async function fetchRows(db: D1Database): Promise<UtmRow[]> {
   const result = await db
     .prepare(
       `SELECT
-         created_at AS "Дата создания",
+        created_at AS "Дата создания",
+        created_by AS "Создал",
          utm_source AS "UTM Source",
          utm_medium AS "UTM Medium",
          utm_campaign AS "UTM Campaign",
@@ -132,6 +134,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
   const campaignLink = asTrimmedString(body.campaign_link);
   const content = asTrimmedString(body.utm_content);
   const term = asTrimmedString(body.utm_term);
+  const createdBy = asTrimmedString((body as any).created_by ?? (body as any).createdBy ?? "");
 
   if (!campaign || !campaignLink) {
     return json(400, { ok: false, error: "required_fields_missing" });
@@ -151,6 +154,7 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
       .prepare(
         `INSERT INTO utm_tags (
           created_at,
+          created_by,
           utm_source,
           utm_medium,
           utm_campaign,
@@ -158,25 +162,26 @@ export async function onRequestPost(context: { request: Request; env: Env }): Pr
           utm_content,
           utm_term,
           utm_tag
-        ) VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .bind(source, medium, campaign, campaignLink, content, term, utmTag)
+      .bind(createdBy, source, medium, campaign, campaignLink, content, term, utmTag)
       .run();
 
     const latest = await context.env.UTM
       .prepare(
-        `SELECT
-           created_at AS "Дата создания",
-           utm_source AS "UTM Source",
-           utm_medium AS "UTM Medium",
-           utm_campaign AS "UTM Campaign",
-           campaign_link AS "Link",
-           utm_content AS "UTM Content",
-           utm_term AS "UTM Term",
-           utm_tag AS "UTM Tag"
-         FROM utm_tags
-         ORDER BY id DESC
-         LIMIT 1`,
+          `SELECT
+            created_at AS "Дата создания",
+            created_by AS "Создал",
+            utm_source AS "UTM Source",
+            utm_medium AS "UTM Medium",
+            utm_campaign AS "UTM Campaign",
+            campaign_link AS "Link",
+            utm_content AS "UTM Content",
+            utm_term AS "UTM Term",
+            utm_tag AS "UTM Tag"
+          FROM utm_tags
+          ORDER BY id DESC
+          LIMIT 1`,
       )
       .first<UtmRow>();
 

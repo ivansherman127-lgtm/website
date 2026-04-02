@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
-DB_PATH="${DEVED_DB_PATH:-$ROOT/deved.db}"
+DB_PATH="${WEBSITE_DB_PATH:-$ROOT/website.db}"
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "help" ]]; then
   echo "Usage: ./scripts/dedupe_raw_tables_local.sh [db_path]"

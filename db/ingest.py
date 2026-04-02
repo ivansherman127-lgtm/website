@@ -148,8 +148,8 @@ def run_csv_import(
 
 if __name__ == "__main__":
     import argparse
-    p = argparse.ArgumentParser(description="Import CSVs into deved SQLite DB")
-    p.add_argument("--db", default=None, help="DB path (default: project root / deved.db)")
+    p = argparse.ArgumentParser(description="Import CSVs into website SQLite DB")
+    p.add_argument("--db", default=None, help="DB path (default: project root / website.db)")
     p.add_argument("--firstline", type=Path, default=None)
     p.add_argument("--yandex", type=Path, default=None)
     p.add_argument("--mass-email", type=Path, default=None)

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Push selected tables from local deved.db and/or JSON files under public/data into Cloudflare D1.
+Push selected tables from local website.db and/or JSON files under public/data into Cloudflare D1.
 
   ./.venv/bin/python3 db/d1/push_from_sqlite.py --remote --wrangler-config web/wrangler.toml
 
-**Prerequisite:** `deved.db` must already contain marts and staging (e.g. run
+**Prerequisite:** `website.db` must already contain marts and staging (e.g. run
 `python db/run_all_slices.py` from repo root). If those tables are missing locally, this
 script skips them silently unless you use `--strict` — then you may end up with only
 `dataset_json` rows (from public/data/*.json) and empty metric tables in D1.
@@ -825,7 +825,7 @@ def main() -> None:
     p.add_argument(
         "--db",
         default=None,
-        help="Path to deved.db (default: project root deved.db)",
+        help="Path to website.db (default: project root website.db)",
     )
     p.add_argument(
         "--wrangler-config",
@@ -878,7 +878,7 @@ def main() -> None:
     p.add_argument(
         "--preflight",
         action="store_true",
-        help="Print row counts for each --tables entry in local deved.db and exit (no push).",
+        help="Print row counts for each --tables entry in local website.db and exit (no push).",
     )
     p.add_argument(
         "--strict",
@@ -889,7 +889,7 @@ def main() -> None:
 
     from conn import get_conn  # noqa: WPS433
 
-    db_path = args.db or str(ROOT / "deved.db")
+    db_path = args.db or str(ROOT / "website.db")
     tables = [t.strip() for t in args.tables.split(",") if t.strip()]
     for t in tables:
         if t in SKIP_TABLES:

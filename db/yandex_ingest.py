@@ -73,7 +73,7 @@ def fetch_yandex_direct_report(
                 "Clicks",
                 "Conversions",
             ],
-            "ReportName": "Deved Yandex Stats",
+            "ReportName": "Website Yandex Stats",
             "ReportType": "CAMPAIGN_PERFORMANCE_REPORT",
             "DateRangeType": "CUSTOM_DATE",
             "Format": "TSV",

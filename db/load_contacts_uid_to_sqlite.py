@@ -45,7 +45,7 @@ def to_int(v: object) -> int | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Load bitrix_contacts_uid.csv into SQLite stg_contacts_uid")
-    parser.add_argument("--db", default=None, help="SQLite DB path (default: deved.db)")
+    parser.add_argument("--db", default=None, help="SQLite DB path (default: website.db)")
     parser.add_argument("--csv", default=str(DEFAULT_CSV), help="Path to bitrix_contacts_uid.csv")
     args = parser.parse_args()
 

@@ -25,7 +25,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DB_PATH = ROOT / "deved.db"
+DEFAULT_DB_PATH = ROOT / "website.db"
 PUSH_SCRIPT = ROOT / "db" / "d1" / "push_from_sqlite.py"
 WRANGLER_CONFIG = ROOT / "wrangler.jsonc"
 
@@ -327,7 +327,7 @@ def trigger_rebuild() -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Upsert Yandex CSV into local SQLite, optionally push to D1 and trigger rebuild.")
     parser.add_argument("csv_path", help="Path to Yandex update CSV")
-    parser.add_argument("--db-path", default=os.environ.get("DEVED_DB_PATH", str(DEFAULT_DB_PATH)), help="Path to local SQLite DB")
+    parser.add_argument("--db-path", default=os.environ.get("WEBSITE_DB_PATH", str(DEFAULT_DB_PATH)), help="Path to local SQLite DB")
     parser.add_argument("--wrangler-config", default=str(WRANGLER_CONFIG), help="Wrangler config used for D1 push")
     parser.add_argument("--skip-push", action="store_true", help="Only update local SQLite; do not push stg_yandex_stats to D1")
     parser.add_argument("--skip-rebuild", action="store_true", help="Do not call cloud analytics rebuild after push")

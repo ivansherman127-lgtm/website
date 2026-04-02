@@ -147,7 +147,6 @@ def run(*, require_dns_domain: bool = False) -> dict:
 
     n = len(df)
     dsu = DSU(n)
-    first_by_phone: dict[str, int] = {}
     first_by_email: dict[str, int] = {}
 
     phones_per_row: list[set[str]] = []
@@ -192,12 +191,7 @@ def run(*, require_dns_domain: bool = False) -> dict:
                 continue
 
         keep_indices.append(i)
-        for p in pset:
-            if p in first_by_phone:
-                dsu.union(i, first_by_phone[p])
-            else:
-                first_by_phone[p] = i
-
+        # Deduplicate only by email (case-insensitive). Do not union by phone.
         for e in eset:
             if e in first_by_email:
                 dsu.union(i, first_by_email[e])

@@ -13,6 +13,62 @@ This runs as a Cloudflare Worker with static assets from `dist`. Assoc report ge
 
 Wrangler config source of truth: `wrangler.jsonc` (Wrangler v4 prefers it when both config files exist).
 
+## UTM-only deployment
+
+This repository now supports a separate UTM-only deployment that does not expose analytics routes.
+
+- Frontend entry: `utm.html` + `src/utm-only.ts`
+- Worker entry: `worker-utm.ts`
+- Wrangler config: `wrangler.utm.jsonc`
+- Build output: `dist-utm`
+
+Run locally:
+
+```bash
+npm run dev:utm
+```
+
+Run as Worker locally:
+
+```bash
+npm run worker:dev:utm
+```
+
+Deploy UTM-only:
+
+```bash
+npm run worker:deploy:utm
+```
+
+CI deploy (GitHub Actions)
+
+A GitHub Actions workflow is included to build `dist-utm` and deploy the UTM worker automatically on push to `main` or via manual dispatch. The workflow lives at `.github/workflows/deploy-website-utm.yml`.
+
+Required repository secret:
+
+- `CLOUDFLARE_API_TOKEN` — an API token with permissions to deploy Workers (Workers Scripts edit) and D1 write access if you push migrations. Add the secret in GitHub: Settings → Secrets → Actions.
+
+To trigger the deploy: push to `main` or run the workflow manually from the Actions tab. The workflow performs `npm ci`, `npm run build:utm`, then `npm run worker:deploy:utm` using the provided token.
+
+
+Cloudflare Git deploy settings (repo root = `website`):
+
+- Build/deploy command for UTM-only service:
+
+```bash
+npm run cf:deploy:utm
+```
+
+- Build/deploy command for analytics service:
+
+```bash
+npm run cf:deploy:analytics
+```
+
+Why this matters: if Cloudflare runs `wrangler deploy` with the default/root config, it expects `web_share_subset/webpush/dist`. UTM-only builds output `web_share_subset/webpush/dist-utm`, so you must deploy with `--config web_share_subset/webpush/wrangler.utm.jsonc`.
+
+The UTM worker serves only `/api/utm` and static UTM page assets. Other `/api/*` paths return `404`.
+
 ## D1 sync from local SQLite
 
 Run from this repo root (`web_share_subset/webpush`):

@@ -7,6 +7,7 @@ import { buildYdHierarchyRows } from "./ydHierarchy";
 import { buildBitrixContactsUidRows } from "./bitrixContactsUid";
 import { buildLeadLogicSql } from "./leadLogicSql";
 import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS, YANDEX_KNOWN_GROUPS, mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
+import managerFirstlineNames from "../../config/manager_firstline.json";
 
 async function tableExists(db: D1Database, tableName: string): Promise<boolean> {
   const row = await db
@@ -197,22 +198,97 @@ function buildYandexAssocQaHierarchyRows(
 
 export async function materializeSliceDatasets(db: D1Database): Promise<{ paths: string[] }> {
   const paths: string[] = [];
+  // Bitrix invalid tokens are tracked in separate columns in the source data.
+  // Use the explicit list (lowercased) and search with instr() to avoid complex LIKE/GLOB patterns.
+  const BITRIX_INVALID_TOKENS = [
+    "спам",
+    "дубль",
+    "тест",
+    "некорректные данные",
+    "чс",
+    "неправильные данные",
+    "партнер или сотрудник cybered",
+    "партнеры, не нужно связываться",
+  ];
+  async function columnExists(db: D1Database, tableName: string, columnName: string): Promise<boolean> {
+    try {
+      const row = await db
+        .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1`)
+        .bind(tableName)
+        .first<{ sql: string }>();
+      if (!row?.sql) return false;
+      const sql = String(row.sql);
+      return sql.includes(columnName) || sql.includes(`"${columnName}"`) || sql.includes(`'${columnName}'`);
+    } catch {
+      return false;
+    }
+  }
+
+  // Detect whether the invalid-token columns exist in mart_deals_enriched or raw_bitrix_deals_p01
+  const hasTypyInMart = (await columnExists(db, "mart_deals_enriched", "Типы некачественного лида")) || (await columnExists(db, "mart_deals_enriched", "Типы некачественных лидов"));
+  const hasRawP01 = await tableExists(db, "raw_bitrix_deals_p01");
+  const hasTypyInRaw = hasRawP01 && ((await columnExists(db, "raw_bitrix_deals_p01", "Типы некачественного лида")) || (await columnExists(db, "raw_bitrix_deals_p01", "Типы некачественных лидов")));
+
+  let bitrixInvalidCond = "0";
+  if (hasTypyInMart) {
+    bitrixInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
+      `instr(lower(COALESCE("Типы некачественного лида", '')), ${sqlQuote(tok)}) > 0`,
+      `instr(lower(COALESCE("Типы некачественных лидов", '')), ${sqlQuote(tok)}) > 0`,
+    ]).join(" OR ");
+  } else if (hasTypyInRaw) {
+    // Fall back to raw table columns when mart_deals_enriched lacks them
+    bitrixInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
+      `instr(lower(COALESCE(p."Типы некачественного лида", '')), ${sqlQuote(tok)}) > 0`,
+      `instr(lower(COALESCE(p."Типы некачественных лидов", '')), ${sqlQuote(tok)}) > 0`,
+    ]).join(" OR ");
+  }
+  const bitrixInvalidExpr = hasTypyInMart
+    ? `CASE WHEN (${bitrixInvalidCond}) THEN 1 ELSE 0 END`
+    : `CASE WHEN 0 THEN 1 ELSE 0 END`;
+  // Build manager invalid condition without referencing non-existent columns.
+  const managerHasTypyInMart = hasTypyInMart; // mart_deals_enriched
+  const managerHasTypyInRaw = hasTypyInRaw; // raw_bitrix_deals_p01
+  let managerInvalidCond = "0";
+  if (managerHasTypyInMart) {
+    managerInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
+      `instr(lower(COALESCE(m."Типы некачественного лида", '')), ${sqlQuote(tok)}) > 0`,
+      `instr(lower(COALESCE(m."Типы некачественных лидов", '')), ${sqlQuote(tok)}) > 0`,
+    ]).join(" OR ");
+  } else if (managerHasTypyInRaw) {
+    managerInvalidCond = BITRIX_INVALID_TOKENS.flatMap((tok) => [
+      `instr(lower(COALESCE(p."Типы некачественного лида", '')), ${sqlQuote(tok)}) > 0`,
+      `instr(lower(COALESCE(p."Типы некачественных лидов", '')), ${sqlQuote(tok)}) > 0`,
+    ]).join(" OR ");
+  }
+  const managerInvalidExpr = `CASE WHEN (${managerInvalidCond}) THEN 1 ELSE 0 END`;
+  // Build lead-logic SQL after invalid-condition fragments are known so we can
+  // include raw/mart checks via the new `extraInvalidCond` parameter.
   const bitrixLeadLogic = buildLeadLogicSql({
     funnelExpr: `"Воронка"`,
     stageExpr: `"Стадия сделки"`,
     monthExpr: "month",
+    extraInvalidCond: hasTypyInMart ? bitrixInvalidCond : "",
   });
+
+  const yandexExtraInvalidCond = hasTypyInMart
+    ? BITRIX_INVALID_TOKENS.flatMap((tok) => [
+        `lower(COALESCE(m."Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+        `lower(COALESCE(m."Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+      ]).join(" OR ")
+    : "";
   const yandexLeadLogic = buildLeadLogicSql({
     funnelExpr: "funnel",
     stageExpr: "stage",
     monthExpr: "yandex_month",
+    extraInvalidCond: yandexExtraInvalidCond,
   });
+
   const managerLeadLogic = buildLeadLogicSql({
     funnelExpr: `m."Воронка"`,
     stageExpr: `m."Стадия сделки"`,
     monthExpr: "m.month",
+    extraInvalidCond: managerInvalidCond,
   });
-  const hasRawP01 = await tableExists(db, "raw_bitrix_deals_p01");
   const hasSendsayContacts = await tableExists(db, "stg_sendsay_contacts");
   const totalEmailContactsExpr = hasSendsayContacts
     ? `(SELECT COUNT(*) FROM stg_sendsay_contacts WHERE COALESCE(email, '') <> '')`
@@ -355,7 +431,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.qual} AS is_qual,
            ${bitrixLeadLogic.unqual} AS is_unqual,
            ${bitrixLeadLogic.refusal} AS is_refusal,
-           ${bitrixLeadLogic.invalid} AS is_invalid,
+           ${bitrixInvalidExpr} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched
@@ -404,7 +480,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.qual} AS is_qual,
            ${bitrixLeadLogic.unqual} AS is_unqual,
            ${bitrixLeadLogic.refusal} AS is_refusal,
-           ${bitrixLeadLogic.invalid} AS is_invalid,
+           ${bitrixInvalidExpr} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched
@@ -966,7 +1042,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.qual} AS is_qual,
            ${bitrixLeadLogic.unqual} AS is_unqual,
            ${bitrixLeadLogic.refusal} AS is_refusal,
-           ${bitrixLeadLogic.invalid} AS is_invalid,
+           ${bitrixInvalidExpr} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched
@@ -1023,7 +1099,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${managerLeadLogic.qual} AS is_qual,
            ${managerLeadLogic.unqual} AS is_unqual,
            ${managerLeadLogic.refusal} AS is_refusal,
-           ${managerLeadLogic.invalid} AS is_invalid,
+           ${managerInvalidExpr} AS is_invalid,
            ${managerLeadLogic.inWork} AS is_in_work,
            CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched m
@@ -1064,7 +1140,10 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
 
   // SQLite lower()/upper() do not reliably normalize Cyrillic in D1.
   // Use exact trimmed names to keep manager datasets populated.
-  const firstlineFilter = `trim(manager) IN ('Алена Тиханова', 'Георгий Воеводин')`;
+  const firstlineList = Array.isArray(managerFirstlineNames) ? managerFirstlineNames.map((s) => String(s ?? "").trim()).filter(Boolean) : [];
+  const firstlineFilter = firstlineList.length
+    ? `trim(manager) IN (${firstlineList.map((n) => sqlQuote(n)).join(", ")})`
+    : `0`;
   const salesFilter = `trim(manager) IN ('Анастасия Крисанова', 'Василий Гореленков', 'Глеб Барбазанов', 'Елена Лобода')`;
 
   const managerFirstlineByMonth = await db
