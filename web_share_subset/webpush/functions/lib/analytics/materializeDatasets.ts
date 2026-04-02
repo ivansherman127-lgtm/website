@@ -232,8 +232,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   });
   const managerInvalidCond = BITRIX_INVALID_TOKENS
     .flatMap((tok) => [
-      `lower(COALESCE(m."Типы некачественного лида", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-      `lower(COALESCE(m."Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+      `lower(COALESCE(COALESCE(m."Типы некачественного лида", p."Типы некачественного лида"), '')) LIKE ${sqlQuote("%" + tok + "%")}`,
+      `lower(COALESCE(COALESCE(m."Типы некачественных лидов", p."Типы некачественных лидов"), '')) LIKE ${sqlQuote("%" + tok + "%")}`,
     ])
     .join(" OR ");
   const managerInvalidExpr = `CASE WHEN (${managerInvalidCond}) THEN 1 ELSE 0 END`;
