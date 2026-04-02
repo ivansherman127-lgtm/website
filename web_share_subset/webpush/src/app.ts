@@ -2329,6 +2329,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const filterInput = app.querySelector<HTMLInputElement>(".filter-input");
   const dateFromInput = app.querySelector<HTMLInputElement>(".date-from-input");
   const dateToInput = app.querySelector<HTMLInputElement>(".date-to-input");
+  const rowNote = app.querySelector<HTMLSpanElement>(".row-note");
   const contactsFullBtn = app.querySelector<HTMLButtonElement>(".contacts-full-btn");
   const copyTableBtn = app.querySelector<HTMLButtonElement>(".copy-table-btn");
   const downloadTableBtn = app.querySelector<HTMLButtonElement>(".download-table-btn");
@@ -2389,15 +2390,45 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     filterInput.oninput = () => { filter = filterInput.value; draw(); };
   }
 
+  let pnlRetryDone = false;
   const rerenderForCurrentState = async (): Promise<void> => {
     try {
+      if (rowNote) rowNote.textContent = "";
       const nextRows = await fetchJson<Record<string, unknown>[]>(viewPath(view, { pnlMode, dateFrom, dateTo }));
       await renderTable(view, nextRows, dealsIndex, {
         initialDateFrom: dateFrom,
         initialDateTo: dateTo,
         initialPnlMode: pnlMode,
       });
+      pnlRetryDone = false;
     } catch (e) {
+      const msg = String(e ?? "");
+      const canRetryMaterialize =
+        !pnlRetryDone &&
+        pnlMode === "pnl" &&
+        !isAssocDynamic &&
+        /:\s*404\b/.test(msg);
+
+      if (canRetryMaterialize) {
+        pnlRetryDone = true;
+        try {
+          if (rowNote) rowNote.textContent = "PNL данные не найдены, запускаю пересборку...";
+          await fetch("/api/analytics/materialize?force=true", { method: "POST" });
+          const nextRows = await fetchJson<Record<string, unknown>[]>(viewPath(view, { pnlMode, dateFrom, dateTo }));
+          await renderTable(view, nextRows, dealsIndex, {
+            initialDateFrom: dateFrom,
+            initialDateTo: dateTo,
+            initialPnlMode: pnlMode,
+          });
+          return;
+        } catch (retryErr) {
+          if (rowNote) rowNote.textContent = `PNL недоступен: ${String(retryErr)}`;
+          if (status) status.textContent = `Ошибка загрузки: ${String(retryErr)}`;
+          return;
+        }
+      }
+
+      if (rowNote) rowNote.textContent = `Ошибка загрузки: ${msg}`;
       if (status) status.textContent = `Ошибка загрузки: ${String(e)}`;
     }
   };
