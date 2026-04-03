@@ -3117,7 +3117,12 @@ async function boot(): Promise<void> {
       console.warn("Materialize request failed", matErr);
     }
     loadEmailOverridesMap(await fetch(staticUrl("data/email_group_overrides.json")).then(r => r.json() as Promise<EmailOverridesFile>));
-    const yandexHierarchy = await fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
+    let yandexHierarchy: Record<string, unknown>[] = [];
+    try {
+      yandexHierarchy = await fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
+    } catch (yandexHierarchyError) {
+      console.warn("Yandex hierarchy unavailable; continuing without hierarchy metrics", yandexHierarchyError);
+    }
     for (const r of yandexHierarchy) {
       const lvl = String(r["Level"] ?? "").trim();
       if (lvl === "Campaign") {
