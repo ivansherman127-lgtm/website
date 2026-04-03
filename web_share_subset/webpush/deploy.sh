@@ -20,8 +20,14 @@ DOMAIN="${DOMAIN:-new.cyber-ed.ru}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
 APP_DIR="${APP_DIR:-/opt/utm-app}"
 APP_SUBDIR="web_share_subset/webpush"
-REPO="https://github.com/ivansherman127-lgtm/website.git"
+GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 BRANCH="server-deploy"
+
+if [[ -n "$GITHUB_TOKEN" ]]; then
+  REPO="https://x-access-token:${GITHUB_TOKEN}@github.com/ivansherman127-lgtm/website.git"
+else
+  REPO="git@github.com:ivansherman127-lgtm/website.git"
+fi
 PORT="${PORT:-3000}"
 UPDATE_ONLY="${1:-}"
 
