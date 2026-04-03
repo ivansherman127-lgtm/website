@@ -4,6 +4,10 @@ const META_LAST_SOURCE_FINGERPRINT = "last_source_fingerprint";
 const META_LAST_SOURCE_SEEN_UTC = "last_source_seen_utc";
 const META_LAST_MATERIALIZE_UTC = "last_materialize_utc";
 const META_LOGIC_VERSION = "logic_version";
+const META_LAST_ATTEMPT_UTC = "last_attempt_utc";
+
+// Minimum seconds between full materialization attempts (prevents infinite loops when D1 CPU limit is hit).
+export const MATERIALIZE_COOLDOWN_SECONDS = 300;
 
 type SourceSnapshot = {
   rawSourceBatchMaxCreatedAt: string;
@@ -17,6 +21,7 @@ type BuildMeta = {
   lastSourceFingerprint: string;
   lastMaterializeUtc: string;
   logicVersion: string;
+  lastAttemptUtc: string;
 };
 
 export type FreshnessDecision = {
@@ -65,15 +70,16 @@ async function readMeta(db: D1Database): Promise<BuildMeta> {
     .prepare(
       `SELECT k, v
        FROM analytics_build_meta
-       WHERE k IN (?, ?, ?)`
+       WHERE k IN (?, ?, ?, ?)`
     )
-    .bind(META_LAST_SOURCE_FINGERPRINT, META_LAST_MATERIALIZE_UTC, META_LOGIC_VERSION)
+    .bind(META_LAST_SOURCE_FINGERPRINT, META_LAST_MATERIALIZE_UTC, META_LOGIC_VERSION, META_LAST_ATTEMPT_UTC)
     .all<{ k: string; v: string }>();
 
   const out: BuildMeta = {
     lastSourceFingerprint: "",
     lastMaterializeUtc: "",
     logicVersion: "",
+    lastAttemptUtc: "",
   };
   for (const row of results ?? []) {
     const k = String(row.k ?? "");
@@ -81,6 +87,7 @@ async function readMeta(db: D1Database): Promise<BuildMeta> {
     if (k === META_LAST_SOURCE_FINGERPRINT) out.lastSourceFingerprint = v;
     if (k === META_LAST_MATERIALIZE_UTC) out.lastMaterializeUtc = v;
     if (k === META_LOGIC_VERSION) out.logicVersion = v;
+    if (k === META_LAST_ATTEMPT_UTC) out.lastAttemptUtc = v;
   }
   return out;
 }
@@ -132,6 +139,15 @@ export async function evaluateFreshness(db: D1Database): Promise<FreshnessDecisi
     return { stale: true, reason: "logic_version_changed", fingerprint, snapshot, hasDatasets, meta };
   }
   if (meta.lastSourceFingerprint !== fingerprint) {
+    // Enforce cooldown: if a materialization attempt was made very recently, skip even if stale.
+    // This prevents infinite retry loops when D1 hits its CPU time limit.
+    if (meta.lastAttemptUtc) {
+      const lastAttemptMs = new Date(meta.lastAttemptUtc).getTime();
+      const nowMs = Date.now();
+      if (!Number.isNaN(lastAttemptMs) && (nowMs - lastAttemptMs) / 1000 < MATERIALIZE_COOLDOWN_SECONDS) {
+        return { stale: false, reason: "cooldown_active", fingerprint, snapshot, hasDatasets, meta };
+      }
+    }
     return { stale: true, reason: "source_changed", fingerprint, snapshot, hasDatasets, meta };
   }
   return { stale: false, reason: "no_source_changes", fingerprint, snapshot, hasDatasets, meta };
@@ -148,4 +164,13 @@ export async function saveFreshnessMeta(db: D1Database, fingerprint: string): Pr
     stmt.bind(META_LAST_MATERIALIZE_UTC, nowIso),
     stmt.bind(META_LOGIC_VERSION, ANALYTICS_LOGIC_VERSION),
   ]);
+}
+
+/** Record that a materialization was attempted (even if it failed) to enforce cooldown. */
+export async function saveAttemptTimestamp(db: D1Database): Promise<void> {
+  const nowIso = new Date().toISOString();
+  await db
+    .prepare(`INSERT OR REPLACE INTO analytics_build_meta (k, v, updated_at) VALUES (?, ?, datetime('now'))`)
+    .bind(META_LAST_ATTEMPT_UTC, nowIso)
+    .run();
 }

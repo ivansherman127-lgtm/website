@@ -71,16 +71,25 @@ function rowsToJson(rows: Record<string, unknown>[]): string {
 const CHUNK_SIZE = 900_000; // bytes (safe margin under 1 MB)
 
 async function upsertDataset(db: D1Database, path: string, body: string): Promise<void> {
-  await db.prepare(`DELETE FROM dataset_json WHERE path = ?`).bind(path).run();
   const chunks: string[] = [];
   for (let i = 0; i < body.length; i += CHUNK_SIZE) {
     chunks.push(body.slice(i, i + CHUNK_SIZE));
   }
   const stmt = db.prepare(
-    `INSERT INTO dataset_json (path, chunk, body, updated_at) VALUES (?, ?, ?, datetime('now'))`,
+    `INSERT OR REPLACE INTO dataset_json (path, chunk, body, updated_at) VALUES (?, ?, ?, datetime('now'))`,
   );
-  // D1 batch max is 100 statements; chunks per dataset will be far fewer than that
+  // Upsert chunks in-place. Using INSERT OR REPLACE avoids a DELETE-then-INSERT window where
+  // old data would be gone but new data not yet written (catastrophic if D1 hits CPU limit mid-write).
+  // If D1 resets mid-batch, the worst case is some chunks have new data and some have old data —
+  // the path remains partially readable rather than completely missing.
   await db.batch(chunks.map((chunk, idx) => stmt.bind(path, idx, chunk)));
+  // Remove any stale extra chunks from a previous version that needed more chunks than the new one.
+  // Best-effort: if this fails the extra chunks are harmless (they'll be overwritten next run).
+  await db
+    .prepare(`DELETE FROM dataset_json WHERE path = ? AND chunk >= ?`)
+    .bind(path, chunks.length)
+    .run()
+    .catch(() => {});
 }
 
 function sqlQuote(value: string): string {

@@ -607,7 +607,33 @@ async function openTableView(view: ViewKey, dealsIndex: DealsIndex): Promise<voi
     await renderTable(view, utmSessionRows, dealsIndex);
     return;
   }
-  const rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
+  let rows: Record<string, unknown>[] = [];
+  try {
+    rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
+  } catch (e) {
+    // Show error inside the layout rather than breaking the whole app.
+    app.innerHTML = `<div class="app-layout">
+      <aside class="side-menu">
+        <button class="side-btn" data-menu="dashboard">Главная</button>
+        <button class="side-btn active" data-menu="reports">Детальные отчеты</button>
+        <button class="side-btn" data-menu="charts">Графики</button>
+        <button class="side-btn" data-menu="utm">UTM Конструктор</button>
+      </aside>
+      <main class="main-content">
+        <div class="err">Ошибка загрузки данных: ${escapeHtml(String(e))}</div>
+      </main>
+    </div>`;
+    app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
+      btn.onclick = async () => {
+        const m = btn.getAttribute("data-menu");
+        if (m === "dashboard") await openMenu("dashboard", dealsIndex, view);
+        else if (m === "reports") await openMenu("reports", dealsIndex, view);
+        else if (m === "charts") await openMenu("charts", dealsIndex, view);
+        else if (m === "utm") await openMenu("utm", dealsIndex, view);
+      };
+    });
+    return;
+  }
   await renderTable(view, rows, dealsIndex);
 }
 
@@ -3104,18 +3130,24 @@ async function boot(): Promise<void> {
     yandexProjectLeadMetrics.clear();
     yandexMonthLeadMetrics.clear();
 
-    // Kick off materialisation in the background — do NOT await before rendering.
-    // Dashboard data endpoints either build on-demand or read whatever snapshot is
-    // already in dataset_json, so the UI can load immediately with the previous
-    // (or freshly-computed) snapshot.  Materialisation will finish in the background
-    // and the next user action / page refresh will get fully-fresh data.
-    fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" })
-      .then((r) =>
-        r.json().then((j: { ok?: boolean; error?: string; skipped?: boolean }) => {
-          if (!j.ok && !j.skipped) console.warn(`Materialize error: ${j.error ?? "unknown"}`);
-        }),
-      )
-      .catch((err) => console.warn("Materialize request failed", err));
+    // Trigger materialisation and wait for it.
+    // If data is not stale the server returns immediately (skipped).
+    // If data IS stale the full materialization runs. We await it so we never
+    // show a page that reads partially-deleted dataset_json rows.
+    try {
+      const matRes = await fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" });
+      if (!matRes.ok) {
+        const errText = await matRes.text().catch(() => matRes.status.toString());
+        console.warn(`Materialize skipped (${matRes.status}): ${errText}`);
+      } else {
+        const matJson = await matRes.json() as { ok?: boolean; error?: string; skipped?: boolean };
+        if (!matJson.ok && !matJson.skipped) {
+          console.warn(`Materialize error: ${matJson.error ?? "unknown"}`);
+        }
+      }
+    } catch (matErr) {
+      console.warn("Materialize request failed", matErr);
+    }
 
     // Load email overrides and yandex hierarchy in parallel (independent of each other
     // and of the background materialisation above).
