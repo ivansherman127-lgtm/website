@@ -78,29 +78,29 @@ function renderShell(): void {
         <p class="muted">Отдельная страница без аналитических данных.</p>
 
         <div class="grid">
-          <label>Medium <span class="required-marker">*</span>
+          <label><span class="label-text">Medium <span class="required-marker">*</span></span>
             <select class="medium-select"></select>
           </label>
-          <label>Source <span class="required-marker">*</span>
+          <label><span class="label-text">Source <span class="required-marker">*</span></span>
             <select class="source-select"></select>
             <input class="source-freetext" type="text" placeholder="Введите источник" style="display:none" />
           </label>
-          <label>Name (Campaign) <span class="required-marker">*</span>
+          <label><span class="label-text">Name (Campaign) <span class="required-marker">*</span></span>
             <input class="campaign-input" type="text" placeholder="Например, spring_sale_2026" />
           </label>
-          <label>Partner
+          <label><span class="label-text">Partner</span>
             <input class="partner-input" type="text" placeholder="Опционально" />
           </label>
-          <label>Автор
+          <label><span class="label-text">Автор</span>
             <input class="created-by-input" type="text" placeholder="Автор (опционально)" />
           </label>
-          <label>Link <span class="required-marker">*</span>
+          <label><span class="label-text">Link <span class="required-marker">*</span></span>
             <input class="link-input" type="url" placeholder="https://example.com/campaign" />
           </label>
-          <label>Content
+          <label><span class="label-text">Content</span>
             <input class="content-input" type="text" placeholder="Например, banner_a" />
           </label>
-          <label>Term
+          <label><span class="label-text">Term</span>
             <input class="term-input" type="text" placeholder="Например, python_course" />
           </label>
         </div>

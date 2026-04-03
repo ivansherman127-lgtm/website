@@ -66,7 +66,9 @@ function jsonRes(res: ServerResponse, status: number, body: unknown): void {
 }
 
 function serveStatic(res: ServerResponse, urlPath: string): void {
-  const cleanPath = urlPath.split("?")[0] ?? "/";
+  // Strip the /utm prefix so we can look up files in dist-utm/
+  const stripped = urlPath.replace(/^\/utm(\/|$)/, "/") || "/";
+  const cleanPath = stripped.split("?")[0] ?? "/";
   let filePath = join(DIST_DIR, cleanPath);
 
   if (!existsSync(filePath) || filePath.endsWith("/")) {
