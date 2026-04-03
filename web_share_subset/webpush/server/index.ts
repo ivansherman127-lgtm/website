@@ -24,9 +24,9 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
-const DB_PATH = process.env.UTM_DB_PATH ?? join(__dirname, "../utm.db");
-const DIST_DIR = join(__dirname, "../dist-utm");
-const SCHEMA_PATH = join(__dirname, "utm-schema.sql");
+const DB_PATH = process.env.UTM_DB_PATH ?? join(process.cwd(), "utm.db");
+const DIST_DIR = process.env.DIST_DIR ?? join(process.cwd(), "dist-utm");
+const SCHEMA_PATH = join(process.cwd(), "server", "utm-schema.sql");
 
 // Initialise database and apply schema if present
 const db = new Database(DB_PATH);
@@ -161,6 +161,7 @@ server.listen(PORT, () => {
   console.log(`UTM server listening on port ${PORT}`);
   console.log(`  DB:   ${DB_PATH}`);
   console.log(`  Dist: ${DIST_DIR}`);
+  console.log(`  cwd:  ${process.cwd()}`);
 });
 
 process.on("SIGTERM", () => {
