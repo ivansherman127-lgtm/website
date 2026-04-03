@@ -113,24 +113,46 @@ export async function onRequestGet(context: {
   // Always build unique contacts from the canonical UID mapping table.
   // This avoids stale dataset_json snapshots when contact mapping was updated.
   if (path === "bitrix_contacts_uid.json") {
-    const rows = await buildBitrixContactsUidRows(context.env.DB);
-    return new Response(JSON.stringify(rows), {
-      status: 200,
-      headers: {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store, no-cache",
-      },
-    });
+    try {
+      const rows = await buildBitrixContactsUidRows(context.env.DB);
+      return new Response(JSON.stringify(rows), {
+        status: 200,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "no-store, no-cache",
+        },
+      });
+    } catch (err) {
+      console.error("buildBitrixContactsUidRows failed", err);
+      return new Response(JSON.stringify([]), {
+        status: 200,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "no-store, no-cache",
+        },
+      });
+    }
   }
   if (path === "bitrix_month_total_full.json") {
-    const rows = await buildBitrixMonthTotalRows(context.env.DB);
-    return new Response(JSON.stringify(rows), {
-      status: 200,
-      headers: {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store, no-cache",
-      },
-    });
+    try {
+      const rows = await buildBitrixMonthTotalRows(context.env.DB);
+      return new Response(JSON.stringify(rows), {
+        status: 200,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "no-store, no-cache",
+        },
+      });
+    } catch (err) {
+      console.error("buildBitrixMonthTotalRows failed", err);
+      return new Response(JSON.stringify([]), {
+        status: 200,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "no-store, no-cache",
+        },
+      });
+    }
   }
 
   let parts: { body: string }[] = [];
@@ -146,14 +168,25 @@ export async function onRequestGet(context: {
   }
   if (!parts.length) {
     if (path === "yd_hierarchy.json") {
-      const rows = await buildYdHierarchyRows(context.env.DB);
-      return new Response(JSON.stringify(rows), {
-        status: 200,
-        headers: {
-          "content-type": "application/json; charset=utf-8",
-          "cache-control": "no-store, no-cache",
-        },
-      });
+      try {
+        const rows = await buildYdHierarchyRows(context.env.DB);
+        return new Response(JSON.stringify(rows), {
+          status: 200,
+          headers: {
+            "content-type": "application/json; charset=utf-8",
+            "cache-control": "no-store, no-cache",
+          },
+        });
+      } catch (err) {
+        console.error("buildYdHierarchyRows failed", err);
+        return new Response(JSON.stringify([]), {
+          status: 200,
+          headers: {
+            "content-type": "application/json; charset=utf-8",
+            "cache-control": "no-store, no-cache",
+          },
+        });
+      }
     }
     if (path === "bitrix_contacts_uid.json") {
       const rows = await buildBitrixContactsUidRows(context.env.DB);

@@ -3164,9 +3164,9 @@ async function boot(): Promise<void> {
 async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
   writeUrlState("dashboard");
   const [contacts, bitrixWeekFunnel, yandexWeekCampaign, contactsTotals] = await Promise.all([
-    fetchJson<Record<string, unknown>[]>("data/bitrix_contacts_uid.json"),
-    fetchJson<Record<string, unknown>[]>("data/bitrix_week_funnel_total.json"),
-    fetchJson<Record<string, unknown>[]>("data/yandex_week_campaign_total.json"),
+    fetchJson<Record<string, unknown>[]>("data/bitrix_contacts_uid.json").catch(() => []),
+    fetchJson<Record<string, unknown>[]>("data/bitrix_week_funnel_total.json").catch(() => []),
+    fetchJson<Record<string, unknown>[]>("data/yandex_week_campaign_total.json").catch(() => []),
     fetchJson<Record<string, unknown>[]>("data/dashboard_contacts_total.json").catch(() => []),
   ]);
 
