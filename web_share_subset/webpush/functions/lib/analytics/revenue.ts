@@ -8,15 +8,8 @@ export function variant3RevenueMask(row: {
   installment_schedule: string;
 }): boolean {
   const stage = (row.stage_raw || "").toLowerCase();
-  const closedFlag = (row.closed_yes || "").trim().toLowerCase() === "да";
   const closedStage = stage.includes("сделка заключена");
   const postStage = stage.includes("постоплат");
   const instStage = stage.includes("рассроч");
-  const payDates = (row.installment_schedule || "").trim() !== "";
-  const payDatePresent = (row.pay_date || "").trim() !== "";
-  const core =
-    closedFlag ||
-    closedStage ||
-    ((postStage || instStage) && payDates);
-  return core && payDatePresent;
+  return closedStage || postStage || instStage;
 }

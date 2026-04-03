@@ -116,22 +116,12 @@ def main() -> None:
     d["Контакт: ID"] = d.get("Контакт: ID", "").map(_id)
     d["Сумма_число"] = d.get("Сумма", 0).map(_amt)
 
-    # Track diagnostics before applying strict valid-payment-date gating.
+    # Track diagnostics before applying canonical stage-based revenue gating.
     stage = coalesce_columns(d, "Стадия сделки").fillna("").astype(str).str.lower()
-    closed_flag = (
-        d.get("Сделка закрыта", "").fillna("").astype(str).str.strip().str.lower().eq("да")
-    )
     closed_stage = stage.str.contains("сделка заключена", na=False)
     post_stage = stage.str.contains("постоплат", na=False)
     inst_stage = stage.str.contains("рассроч", na=False)
-    pay_dates = (
-        d.get("Даты платежей по рассрочке ", "")
-        .fillna("")
-        .astype(str)
-        .str.strip()
-        .ne("")
-    )
-    variant3_core = (closed_flag | closed_stage) | ((post_stage | inst_stage) & pay_dates)
+    variant3_core = closed_stage | post_stage | inst_stage
     pay_date_raw = d.get("Дата оплаты", "").fillna("").astype(str).str.strip()
     pay_date_valid = pd.to_datetime(pay_date_raw, errors="coerce", dayfirst=True).notna()
 
