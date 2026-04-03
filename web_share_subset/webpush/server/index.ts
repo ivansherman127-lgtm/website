@@ -35,6 +35,14 @@ if (existsSync(SCHEMA_PATH)) {
   db.exec(readFileSync(SCHEMA_PATH, "utf8"));
 }
 
+// Apply incremental column additions (idempotent — ignore "duplicate column" errors)
+const COLUMN_MIGRATIONS: string[] = [
+  "ALTER TABLE utm_tags ADD COLUMN created_by TEXT NOT NULL DEFAULT ''",
+];
+for (const stmt of COLUMN_MIGRATIONS) {
+  try { db.prepare(stmt).run(); } catch { /* column already exists */ }
+}
+
 const UTM = createD1Compat(db);
 
 const MIME: Record<string, string> = {
