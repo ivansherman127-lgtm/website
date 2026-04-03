@@ -24,15 +24,23 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
-const DB_PATH = process.env.UTM_DB_PATH ?? join(__dirname, "../utm.db");
-const DIST_DIR = join(__dirname, "../dist-utm");
-const SCHEMA_PATH = join(__dirname, "utm-schema.sql");
+const DB_PATH = process.env.UTM_DB_PATH ?? join(process.cwd(), "utm.db");
+const DIST_DIR = process.env.DIST_DIR ?? join(process.cwd(), "dist-utm");
+const SCHEMA_PATH = join(process.cwd(), "server", "utm-schema.sql");
 
 // Initialise database and apply schema if present
 const db = new Database(DB_PATH);
 db.pragma("journal_mode = WAL");
 if (existsSync(SCHEMA_PATH)) {
   db.exec(readFileSync(SCHEMA_PATH, "utf8"));
+}
+
+// Apply incremental column additions (idempotent — ignore "duplicate column" errors)
+const COLUMN_MIGRATIONS: string[] = [
+  "ALTER TABLE utm_tags ADD COLUMN created_by TEXT NOT NULL DEFAULT ''",
+];
+for (const stmt of COLUMN_MIGRATIONS) {
+  try { db.prepare(stmt).run(); } catch { /* column already exists */ }
 }
 
 const UTM = createD1Compat(db);
@@ -58,7 +66,9 @@ function jsonRes(res: ServerResponse, status: number, body: unknown): void {
 }
 
 function serveStatic(res: ServerResponse, urlPath: string): void {
-  const cleanPath = urlPath.split("?")[0] ?? "/";
+  // Strip the /utm prefix so we can look up files in dist-utm/
+  const stripped = urlPath.replace(/^\/utm(\/|$)/, "/") || "/";
+  const cleanPath = stripped.split("?")[0] ?? "/";
   let filePath = join(DIST_DIR, cleanPath);
 
   if (!existsSync(filePath) || filePath.endsWith("/")) {
@@ -134,6 +144,12 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       return;
     }
 
+    if (!pathname.startsWith("/utm/") && pathname !== "/utm") {
+      res.writeHead(404);
+      res.end("Not Found");
+      return;
+    }
+
     serveStatic(res, pathname);
   } catch (err) {
     console.error("Request error:", err);
@@ -145,6 +161,7 @@ server.listen(PORT, () => {
   console.log(`UTM server listening on port ${PORT}`);
   console.log(`  DB:   ${DB_PATH}`);
   console.log(`  Dist: ${DIST_DIR}`);
+  console.log(`  cwd:  ${process.cwd()}`);
 });
 
 process.on("SIGTERM", () => {

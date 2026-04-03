@@ -61,9 +61,16 @@ label {
   font-size: 0.85rem;
 }
 
+.label-text {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
 .required-marker {
   color: var(--danger);
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 input,
