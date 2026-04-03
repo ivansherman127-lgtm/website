@@ -33,5 +33,6 @@ __pycache__/
 # App does not fetch this file.
 web_share_subset/webpush/public/data/attacking_january_associative_deals_base.json
 # Local SQLite DB used for ad-hoc testing inside webpush
+/website.db
 web_share_subset/webpush/deved.db
 deved.db
