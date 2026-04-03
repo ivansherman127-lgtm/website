@@ -26,3 +26,5 @@ __pycache__/
 # Cloudflare Workers/Pages static asset limit (~25 MiB per file).
 # App does not fetch this file.
 web_share_subset/webpush/public/data/attacking_january_associative_deals_base.json
+*.csv
+website.db
