@@ -81,7 +81,9 @@ export function buildManagerBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs)
          SELECT
            COALESCE("ID", '') AS deal_id,
            MAX(COALESCE(trim("Ответственный"), '')) AS manager,
-           MAX(COALESCE(trim("Передан первой линией"), '')) AS passed_by_firstline
+           MAX(COALESCE(trim("Передан первой линией"), '')) AS passed_by_firstline,
+           MAX(COALESCE("Типы некачественного лида", '')) AS "Типы некачественного лида",
+           MAX(COALESCE("Типы некачественных лидов", '')) AS "Типы некачественных лидов"
          FROM raw_bitrix_deals_p01
          GROUP BY COALESCE("ID", '')
        ),
@@ -297,7 +299,9 @@ export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExp
            COALESCE("ID", '') AS deal_id,
            MAX(COALESCE(trim("Ответственный"), '')) AS manager,
            MAX(COALESCE(trim("Передан первой линией"), '')) AS passed_by_firstline,
-           MAX(COALESCE("Дата изменения сделки", "Дата изменения", "date_modify", '')) AS modify_raw
+           MAX(COALESCE("Дата изменения сделки", "Дата изменения", "date_modify", '')) AS modify_raw,
+           MAX(COALESCE("Типы некачественного лида", '')) AS "Типы некачественного лида",
+           MAX(COALESCE("Типы некачественных лидов", '')) AS "Типы некачественных лидов"
          FROM raw_bitrix_deals_p01
          GROUP BY COALESCE("ID", '')
        ),
