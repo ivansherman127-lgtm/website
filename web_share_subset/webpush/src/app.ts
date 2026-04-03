@@ -1737,6 +1737,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isYandexProjectHierarchy && !isAssocEmailHierarchy && !isAssocEventHierarchy && !isAssocYandexHierarchy && !isBudgetHierarchy) {
       data.sort((a, b) => compareCell(sortCol, a[sortCol], b[sortCol], sortDir));
     }
+
+    // KPI boxes should reflect active period/filter selection, not collapse state.
+    const kpiBaseRows = [...data];
     if (isEmailHierarchy) {
       const ordered: Record<string, unknown>[] = [];
       for (const r of data) {
@@ -1852,8 +1855,37 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       data = ordered;
     }
 
+    const kpiRows =
+      view === "funnels_hierarchy"
+        ? kpiBaseRows.filter((r) => String(r["__node"] ?? "").trim() === "code")
+        : isManagerHierarchy
+          ? kpiBaseRows.filter((r) => String(r["Level"] ?? "").trim() === "Manager")
+        : isAssocEmailHierarchy
+          ? kpiBaseRows.filter((r) => num(r["__assoc_email_detail"]) === 0)
+        : isAssocEventHierarchy
+          ? kpiBaseRows.filter((r) => num(r["__assoc_event_detail"]) === 0)
+        : isAssocYandexHierarchy
+          ? kpiBaseRows.filter((r) => num(r["__assoc_yandex_detail"]) === 0)
+        : isYandexProjectHierarchy
+          ? kpiBaseRows.filter((r) => num(r["__yandex_project_detail"]) === 0)
+        : isBudgetHierarchy
+          ? kpiBaseRows.filter((r) => String(r["Level"] ?? "").trim() === "Month")
+          : kpiBaseRows;
+
     const topCountEl = app.querySelector<HTMLElement>(".kpi-grid .kpi:first-child .value");
-    if (topCountEl) topCountEl.textContent = data.length.toLocaleString("ru-RU");
+    if (topCountEl) topCountEl.textContent = kpiRows.length.toLocaleString("ru-RU");
+
+    const topDealsEl = app.querySelector<HTMLElement>(".kpi-grid .kpi:nth-child(2) .value");
+    if (topDealsEl) {
+      const dealsTotal = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Сделок_с_выручкой", "Сделок с выручкой"]), 0);
+      topDealsEl.textContent = dealsTotal.toLocaleString("ru-RU");
+    }
+
+    const topRevenueEl = app.querySelector<HTMLElement>(".kpi-grid .kpi:nth-child(3) .value");
+    if (topRevenueEl) {
+      const revenueTotal = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Выручка", "выручка"]), 0);
+      topRevenueEl.textContent = formatRub(revenueTotal);
+    }
 
     const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isYandexProjectHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy || isAssocYandexHierarchy || isBudgetHierarchy;
     visibleRows = data;
