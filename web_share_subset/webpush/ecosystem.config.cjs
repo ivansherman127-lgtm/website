@@ -22,6 +22,7 @@ module.exports = {
         NODE_ENV: "production",
         PORT: process.env.PORT || "3000",
         UTM_DB_PATH: process.env.UTM_DB_PATH || "/opt/utm-app/utm.db",
+        DIST_DIR: process.env.DIST_DIR || require("path").join(__dirname, "dist-utm"),
       },
     },
   ],
