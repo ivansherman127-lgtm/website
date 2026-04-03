@@ -2,10 +2,10 @@
 """
 Refresh all Bitrix-derived analytics JSON for the local web app (and optionally webpush).
 
-Сделки для метрик и воронок берутся из объединения ``sheets/fl_raw_09-03.csv`` +
-``sheets/bitrix_upd_27.03.csv`` (см. ``db/bitrix_union_io.py``). Опция ``--merge`` по-прежнему
-может собирать ``sheets/bitrix_19.03.26`` для прочих сценариев, но основной веб-пайплайн
-смотрит на union.
+Сделки для метрик и воронок берутся из объединения ``bitrix_19.03.26.csv`` +
+``bitrix_60_days_03.04.2026.csv`` (см. ``db/bitrix_union_io.py``). Опция ``--merge`` по-прежнему
+может собирать full-history base + update для прочих сценариев, но основной веб-пайплайн
+смотрит на этот union.
 
 This is the single entry point: it ensures repo-root `.venv` exists, installs deps when
 needed, then runs the db scripts in the right order. No manual Python/venv hunting.

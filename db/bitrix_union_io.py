@@ -1,8 +1,8 @@
 """
 Объединённый вход по сделкам Bitrix: исторический срез + актуальная дозагрузка.
 
-    - sheets/fl_raw_09-03.csv — покрывает прошлый период (воронка «Воронка» заполнена).
-    - sheets/bitrix_upd_27.03.csv — доп. выгрузка до сегодня.
+    - bitrix_19.03.26.csv — полный исторический экспорт.
+    - bitrix_60_days_03.04.2026.csv / bitrix_upd_27.03.csv — актуальная дозагрузка.
 
 Склейка: concat → нормализация ID → дедуп по ID с выбором строки с максимальной «Сумма».
 Если суммы равны, допустимо оставить любую из строк.
@@ -55,8 +55,8 @@ def dedup_columns_sqlalchemy_safe(columns: list[str]) -> list[str]:
         used.add(name)
         out.append(name)
     return out
-DEFAULT_FL_RAW = ROOT / "sheets" / "fl_raw_09-03.csv"
-DEFAULT_BITRIX_UPD = ROOT / "sheets" / "bitrix_upd_27.03.csv"
+DEFAULT_FL_RAW = ROOT / "bitrix_19.03.26.csv"
+DEFAULT_BITRIX_UPD = ROOT / "bitrix_60_days_03.04.2026.csv"
 
 
 def _norm_id(v: object) -> str:

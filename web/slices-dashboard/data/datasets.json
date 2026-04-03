@@ -7,7 +7,7 @@
       "category": "cohort",
       "jsonPath": "data/cohorts/attacking_january/cohort_assoc_contacts.json",
       "csvRel": "cohorts/attacking_january/cohort_assoc_contacts.csv",
-      "rowCount": 7,
+      "rowCount": 1037,
       "columns": [
         "contact_id",
         "deals_total",
@@ -23,7 +23,7 @@
       "category": "cohort",
       "jsonPath": "data/cohorts/attacking_january/cohort_assoc_event_course.json",
       "csvRel": "cohorts/attacking_january/cohort_assoc_event_course.csv",
-      "rowCount": 10,
+      "rowCount": 83,
       "columns": [
         "event_class",
         "course_code_norm",
@@ -56,7 +56,7 @@
       "category": "global",
       "jsonPath": "data/global/month_channel_bitrix.json",
       "csvRel": "global/month_channel_bitrix.csv",
-      "rowCount": 105,
+      "rowCount": 1020,
       "columns": [
         "month",
         "utm_source",
@@ -73,7 +73,7 @@
       "category": "global",
       "jsonPath": "data/global/funnel_stage.json",
       "csvRel": "global/funnel_stage.csv",
-      "rowCount": 43,
+      "rowCount": 85,
       "columns": [
         "funnel",
         "stage",
@@ -89,7 +89,7 @@
       "category": "global",
       "jsonPath": "data/global/event_course.json",
       "csvRel": "global/event_course.csv",
-      "rowCount": 44,
+      "rowCount": 116,
       "columns": [
         "event_class",
         "course_code_norm",
@@ -274,7 +274,7 @@
       "category": "qa",
       "jsonPath": "data/qa/yandex_dedup_keys_top_collisions.json",
       "csvRel": "qa/yandex_dedup_keys_top_collisions.csv",
-      "rowCount": 57,
+      "rowCount": 59,
       "columns": [
         "lead_key",
         "rows_count",
@@ -289,7 +289,7 @@
       "category": "qa",
       "jsonPath": "data/qa/other_top50_cohort.json",
       "csvRel": "qa/other_top50_cohort.csv",
-      "rowCount": 0,
+      "rowCount": 50,
       "columns": [
         "ID",
         "contact_id",

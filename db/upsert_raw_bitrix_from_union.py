@@ -13,7 +13,7 @@ from conn import ensure_schema, get_engine
 
 RAW_TABLE = "raw_bitrix_deals"
 BATCH_TABLE = "raw_source_batches"
-SOURCE_REF = "sheets/fl_raw_09-03.csv + sheets/bitrix_upd_27.03.csv"
+SOURCE_REF = "bitrix_19.03.26.csv + bitrix_60_days_03.04.2026.csv"
 
 
 def _n(v: object) -> str:

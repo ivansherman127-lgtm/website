@@ -1,51 +1,7261 @@
 [
   {
-    "contact_id": 99943,
+    "contact_id": 9585,
+    "deals_total": 14,
+    "paid_deals": 6,
+    "revenue": 419580.0,
+    "avg_check": 69930.0
+  },
+  {
+    "contact_id": 120337,
+    "deals_total": 25,
+    "paid_deals": 11,
+    "revenue": 346190.4,
+    "avg_check": 31471.85454545455
+  },
+  {
+    "contact_id": 1017,
+    "deals_total": 11,
+    "paid_deals": 6,
+    "revenue": 290472.0,
+    "avg_check": 48412.0
+  },
+  {
+    "contact_id": 124857,
+    "deals_total": 13,
+    "paid_deals": 4,
+    "revenue": 284677.0,
+    "avg_check": 71169.25
+  },
+  {
+    "contact_id": 120553,
+    "deals_total": 5,
+    "paid_deals": 3,
+    "revenue": 275400.0,
+    "avg_check": 91800.0
+  },
+  {
+    "contact_id": 6197,
+    "deals_total": 6,
+    "paid_deals": 3,
+    "revenue": 262080.0,
+    "avg_check": 87360.0
+  },
+  {
+    "contact_id": 4701,
+    "deals_total": 19,
+    "paid_deals": 5,
+    "revenue": 240954.0,
+    "avg_check": 48190.8
+  },
+  {
+    "contact_id": 24237,
+    "deals_total": 18,
+    "paid_deals": 3,
+    "revenue": 235872.0,
+    "avg_check": 78624.0
+  },
+  {
+    "contact_id": 56861,
+    "deals_total": 21,
+    "paid_deals": 9,
+    "revenue": 225862.8,
+    "avg_check": 25095.866666666665
+  },
+  {
+    "contact_id": 55569,
+    "deals_total": 20,
+    "paid_deals": 7,
+    "revenue": 219105.5,
+    "avg_check": 31300.785714285717
+  },
+  {
+    "contact_id": 126005,
+    "deals_total": 29,
+    "paid_deals": 7,
+    "revenue": 210346.0,
+    "avg_check": 30049.42857142857
+  },
+  {
+    "contact_id": 116471,
+    "deals_total": 6,
+    "paid_deals": 3,
+    "revenue": 201965.0,
+    "avg_check": 67321.66666666667
+  },
+  {
+    "contact_id": 65187,
+    "deals_total": 16,
+    "paid_deals": 3,
+    "revenue": 195300.0,
+    "avg_check": 65100.0
+  },
+  {
+    "contact_id": 16497,
+    "deals_total": 10,
+    "paid_deals": 2,
+    "revenue": 177568.0,
+    "avg_check": 88784.0
+  },
+  {
+    "contact_id": 123097,
     "deals_total": 1,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0
+    "paid_deals": 1,
+    "revenue": 153900.0,
+    "avg_check": 153900.0
+  },
+  {
+    "contact_id": 122035,
+    "deals_total": 4,
+    "paid_deals": 1,
+    "revenue": 153900.0,
+    "avg_check": 153900.0
+  },
+  {
+    "contact_id": 120943,
+    "deals_total": 20,
+    "paid_deals": 4,
+    "revenue": 153630.0,
+    "avg_check": 38407.5
+  },
+  {
+    "contact_id": 76115,
+    "deals_total": 4,
+    "paid_deals": 1,
+    "revenue": 142680.0,
+    "avg_check": 142680.0
+  },
+  {
+    "contact_id": 93233,
+    "deals_total": 7,
+    "paid_deals": 1,
+    "revenue": 138000.0,
+    "avg_check": 138000.0
+  },
+  {
+    "contact_id": 13135,
+    "deals_total": 11,
+    "paid_deals": 1,
+    "revenue": 138000.0,
+    "avg_check": 138000.0
+  },
+  {
+    "contact_id": 8217,
+    "deals_total": 11,
+    "paid_deals": 1,
+    "revenue": 136072.0,
+    "avg_check": 136072.0
+  },
+  {
+    "contact_id": 115255,
+    "deals_total": 6,
+    "paid_deals": 1,
+    "revenue": 132480.0,
+    "avg_check": 132480.0
+  },
+  {
+    "contact_id": 5803,
+    "deals_total": 6,
+    "paid_deals": 1,
+    "revenue": 127429.2,
+    "avg_check": 127429.2
+  },
+  {
+    "contact_id": 122703,
+    "deals_total": 2,
+    "paid_deals": 1,
+    "revenue": 127429.0,
+    "avg_check": 127429.0
+  },
+  {
+    "contact_id": 120391,
+    "deals_total": 5,
+    "paid_deals": 1,
+    "revenue": 124200.0,
+    "avg_check": 124200.0
+  },
+  {
+    "contact_id": 118133,
+    "deals_total": 3,
+    "paid_deals": 1,
+    "revenue": 124200.0,
+    "avg_check": 124200.0
+  },
+  {
+    "contact_id": 25237,
+    "deals_total": 18,
+    "paid_deals": 4,
+    "revenue": 123480.0,
+    "avg_check": 30870.0
+  },
+  {
+    "contact_id": 75537,
+    "deals_total": 8,
+    "paid_deals": 4,
+    "revenue": 123012.0,
+    "avg_check": 30753.0
+  },
+  {
+    "contact_id": 74163,
+    "deals_total": 8,
+    "paid_deals": 1,
+    "revenue": 122467.2,
+    "avg_check": 122467.2
+  },
+  {
+    "contact_id": 64555,
+    "deals_total": 11,
+    "paid_deals": 2,
+    "revenue": 120760.3,
+    "avg_check": 60380.15
+  },
+  {
+    "contact_id": 121117,
+    "deals_total": 6,
+    "paid_deals": 1,
+    "revenue": 118900.0,
+    "avg_check": 118900.0
+  },
+  {
+    "contact_id": 59309,
+    "deals_total": 9,
+    "paid_deals": 4,
+    "revenue": 101088.0,
+    "avg_check": 25272.0
+  },
+  {
+    "contact_id": 122001,
+    "deals_total": 8,
+    "paid_deals": 3,
+    "revenue": 101088.0,
+    "avg_check": 33696.0
+  },
+  {
+    "contact_id": 28175,
+    "deals_total": 9,
+    "paid_deals": 1,
+    "revenue": 98449.2,
+    "avg_check": 98449.2
+  },
+  {
+    "contact_id": 49233,
+    "deals_total": 5,
+    "paid_deals": 3,
+    "revenue": 97200.0,
+    "avg_check": 32400.0
+  },
+  {
+    "contact_id": 77563,
+    "deals_total": 8,
+    "paid_deals": 1,
+    "revenue": 83900.0,
+    "avg_check": 83900.0
+  },
+  {
+    "contact_id": 117403,
+    "deals_total": 5,
+    "paid_deals": 1,
+    "revenue": 83900.0,
+    "avg_check": 83900.0
   },
   {
     "contact_id": 93,
-    "deals_total": 1,
+    "deals_total": 11,
+    "paid_deals": 3,
+    "revenue": 77760.0,
+    "avg_check": 25920.0
+  },
+  {
+    "contact_id": 55829,
+    "deals_total": 7,
+    "paid_deals": 3,
+    "revenue": 77760.0,
+    "avg_check": 25920.0
+  },
+  {
+    "contact_id": 121887,
+    "deals_total": 7,
+    "paid_deals": 3,
+    "revenue": 77760.0,
+    "avg_check": 25920.0
+  },
+  {
+    "contact_id": 120969,
+    "deals_total": 8,
+    "paid_deals": 3,
+    "revenue": 77760.0,
+    "avg_check": 25920.0
+  },
+  {
+    "contact_id": 85485,
+    "deals_total": 22,
+    "paid_deals": 1,
+    "revenue": 76960.0,
+    "avg_check": 76960.0
+  },
+  {
+    "contact_id": 54959,
+    "deals_total": 11,
+    "paid_deals": 3,
+    "revenue": 75880.0,
+    "avg_check": 25293.33333333333
+  },
+  {
+    "contact_id": 6801,
+    "deals_total": 11,
+    "paid_deals": 1,
+    "revenue": 75510.0,
+    "avg_check": 75510.0
+  },
+  {
+    "contact_id": 45657,
+    "deals_total": 20,
+    "paid_deals": 1,
+    "revenue": 74000.0,
+    "avg_check": 74000.0
+  },
+  {
+    "contact_id": 120771,
+    "deals_total": 6,
+    "paid_deals": 1,
+    "revenue": 74000.0,
+    "avg_check": 74000.0
+  },
+  {
+    "contact_id": 88037,
+    "deals_total": 11,
+    "paid_deals": 3,
+    "revenue": 72900.0,
+    "avg_check": 24300.0
+  },
+  {
+    "contact_id": 103529,
+    "deals_total": 8,
+    "paid_deals": 2,
+    "revenue": 71898.0,
+    "avg_check": 35949.0
+  },
+  {
+    "contact_id": 79591,
+    "deals_total": 5,
+    "paid_deals": 3,
+    "revenue": 70200.0,
+    "avg_check": 23400.0
+  },
+  {
+    "contact_id": 78095,
+    "deals_total": 10,
+    "paid_deals": 4,
+    "revenue": 63535.2,
+    "avg_check": 15883.8
+  },
+  {
+    "contact_id": 122261,
+    "deals_total": 3,
+    "paid_deals": 1,
+    "revenue": 62900.0,
+    "avg_check": 62900.0
+  },
+  {
+    "contact_id": 121323,
+    "deals_total": 8,
+    "paid_deals": 4,
+    "revenue": 60300.0,
+    "avg_check": 15075.0
+  },
+  {
+    "contact_id": 81653,
+    "deals_total": 6,
+    "paid_deals": 2,
+    "revenue": 60120.0,
+    "avg_check": 30060.0
+  },
+  {
+    "contact_id": 122321,
+    "deals_total": 5,
+    "paid_deals": 1,
+    "revenue": 60010.0,
+    "avg_check": 60010.0
+  },
+  {
+    "contact_id": 23781,
+    "deals_total": 15,
+    "paid_deals": 1,
+    "revenue": 59200.0,
+    "avg_check": 59200.0
+  },
+  {
+    "contact_id": 50067,
+    "deals_total": 5,
+    "paid_deals": 1,
+    "revenue": 54535.0,
+    "avg_check": 54535.0
+  },
+  {
+    "contact_id": 59527,
+    "deals_total": 10,
+    "paid_deals": 4,
+    "revenue": 52800.0,
+    "avg_check": 13200.0
+  },
+  {
+    "contact_id": 112123,
+    "deals_total": 10,
+    "paid_deals": 2,
+    "revenue": 50938.0,
+    "avg_check": 25469.0
+  },
+  {
+    "contact_id": 76765,
+    "deals_total": 6,
+    "paid_deals": 3,
+    "revenue": 47628.0,
+    "avg_check": 15876.0
+  },
+  {
+    "contact_id": 81185,
+    "deals_total": 6,
+    "paid_deals": 2,
+    "revenue": 44400.6,
+    "avg_check": 22200.3
+  },
+  {
+    "contact_id": 122253,
+    "deals_total": 7,
+    "paid_deals": 3,
+    "revenue": 43200.0,
+    "avg_check": 14400.0
+  },
+  {
+    "contact_id": 64715,
+    "deals_total": 15,
+    "paid_deals": 3,
+    "revenue": 42336.0,
+    "avg_check": 14112.0
+  },
+  {
+    "contact_id": 54153,
+    "deals_total": 46,
+    "paid_deals": 2,
+    "revenue": 41700.0,
+    "avg_check": 20850.0
+  },
+  {
+    "contact_id": 55099,
+    "deals_total": 12,
+    "paid_deals": 1,
+    "revenue": 41400.0,
+    "avg_check": 41400.0
+  },
+  {
+    "contact_id": 120293,
+    "deals_total": 7,
+    "paid_deals": 1,
+    "revenue": 38577.0,
+    "avg_check": 38577.0
+  },
+  {
+    "contact_id": 122009,
+    "deals_total": 8,
+    "paid_deals": 1,
+    "revenue": 38475.0,
+    "avg_check": 38475.0
+  },
+  {
+    "contact_id": 6913,
+    "deals_total": 15,
+    "paid_deals": 2,
+    "revenue": 35840.0,
+    "avg_check": 17920.0
+  },
+  {
+    "contact_id": 117729,
+    "deals_total": 9,
+    "paid_deals": 1,
+    "revenue": 35190.0,
+    "avg_check": 35190.0
+  },
+  {
+    "contact_id": 54721,
+    "deals_total": 13,
+    "paid_deals": 1,
+    "revenue": 35070.0,
+    "avg_check": 35070.0
+  },
+  {
+    "contact_id": 86077,
+    "deals_total": 15,
+    "paid_deals": 1,
+    "revenue": 32200.0,
+    "avg_check": 32200.0
+  },
+  {
+    "contact_id": 120745,
+    "deals_total": 9,
+    "paid_deals": 5,
+    "revenue": 30338.0,
+    "avg_check": 6067.6
+  },
+  {
+    "contact_id": 123081,
+    "deals_total": 14,
+    "paid_deals": 1,
+    "revenue": 29634.0,
+    "avg_check": 29634.0
+  },
+  {
+    "contact_id": 120933,
+    "deals_total": 7,
+    "paid_deals": 1,
+    "revenue": 26172.0,
+    "avg_check": 26172.0
+  },
+  {
+    "contact_id": 120149,
+    "deals_total": 9,
+    "paid_deals": 1,
+    "revenue": 24667.0,
+    "avg_check": 24667.0
+  },
+  {
+    "contact_id": 88355,
+    "deals_total": 7,
+    "paid_deals": 1,
+    "revenue": 20975.0,
+    "avg_check": 20975.0
+  },
+  {
+    "contact_id": 121287,
+    "deals_total": 5,
+    "paid_deals": 1,
+    "revenue": 19500.0,
+    "avg_check": 19500.0
+  },
+  {
+    "contact_id": 60629,
+    "deals_total": 22,
+    "paid_deals": 3,
+    "revenue": 18360.0,
+    "avg_check": 6120.0
+  },
+  {
+    "contact_id": 119367,
+    "deals_total": 3,
+    "paid_deals": 1,
+    "revenue": 17640.0,
+    "avg_check": 17640.0
+  },
+  {
+    "contact_id": 114609,
+    "deals_total": 20,
+    "paid_deals": 1,
+    "revenue": 17640.0,
+    "avg_check": 17640.0
+  },
+  {
+    "contact_id": 66519,
+    "deals_total": 4,
+    "paid_deals": 1,
+    "revenue": 15390.0,
+    "avg_check": 15390.0
+  },
+  {
+    "contact_id": 59603,
+    "deals_total": 3,
+    "paid_deals": 1,
+    "revenue": 7000.0,
+    "avg_check": 7000.0
+  },
+  {
+    "contact_id": 121505,
+    "deals_total": 6,
+    "paid_deals": 2,
+    "revenue": 4440.0,
+    "avg_check": 2220.0
+  },
+  {
+    "contact_id": 99943,
+    "deals_total": 2,
     "paid_deals": 0,
     "revenue": 0.0,
-    "avg_check": 0
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 98999,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 98383,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 9649,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 95145,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 94481,
+    "deals_total": 10,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 93313,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 91051,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 89285,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 89143,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 88955,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 88635,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 88511,
+    "deals_total": 12,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 88265,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 88173,
+    "deals_total": 13,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 88163,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 88099,
+    "deals_total": 10,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 88069,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 87463,
+    "deals_total": 9,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 87295,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 87279,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 86709,
+    "deals_total": 9,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 86551,
+    "deals_total": 18,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 86517,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 86211,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 86005,
+    "deals_total": 8,
+    "paid_deals": 1,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 86001,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 85961,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 85253,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 85081,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 83599,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 83273,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 83011,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 82971,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 82867,
+    "deals_total": 11,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 82839,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 82675,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 82131,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 82097,
+    "deals_total": 13,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 81843,
+    "deals_total": 13,
+    "paid_deals": 1,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 8097,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 80191,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 79211,
+    "deals_total": 15,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 7913,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 79101,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 78989,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 78315,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 77457,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 76823,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 76459,
+    "deals_total": 16,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 75923,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 75887,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 74427,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 74267,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 73997,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 7157,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 705,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 7049,
+    "deals_total": 12,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 6975,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 69635,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 69003,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 66769,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 66187,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 63817,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 63207,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 63089,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 61299,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 6123,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 59487,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 57607,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 56969,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 55897,
+    "deals_total": 10,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 55629,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 55557,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 55303,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 5517,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 54901,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 5327,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 52799,
+    "deals_total": 21,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 5273,
+    "deals_total": 11,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 51973,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 5103,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 44551,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 43785,
+    "deals_total": 9,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 43531,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 41205,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 4117,
+    "deals_total": 9,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 3957,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 38129,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 3709,
+    "deals_total": 18,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 36945,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 35693,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 33419,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 32549,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 32211,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 31949,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 2867,
+    "deals_total": 18,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 27231,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 26141,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 25565,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 24857,
+    "deals_total": 14,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 2349,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 22209,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 20979,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 19561,
+    "deals_total": 9,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 19233,
+    "deals_total": 9,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 17315,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 1597,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 1463,
+    "deals_total": 11,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 13509,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
   },
   {
     "contact_id": 132533,
     "deals_total": 2,
     "paid_deals": 0,
     "revenue": 0.0,
-    "avg_check": 0
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 130639,
+    "deals_total": 9,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 129483,
+    "deals_total": 10,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 129297,
+    "deals_total": 21,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 128975,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 127599,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
   },
   {
     "contact_id": 127505,
     "deals_total": 1,
     "paid_deals": 0,
     "revenue": 0.0,
-    "avg_check": 0
+    "avg_check": 0.0
   },
   {
-    "contact_id": 124003,
+    "contact_id": 127119,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 126987,
     "deals_total": 2,
     "paid_deals": 0,
     "revenue": 0.0,
-    "avg_check": 0
+    "avg_check": 0.0
   },
   {
-    "contact_id": 120665,
+    "contact_id": 126983,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 126971,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 126827,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 126727,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 126641,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 126627,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 126601,
+    "deals_total": 15,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 126507,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 126299,
+    "deals_total": 9,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 126063,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 125947,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 1259,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 125861,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 125855,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 125771,
+    "deals_total": 11,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 125669,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 125371,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 125363,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 12529,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 125141,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 124885,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 124875,
+    "deals_total": 21,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 124543,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 124399,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 12437,
     "deals_total": 18,
     "paid_deals": 0,
     "revenue": 0.0,
-    "avg_check": 0
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 124239,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 124055,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 124033,
+    "deals_total": 14,
+    "paid_deals": 1,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 124003,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123921,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123861,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123457,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123347,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123343,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123327,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123293,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123291,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123289,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123263,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123175,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123139,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123135,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123133,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123131,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123089,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123077,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123067,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123059,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123055,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123051,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123043,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123041,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123039,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123035,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123029,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123025,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123023,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123019,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123017,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123009,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122991,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122959,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122957,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122955,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122939,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122937,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122929,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122925,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122921,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122919,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122913,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122911,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122907,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122905,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122903,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122901,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122899,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122897,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122895,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122893,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122889,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122879,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122875,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122873,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122865,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122863,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122851,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122849,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122847,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122845,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122843,
+    "deals_total": 1,
+    "paid_deals": 1,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122841,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122837,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122835,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122831,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122829,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122825,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122823,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122821,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122819,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122815,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122813,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122807,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122805,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122791,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122789,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122787,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122781,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122779,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122777,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122775,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122773,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122771,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122769,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122767,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122765,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122763,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122761,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122759,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122757,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122753,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122751,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122749,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122741,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122739,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122737,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122735,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122729,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122725,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122723,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122721,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122719,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122717,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122713,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122711,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122709,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122707,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122701,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122697,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122695,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122691,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122689,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122687,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122683,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122681,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122671,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122669,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122667,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122663,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122655,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122653,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122649,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122647,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122645,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122643,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122641,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122639,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122637,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122633,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122631,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122629,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122621,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122619,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122615,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122611,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122609,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122607,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122605,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122599,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122597,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122595,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122593,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122591,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122589,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122587,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122585,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122583,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122581,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122577,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122575,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122571,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122569,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122565,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122563,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122561,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122559,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122557,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122555,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122553,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122551,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122547,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122543,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122541,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122539,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122537,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122535,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122533,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122531,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122529,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122527,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122525,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122523,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122521,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122519,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122517,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122515,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122513,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122511,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122509,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122507,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122505,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122503,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122501,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122495,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122493,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122491,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122489,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122483,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122481,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122477,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122473,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122469,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122467,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122459,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122455,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122451,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122449,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122447,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122443,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122441,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122439,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122437,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122435,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122433,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122429,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122415,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122409,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122407,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122405,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122403,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122399,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122397,
+    "deals_total": 9,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122395,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122391,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122389,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122383,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122377,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122375,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122367,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122359,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122355,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122349,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122347,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122345,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122343,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122341,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122339,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122333,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122331,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122327,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122325,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122319,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122315,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122313,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122311,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122309,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122307,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122305,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122303,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122297,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122293,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122291,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122289,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122287,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122285,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122283,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122281,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122279,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122273,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122269,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122265,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122263,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122259,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122257,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122255,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122251,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122249,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122247,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122239,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122237,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122235,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122231,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122229,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122227,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122221,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122219,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122217,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122215,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122213,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122209,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122205,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122203,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122201,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122199,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122197,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122191,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122189,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122185,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122181,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122179,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122177,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122175,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122173,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122169,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122167,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122161,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122159,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122157,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122155,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122153,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122151,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122149,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122143,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122139,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122135,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122133,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122129,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122127,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122125,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122121,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122117,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122115,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122111,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122109,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122107,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122105,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122101,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122099,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122097,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122093,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122091,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122089,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122087,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122085,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122081,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122077,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122075,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122073,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122067,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122065,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122063,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122061,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122057,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122049,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122047,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122045,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122043,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122041,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122039,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122033,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122029,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122027,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122025,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122021,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122019,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122017,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122013,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122007,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122005,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 122003,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121999,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121997,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121995,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121991,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121987,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121985,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121981,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121977,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121975,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121973,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121963,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121961,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121959,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121957,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121955,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121953,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121949,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121945,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121943,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121941,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121939,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121937,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121935,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121933,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121929,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121927,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121925,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121923,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121921,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121919,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121917,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121915,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121913,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121909,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121907,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121903,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121899,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121897,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121895,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121893,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121891,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121889,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121885,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121883,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121879,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121877,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121873,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121871,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121869,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121863,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121861,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121853,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121851,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121849,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121841,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121839,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121837,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121835,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121833,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121831,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121829,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121825,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121823,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121821,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121819,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121817,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121815,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121813,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121811,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121809,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121807,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121805,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121803,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121799,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121797,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121795,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121793,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121791,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121789,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121787,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121785,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121783,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121781,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121779,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121777,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121775,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121773,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121771,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121769,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121767,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121765,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121761,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121753,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121743,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121741,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121739,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121731,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121729,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121727,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121725,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121723,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121713,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121705,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121701,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121697,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121693,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121691,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121689,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121687,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121683,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121681,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121679,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121677,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121675,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121673,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121669,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121667,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121663,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121655,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121653,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121651,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121647,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121645,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121643,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121639,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121637,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121635,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121633,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121631,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121629,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121625,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121621,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121617,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121615,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121613,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121609,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121607,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121597,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121591,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121589,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121587,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121581,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121573,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121565,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121561,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121557,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121555,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121525,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121523,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121519,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121517,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121513,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121511,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121509,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121499,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121497,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121493,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121491,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121489,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121487,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121485,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121483,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121477,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121475,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121471,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121469,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121467,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121461,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121453,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121451,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121449,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121447,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121445,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121443,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121441,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121439,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121437,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121435,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121427,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121423,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121421,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121419,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121417,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121415,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121413,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121405,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121401,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121399,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121395,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121389,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121379,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121375,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121369,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121365,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121363,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121359,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121357,
+    "deals_total": 12,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121355,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121353,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121351,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121349,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121347,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121343,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121337,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121331,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121321,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121319,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121317,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121315,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121313,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121305,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121303,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121301,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121297,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121295,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121293,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121277,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121275,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121273,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121271,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121269,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121265,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121261,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121259,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121257,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121247,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121245,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121241,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121229,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121227,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121219,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121217,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121213,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121211,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121207,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121201,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121199,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121195,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121191,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121189,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121183,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121173,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121169,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121167,
+    "deals_total": 18,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121161,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121159,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121151,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121147,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121141,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121139,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121135,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121133,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121129,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121125,
+    "deals_total": 11,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121121,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121115,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121111,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121107,
+    "deals_total": 10,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121105,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121103,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121099,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121095,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121093,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121087,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121085,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121083,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121081,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121077,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121075,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121073,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121063,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121057,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121047,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121041,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121037,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121033,
+    "deals_total": 15,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121031,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121029,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121027,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121025,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121023,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121017,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121015,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121003,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120999,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120995,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120993,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120989,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120977,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120975,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120973,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120971,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120965,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120963,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120961,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120957,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120953,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120951,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120945,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120941,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120939,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120937,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120935,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120925,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120919,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120911,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120907,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120903,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120901,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120897,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120895,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120891,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120885,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120879,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120875,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120867,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120853,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120849,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120847,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120835,
+    "deals_total": 11,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120833,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120831,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120829,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120827,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120817,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120815,
+    "deals_total": 18,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120811,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120807,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120803,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120797,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120793,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120781,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120779,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120775,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120767,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120763,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120761,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120757,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120751,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120747,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120743,
+    "deals_total": 11,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120737,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120733,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120727,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120725,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120723,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120721,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120715,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120711,
+    "deals_total": 15,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120697,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120691,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120689,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120687,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120681,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120679,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120667,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120665,
+    "deals_total": 24,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120663,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120661,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120647,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120639,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120637,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120631,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120621,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120619,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120615,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120613,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120609,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120607,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120603,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120599,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120597,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120595,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120593,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120587,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120583,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120581,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120575,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120573,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120571,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120567,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120545,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120543,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120541,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120533,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120529,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120527,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120525,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120521,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120519,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120507,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120427,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120413,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120411,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120409,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120401,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120395,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120389,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120371,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120367,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120365,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120363,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120359,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120347,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120345,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120331,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120311,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120303,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120299,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120295,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120289,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120285,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120271,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120241,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120221,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120215,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120201,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 120127,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 119847,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 119843,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 119735,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 119483,
+    "deals_total": 10,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 119327,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 119105,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 119089,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 118913,
+    "deals_total": 9,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 118819,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 118771,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 118749,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 118675,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 118461,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 117721,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 117613,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 117605,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 117485,
+    "deals_total": 7,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 117323,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 117085,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 116975,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 116943,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 116863,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 116785,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 116425,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 116089,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 116053,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 115141,
+    "deals_total": 13,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 115047,
+    "deals_total": 5,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 114955,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 114583,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 114423,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 113705,
+    "deals_total": 7,
+    "paid_deals": 1,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 113403,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 111997,
+    "deals_total": 9,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 111951,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 109365,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 10933,
+    "deals_total": 3,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
   },
   {
     "contact_id": 109067,
-    "deals_total": 22,
+    "deals_total": 73,
     "paid_deals": 0,
     "revenue": 0.0,
-    "avg_check": 0
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 104739,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 104525,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 104081,
+    "deals_total": 8,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 103767,
+    "deals_total": 11,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 103475,
+    "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 102949,
+    "deals_total": 10,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 102737,
+    "deals_total": 17,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 102655,
+    "deals_total": 14,
+    "paid_deals": 1,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 102275,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 101765,
+    "deals_total": 6,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
   }
 ]

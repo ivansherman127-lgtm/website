@@ -133,7 +133,7 @@ def load_bitrix_deals_db_first(engine) -> tuple[pd.DataFrame, str]:
         union,
         source_batch=batch,
         source_type="csv_union",
-        source_ref="sheets/fl_raw_09-03.csv + sheets/bitrix_upd_27.03.csv",
+        source_ref="bitrix_19.03.26.csv + bitrix_60_days_03.04.2026.csv",
     )
     print(f"Backfilled {RAW_BITRIX_TABLE}: {rows} rows from CSV union", flush=True)
     return union, "csv_union_auto_backfill"
