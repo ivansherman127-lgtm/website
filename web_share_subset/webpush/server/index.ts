@@ -144,6 +144,12 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       return;
     }
 
+    if (!pathname.startsWith("/utm/") && pathname !== "/utm") {
+      res.writeHead(404);
+      res.end("Not Found");
+      return;
+    }
+
     serveStatic(res, pathname);
   } catch (err) {
     console.error("Request error:", err);
