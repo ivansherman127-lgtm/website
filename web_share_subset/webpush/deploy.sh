@@ -23,11 +23,14 @@ APP_SUBDIR="web_share_subset/webpush"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 BRANCH="server-deploy"
 
-if [[ -n "$GITHUB_TOKEN" ]]; then
-  REPO="https://x-access-token:${GITHUB_TOKEN}@github.com/ivansherman127-lgtm/website.git"
-else
-  REPO="git@github.com:ivansherman127-lgtm/website.git"
+if [[ -z "$GITHUB_TOKEN" ]]; then
+  echo "ERROR: GITHUB_TOKEN is required for private repo access." >&2
+  echo "  Generate a fine-grained PAT with Contents: read, then re-run with:" >&2
+  echo "  GITHUB_TOKEN=your_token sudo -E bash deploy.sh" >&2
+  exit 1
 fi
+
+REPO="https://x-access-token:${GITHUB_TOKEN}@github.com/ivansherman127-lgtm/website.git"
 PORT="${PORT:-3000}"
 UPDATE_ONLY="${1:-}"
 
