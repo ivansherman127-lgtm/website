@@ -3089,14 +3089,19 @@ async function boot(): Promise<void> {
     // Refresh materialized datasets only when D1 source fingerprint changed.
     // Server-side gate skips recomputation on unchanged raw/staging data.
     // This must succeed before we fetch any table data, otherwise we'd read stale/missing rows.
-    const matRes = await fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" });
-    if (!matRes.ok) {
-      const errText = await matRes.text().catch(() => matRes.status.toString());
-      throw new Error(`Materialize failed (${matRes.status}): ${errText}`);
-    }
-    const matJson = await matRes.json() as { ok?: boolean; error?: string; skipped?: boolean };
-    if (!matJson.ok) {
-      throw new Error(`Materialize error: ${matJson.error ?? "unknown"}`);
+    try {
+      const matRes = await fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" });
+      if (!matRes.ok) {
+        const errText = await matRes.text().catch(() => matRes.status.toString());
+        console.warn(`Materialize skipped (${matRes.status}): ${errText}`);
+      } else {
+        const matJson = await matRes.json() as { ok?: boolean; error?: string; skipped?: boolean };
+        if (!matJson.ok) {
+          console.warn(`Materialize error: ${matJson.error ?? "unknown"}`);
+        }
+      }
+    } catch (matErr) {
+      console.warn("Materialize request failed", matErr);
     }
     loadEmailOverridesMap(await fetch(staticUrl("data/email_group_overrides.json")).then(r => r.json() as Promise<EmailOverridesFile>));
     const yandexHierarchy = await fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
