@@ -611,6 +611,22 @@ async function openTableView(view: ViewKey, dealsIndex: DealsIndex): Promise<voi
   await renderTable(view, rows, dealsIndex);
 }
 
+async function openMenu(menu: MenuMode, dealsIndex: DealsIndex, currentView?: ViewKey): Promise<void> {
+  if (menu === "dashboard") {
+    await renderDashboard(dealsIndex);
+    return;
+  }
+  if (menu === "charts") {
+    await renderCharts(dealsIndex);
+    return;
+  }
+  if (menu === "utm") {
+    await openTableView("utm_constructor", dealsIndex);
+    return;
+  }
+  await openTableView(currentView && currentView !== "utm_constructor" ? currentView : "year_total", dealsIndex);
+}
+
 function managerFormulaNote(_view: ViewKey): string {
   return "";
 }
@@ -2497,9 +2513,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
     btn.onclick = async () => {
       const m = btn.getAttribute("data-menu");
-      if (m === "dashboard") await renderDashboard(dealsIndex);
-      else if (m === "charts") await renderCharts(dealsIndex);
-      else if (m === "utm") await openTableView("utm_constructor", dealsIndex);
+      if (m === "dashboard" || m === "reports" || m === "charts" || m === "utm") {
+        await openMenu(m, dealsIndex, view);
+      }
     };
   });
   if (contactsFullBtn) {
@@ -2721,12 +2737,9 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
   app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
     btn.onclick = async () => {
       const m = btn.getAttribute("data-menu");
-      if (m === "dashboard") await renderDashboard(dealsIndex);
-      else if (m === "reports") {
-        const view: ViewKey = "year_total";
-        await openTableView(view, dealsIndex);
+      if (m === "dashboard" || m === "reports" || m === "charts" || m === "utm") {
+        await openMenu(m, dealsIndex, "year_total");
       }
-      else if (m === "utm") await openTableView("utm_constructor", dealsIndex);
     };
   });
 
@@ -3254,13 +3267,8 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
     app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
       btn.onclick = async () => {
         const m = btn.getAttribute("data-menu");
-        if (m === "reports") {
-          const view: ViewKey = "year_total";
-          await openTableView(view, dealsIndex);
-        } else if (m === "charts") {
-          await renderCharts(dealsIndex);
-        } else if (m === "utm") {
-          await openTableView("utm_constructor", dealsIndex);
+        if (m === "dashboard" || m === "reports" || m === "charts" || m === "utm") {
+          await openMenu(m, dealsIndex, "year_total");
         }
       };
     });
