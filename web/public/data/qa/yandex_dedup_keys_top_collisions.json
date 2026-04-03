@@ -1,0 +1,344 @@
+[
+  {
+    "lead_key": 79915,
+    "rows_count": 5,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 126299,
+    "rows_count": 4,
+    "projects_count": 4,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 130815,
+    "rows_count": 4,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 102737,
+    "rows_count": 3,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 126631,
+    "rows_count": 3,
+    "projects_count": 3,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 128943,
+    "rows_count": 3,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 129147,
+    "rows_count": 3,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 130527,
+    "rows_count": 3,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 131937,
+    "rows_count": 3,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 133089,
+    "rows_count": 3,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 19173,
+    "rows_count": 3,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 24857,
+    "rows_count": 3,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 4979,
+    "rows_count": 3,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 55149,
+    "rows_count": 3,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 81133,
+    "rows_count": 3,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 121167,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 121797,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 121913,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 122481,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 122845,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 123165,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 126727,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 127763,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 127887,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 128665,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 128843,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 128929,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 128931,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 128939,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 128947,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 129013,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 129215,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 129713,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 129799,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 129973,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 130019,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 130343,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 130467,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 130507,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 130629,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 130737,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 130753,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 131723,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 131755,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 131875,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 132005,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 132787,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 133389,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 13399,
+    "rows_count": 2,
+    "projects_count": 1,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 19233,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 22873,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 34371,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 3709,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 5335,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 725,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 79101,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  },
+  {
+    "lead_key": 84427,
+    "rows_count": 2,
+    "projects_count": 2,
+    "revenue_raw": 0.0
+  }
+]

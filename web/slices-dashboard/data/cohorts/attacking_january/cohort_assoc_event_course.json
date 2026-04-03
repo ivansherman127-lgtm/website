@@ -1,0 +1,72 @@
+[
+  {
+    "event_class": "Blue Team Stepik",
+    "course_code_norm": "B-101",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "INFOSEC_START",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-301-M0A",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-302-A",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "RE101_A",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "Другое",
+    "deals": 24,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "МАРАФОНПРОФЕССИЙ",
+    "deals": 7,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Опен дэй",
+    "course_code_norm": "Другое",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "ПБХ",
+    "course_code_norm": "R-101",
+    "deals": 6,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "ПБХ",
+    "course_code_norm": "Другое",
+    "deals": 4,
+    "paid_deals": 0,
+    "revenue": 0.0
+  }
+]

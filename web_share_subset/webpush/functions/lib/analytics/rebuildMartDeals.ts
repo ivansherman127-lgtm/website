@@ -5,6 +5,7 @@ import { funnelReportBucket } from "./funnelBucket";
 import { isAttackingJanuary } from "./isAttackingJanuary";
 import { monthFromCreated } from "./month";
 import { normalizeCourseCode } from "./normalizeCourseCode";
+import { loadCanonicalBitrixRows } from "./rawBitrixSource";
 import { variant3RevenueMask } from "./revenue";
 import { rowForClassifier, type StgDealAnalytics } from "./stagingTypes";
 
@@ -64,13 +65,15 @@ function buildMartRow(s: StgDealAnalytics) {
   };
 }
 
-/** Rebuild mart_deals_enriched from stg_deals_analytics (batched). */
-export async function rebuildMartDealsFromStaging(db: D1Database): Promise<{ rows: number }> {
+/**
+ * Rebuild mart_deals_enriched from canonical raw Bitrix rows.
+ * raw_bitrix_deals is the primary source of truth; stg_deals_analytics is only a fallback.
+ */
+export async function rebuildMartDealsFromStaging(db: D1Database): Promise<{ rows: number; source: string }> {
   await db.prepare("DELETE FROM mart_deals_enriched").run();
 
-  const { results } = await db.prepare("SELECT * FROM stg_deals_analytics").all<StgDealAnalytics>();
-  const rows = results ?? [];
-  if (!rows.length) return { rows: 0 };
+  const { rows, source } = await loadCanonicalBitrixRows(db);
+  if (!rows.length) return { rows: 0, source };
 
   const stmt = db.prepare(
     `INSERT INTO mart_deals_enriched (
@@ -122,5 +125,5 @@ export async function rebuildMartDealsFromStaging(db: D1Database): Promise<{ row
     await db.batch(stmts);
   }
 
-  return { rows: rows.length };
+  return { rows: rows.length, source };
 }

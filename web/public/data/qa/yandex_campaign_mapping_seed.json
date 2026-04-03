@@ -1,0 +1,102 @@
+[
+  {
+    "project_name": "vea-professiya-pentester_RSYA-270226_1_rm221125_City_ml",
+    "campaign_id": 707634725.0,
+    "month": "2026-03",
+    "yandex_rows": 73,
+    "map_to_utm_campaign": null,
+    "map_to_project": "ПБХ",
+    "map_confidence": 0.9726,
+    "comment": "top_candidate_from_deal_name"
+  },
+  {
+    "project_name": "vea-professiya-pentester_RSYA-270226_1_rm221125-RF",
+    "campaign_id": 707634735.0,
+    "month": "2026-03",
+    "yandex_rows": 71,
+    "map_to_utm_campaign": null,
+    "map_to_project": "ПБХ",
+    "map_confidence": 0.9859,
+    "comment": "top_candidate_from_deal_name"
+  },
+  {
+    "project_name": "vea-professiya-pentester_RSYA-270226_1_rm221125-RF-SR-PAY-CONV-200",
+    "campaign_id": 707811673.0,
+    "month": "2026-03",
+    "yandex_rows": 68,
+    "map_to_utm_campaign": null,
+    "map_to_project": "ПБХ",
+    "map_confidence": 1.0,
+    "comment": "single_candidate"
+  },
+  {
+    "project_name": "vea-professiya-pentester_RSYA-270226_1_rm221125-RF-PAY-CONV-200",
+    "campaign_id": 707811553.0,
+    "month": "2026-03",
+    "yandex_rows": 63,
+    "map_to_utm_campaign": null,
+    "map_to_project": "ПБХ",
+    "map_confidence": 0.9841,
+    "comment": "top_candidate_from_deal_name"
+  },
+  {
+    "project_name": "vea-start-karery-v-blue-team_RSYA-270226_1_rm061125-RF",
+    "campaign_id": 707634756.0,
+    "month": "2026-03",
+    "yandex_rows": 47,
+    "map_to_utm_campaign": null,
+    "map_to_project": "Blue Team Stepik",
+    "map_confidence": 0.9787,
+    "comment": "top_candidate_from_deal_name"
+  },
+  {
+    "project_name": "vea_cybered_start_v_ib_RSYA-110326_rm110326-RF_retarget",
+    "campaign_id": 707977649.0,
+    "month": "2026-03",
+    "yandex_rows": 34,
+    "map_to_utm_campaign": null,
+    "map_to_project": "Программа «Старт в ИБ»",
+    "map_confidence": 0.9412,
+    "comment": "top_candidate_from_deal_name"
+  },
+  {
+    "project_name": "vea-start-karery-v-blue-team_RSYA-270226_1_rm061125-City_ml",
+    "campaign_id": 707634746.0,
+    "month": "2026-03",
+    "yandex_rows": 33,
+    "map_to_utm_campaign": null,
+    "map_to_project": "Blue Team Stepik",
+    "map_confidence": 0.9394,
+    "comment": "top_candidate_from_deal_name"
+  },
+  {
+    "project_name": "vea_b2c_start_RSYA_120226_rm120226-RF_City_ml",
+    "campaign_id": 707219401.0,
+    "month": "2026-03",
+    "yandex_rows": 19,
+    "map_to_utm_campaign": null,
+    "map_to_project": "Квиз",
+    "map_confidence": 1.0,
+    "comment": "single_candidate"
+  },
+  {
+    "project_name": "vea-start-karery-v-blue-team_RSYA-270226_1_rm061125-RF-SR-PAY-CONV-200",
+    "campaign_id": 707811674.0,
+    "month": "2026-03",
+    "yandex_rows": 16,
+    "map_to_utm_campaign": null,
+    "map_to_project": "Blue Team Stepik",
+    "map_confidence": 1.0,
+    "comment": "single_candidate"
+  },
+  {
+    "project_name": "vea-start-karery-v-blue-team_RSYA-270226_1_rm061125-RF-PAY-CONV-200",
+    "campaign_id": 707811554.0,
+    "month": "2026-03",
+    "yandex_rows": 11,
+    "map_to_utm_campaign": null,
+    "map_to_project": "Blue Team Stepik",
+    "map_confidence": 1.0,
+    "comment": "single_candidate"
+  }
+]

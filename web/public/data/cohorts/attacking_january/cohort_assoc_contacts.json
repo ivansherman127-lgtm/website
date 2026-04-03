@@ -1,0 +1,51 @@
+[
+  {
+    "contact_id": 99943,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0
+  },
+  {
+    "contact_id": 93,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0
+  },
+  {
+    "contact_id": 132533,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0
+  },
+  {
+    "contact_id": 127505,
+    "deals_total": 1,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0
+  },
+  {
+    "contact_id": 124003,
+    "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0
+  },
+  {
+    "contact_id": 120665,
+    "deals_total": 18,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0
+  },
+  {
+    "contact_id": 109067,
+    "deals_total": 22,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0
+  }
+]

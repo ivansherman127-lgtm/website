@@ -1,0 +1,13 @@
+[
+  {
+    "leads_raw": 435,
+    "leads_dedup": 401,
+    "leads_delta": 34,
+    "paid_deals_raw": 2,
+    "paid_deals_dedup": 2,
+    "paid_deals_delta": 0,
+    "revenue_raw": 51000.0,
+    "revenue_dedup": 51000.0,
+    "revenue_delta": 0.0
+  }
+]

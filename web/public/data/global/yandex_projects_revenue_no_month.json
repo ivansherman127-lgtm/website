@@ -1,0 +1,26 @@
+[
+  {
+    "project_name": "vea-professiya-pentester_RSYA-270226_1_rm221125_City_ml",
+    "leads_raw": 275,
+    "payments_count": 2,
+    "paid_deals_raw": 2,
+    "revenue_raw": 51000.0,
+    "spend": 1920.43
+  },
+  {
+    "project_name": "vea-start-karery-v-blue-team_RSYA-270226_1_rm061125-RF",
+    "leads_raw": 107,
+    "payments_count": 0,
+    "paid_deals_raw": 0,
+    "revenue_raw": 0.0,
+    "spend": 10005.77
+  },
+  {
+    "project_name": "vea_cybered_start_v_ib_RSYA-110326_rm110326-RF_retarget",
+    "leads_raw": 53,
+    "payments_count": 0,
+    "paid_deals_raw": 0,
+    "revenue_raw": 0.0,
+    "spend": 16442.37
+  }
+]

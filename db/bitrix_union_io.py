@@ -1,11 +1,11 @@
 """
 Объединённый вход по сделкам Bitrix: исторический срез + актуальная дозагрузка.
 
-  - sheets/fl_raw_09-03.csv — покрывает прошлый период (воронка «Воронка» заполнена).
-  - sheets/bitrix_upd_27.03.csv — доп. выгрузка до сегодня.
+    - sheets/fl_raw_09-03.csv — покрывает прошлый период (воронка «Воронка» заполнена).
+    - sheets/bitrix_upd_27.03.csv — доп. выгрузка до сегодня.
 
-Склейка: concat → нормализация ID → drop_duplicates(..., keep='last'), чтобы пересекающиеся
-сделки брались из более позднего файла (upd).
+Склейка: concat → нормализация ID → дедуп по ID с выбором строки с максимальной «Сумма».
+Если суммы равны, допустимо оставить любую из строк.
 """
 from __future__ import annotations
 
@@ -70,6 +70,35 @@ def _norm_id(v: object) -> str:
     return s
 
 
+def _amount_num(v: object) -> float:
+    if v is None or (isinstance(v, float) and pd.isna(v)):
+        return 0.0
+    s = str(v).replace(" ", "").replace("\xa0", "").replace(",", ".").strip()
+    if not s or s.lower() in {"nan", "none", "null"}:
+        return 0.0
+    try:
+        return float(s)
+    except ValueError:
+        return 0.0
+
+
+def dedup_bitrix_deals_by_highest_amount(df: pd.DataFrame) -> pd.DataFrame:
+    if "ID" not in df.columns:
+        raise ValueError("Bitrix frame must contain column ID")
+    out = df.copy()
+    out["ID"] = out["ID"].map(_norm_id)
+    out = out[out["ID"].astype(str).str.strip().ne("")]
+    if out.empty:
+        return out.reset_index(drop=True)
+
+    sum_col = out["Сумма"] if "Сумма" in out.columns else pd.Series([0.0] * len(out), index=out.index)
+    out["__dedup_amount"] = sum_col.map(_amount_num)
+    out["__dedup_pos"] = range(len(out))
+    keep_idx = out.groupby("ID", sort=False)["__dedup_amount"].idxmax()
+    deduped = out.loc[keep_idx].sort_values("__dedup_pos").drop(columns=["__dedup_amount", "__dedup_pos"])
+    return deduped.reset_index(drop=True)
+
+
 def read_bitrix_export(path: Path) -> pd.DataFrame:
     if not path.is_file():
         raise FileNotFoundError(path)
@@ -80,7 +109,7 @@ def load_bitrix_deals_union(
     fl_raw_path: Optional[Path] = None,
     bitrix_upd_path: Optional[Path] = None,
 ) -> pd.DataFrame:
-    """Две выгрузки подряд; при совпадении ID побеждает последняя таблица (upd)."""
+    """Две выгрузки подряд; при совпадении ID берётся строка с максимальной «Сумма»."""
     fl_raw_path = fl_raw_path or DEFAULT_FL_RAW
     bitrix_upd_path = bitrix_upd_path or DEFAULT_BITRIX_UPD
     parts: list[pd.DataFrame] = []
@@ -98,7 +127,4 @@ def load_bitrix_deals_union(
     out.columns = dedup_columns_sqlalchemy_safe(list(out.columns))
     if "ID" not in out.columns:
         raise ValueError("Union frames must contain column ID")
-    out = out.copy()
-    out["ID"] = out["ID"].map(_norm_id)
-    out = out[out["ID"].astype(str).str.strip().ne("")].drop_duplicates(subset=["ID"], keep="last")
-    return out.reset_index(drop=True)
+    return dedup_bitrix_deals_by_highest_amount(out)

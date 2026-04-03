@@ -1,0 +1,842 @@
+[
+  {
+    "month": "2026-02",
+    "utm_source": null,
+    "utm_medium": null,
+    "deals": 639,
+    "paid_deals": 27,
+    "revenue": 3482491.32
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "social",
+    "utm_medium": "tg",
+    "deals": 45,
+    "paid_deals": 1,
+    "revenue": 143900.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "tg",
+    "utm_medium": "social",
+    "deals": 7,
+    "paid_deals": 1,
+    "revenue": 143900.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "xaker",
+    "utm_medium": "tg",
+    "deals": 15,
+    "paid_deals": 1,
+    "revenue": 143900.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "Securitylab.ru",
+    "utm_medium": null,
+    "deals": 16,
+    "paid_deals": 1,
+    "revenue": 136072.32
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "sl",
+    "utm_medium": "tg",
+    "deals": 65,
+    "paid_deals": 2,
+    "revenue": 127602.03
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "site",
+    "utm_medium": "social",
+    "deals": 56,
+    "paid_deals": 1,
+    "revenue": 118900.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "yd",
+    "utm_medium": "context",
+    "deals": 112,
+    "paid_deals": 1,
+    "revenue": 75510.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "refferal",
+    "utm_medium": "digital_academy",
+    "deals": 4,
+    "paid_deals": 1,
+    "revenue": 4900.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "SMS",
+    "utm_medium": "SMS",
+    "deals": 5,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "Sendsay",
+    "utm_medium": "email",
+    "deals": 154,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "banner",
+    "utm_medium": "website",
+    "deals": 7,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "blog",
+    "utm_medium": "tg",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "brand_250226_01",
+    "utm_medium": "brand_250226_01",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "brand_250226_02",
+    "utm_medium": "brand_250226_02",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "cybered",
+    "utm_medium": "tg",
+    "deals": 71,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "email",
+    "utm_medium": "email",
+    "deals": 11,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "email",
+    "utm_medium": "social",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "gosuslugi",
+    "utm_medium": "social",
+    "deals": 3,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "hacker",
+    "utm_medium": "email",
+    "deals": 51,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "hacker_blog",
+    "utm_medium": "hacker",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "hacker_tab",
+    "utm_medium": "hacker",
+    "deals": 6,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "kiberbez_130226_1",
+    "utm_medium": "kiberbez_130226_1",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "partner",
+    "utm_medium": "tg",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "pentest_demo2_120226_1",
+    "utm_medium": "pentest_demo2_120226_1",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "pentest_pentest_pay_120226_1",
+    "utm_medium": "pentest_pentest_pay_120226_1",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "pentest_soc2_120226_1",
+    "utm_medium": "pentest_soc2_120226_1",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "pohek",
+    "utm_medium": "tg",
+    "deals": 23,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "prof_pentest_demo2_100226_1",
+    "utm_medium": "prof_pentest_demo2_100226_1",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "prof_pentest_demo2_100226_2",
+    "utm_medium": "prof_pentest_demo2_100226_2",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "prof_pentest_demo2_100226_3",
+    "utm_medium": "prof_pentest_demo2_100226_3",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "prof_pentest_demo_1002226_2",
+    "utm_medium": "prof_pentest_demo_1002226_2",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "prof_pentest_demo_250226_01",
+    "utm_medium": "prof_pentest_demo_250226_01",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "prof_pentest_demo_250226_02",
+    "utm_medium": "prof_pentest_demo_250226_02",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "prof_soc_demo_1002226",
+    "utm_medium": "prof_soc_demo_1002226",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "professiya_pentester_270226_01",
+    "utm_medium": "professiya_pentester_270226_01",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "refferal",
+    "utm_medium": "ciso",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "rof_pentest_demo_240226_01",
+    "utm_medium": "rof_pentest_demo_240226_01",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "seo",
+    "utm_medium": "bsoc_article",
+    "deals": 21,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "seo",
+    "utm_medium": "pentester_article",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "soc_pay_120226_1",
+    "utm_medium": "soc_pay_120226_1",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "start_120226_2",
+    "utm_medium": "start_120226_2",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "start_blue_team_270226_01",
+    "utm_medium": "start_blue_team_270226_01",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "tsuniversity",
+    "utm_medium": null,
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "tutuortop",
+    "utm_medium": "refferal",
+    "deals": 3,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "website",
+    "utm_medium": null,
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "yah",
+    "utm_medium": "tg",
+    "deals": 10,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "yd",
+    "utm_medium": "kiberbez_context",
+    "deals": 14,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "yd",
+    "utm_medium": "search",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "yd",
+    "utm_medium": "yanvar_context",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "yd_prof_pentest_demo",
+    "utm_medium": "context",
+    "deals": 25,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "yd_prof_pentest_demo2",
+    "utm_medium": "context",
+    "deals": 45,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-02",
+    "utm_source": "yd_prof_soc_demo2",
+    "utm_medium": "context",
+    "deals": 18,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": null,
+    "utm_medium": null,
+    "deals": 1114,
+    "paid_deals": 30,
+    "revenue": 3072757.24
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "Sendsay",
+    "utm_medium": "email",
+    "deals": 397,
+    "paid_deals": 4,
+    "revenue": 402920.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "banner_header",
+    "utm_medium": "website",
+    "deals": 27,
+    "paid_deals": 2,
+    "revenue": 273410.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "tg",
+    "utm_medium": "social",
+    "deals": 54,
+    "paid_deals": 2,
+    "revenue": 266491.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "hacker_tab",
+    "utm_medium": "hacker",
+    "deals": 6,
+    "paid_deals": 1,
+    "revenue": 136705.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "yd",
+    "utm_medium": "context",
+    "deals": 352,
+    "paid_deals": 2,
+    "revenue": 51000.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "Securitylab.ru",
+    "utm_medium": null,
+    "deals": 38,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "YouTube_propentest",
+    "utm_medium": "social",
+    "deals": 33,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "blog",
+    "utm_medium": "banner",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "chatgpt.com",
+    "utm_medium": null,
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "cybered",
+    "utm_medium": "tg",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "email",
+    "utm_medium": "email",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "email",
+    "utm_medium": "stepic",
+    "deals": 31,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "email",
+    "utm_medium": "stepik",
+    "deals": 184,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "gosuslugi",
+    "utm_medium": "social",
+    "deals": 3,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "hacker_blog",
+    "utm_medium": "hacker",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "madtest",
+    "utm_medium": "description",
+    "deals": 12,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "mail",
+    "utm_medium": "stepik",
+    "deals": 183,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "nto",
+    "utm_medium": "tg",
+    "deals": 7,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "pohek",
+    "utm_medium": "tg",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "pornhub",
+    "utm_medium": null,
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "rbc-courses",
+    "utm_medium": "cpa",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "refferal",
+    "utm_medium": "digital_academy",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "securitylab.ru",
+    "utm_medium": null,
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "sendsay",
+    "utm_medium": "email",
+    "deals": 119,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "seo",
+    "utm_medium": "bsoc_article",
+    "deals": 23,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "sms",
+    "utm_medium": "sms",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "social",
+    "utm_medium": "anons1-19-09",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "social",
+    "utm_medium": "tg_cyber-ed",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "telegram",
+    "utm_medium": "social",
+    "deals": 78,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "test_040326_1_how_to_find_a_job_for_a_beginner",
+    "utm_medium": "test_040326_1_how_to_find_a_job_for_a_beginner",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "test_110326_01",
+    "utm_medium": "test_110326_01",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "tg",
+    "utm_medium": null,
+    "deals": 11,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "tutuortop",
+    "utm_medium": "refferal",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "vk",
+    "utm_medium": "social",
+    "deals": 2,
+    "paid_deals": 1,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "yd",
+    "utm_medium": "%7Bsource_type%7D",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "yd",
+    "utm_medium": "kiberbez_context",
+    "deals": 34,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-03",
+    "utm_source": "yd_prof_pentest_demo2",
+    "utm_medium": "context",
+    "deals": 16,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": null,
+    "utm_medium": null,
+    "deals": 317,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": "Securitylab.ru",
+    "utm_medium": null,
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": "Sendsay",
+    "utm_medium": "email",
+    "deals": 11,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": "banner_header",
+    "utm_medium": "website",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": "email",
+    "utm_medium": "stepik",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": "gosuslugi",
+    "utm_medium": "social",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": "hacker_tab",
+    "utm_medium": "hacker",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": "mail",
+    "utm_medium": "stepik",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": "sendsay",
+    "utm_medium": "email",
+    "deals": 7,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": "telegram",
+    "utm_medium": "social",
+    "deals": 5,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": "tg",
+    "utm_medium": "social",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": "vk",
+    "utm_medium": "social",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": "yd",
+    "utm_medium": "context",
+    "deals": 28,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2026-04",
+    "utm_source": "youtube",
+    "utm_medium": "video",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  }
+]
