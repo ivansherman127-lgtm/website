@@ -3095,34 +3095,41 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
 }
 
 async function boot(): Promise<void> {
+  // Show loading skeleton immediately — before any async operations so the page
+  // is never a blank white/black void while waiting for data.
+  app.innerHTML = `<div class="boot-loading"><div class="boot-spinner"></div><p class="boot-msg">Загрузка данных…</p></div>`;
+
   try {
     dealRevenueById.clear();
     yandexProjectLeadMetrics.clear();
     yandexMonthLeadMetrics.clear();
-    // Refresh materialized datasets only when D1 source fingerprint changed.
-    // Server-side gate skips recomputation on unchanged raw/staging data.
-    // This must succeed before we fetch any table data, otherwise we'd read stale/missing rows.
-    try {
-      const matRes = await fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" });
-      if (!matRes.ok) {
-        const errText = await matRes.text().catch(() => matRes.status.toString());
-        console.warn(`Materialize skipped (${matRes.status}): ${errText}`);
-      } else {
-        const matJson = await matRes.json() as { ok?: boolean; error?: string; skipped?: boolean };
-        if (!matJson.ok) {
-          console.warn(`Materialize error: ${matJson.error ?? "unknown"}`);
-        }
-      }
-    } catch (matErr) {
-      console.warn("Materialize request failed", matErr);
-    }
-    loadEmailOverridesMap(await fetch(staticUrl("data/email_group_overrides.json")).then(r => r.json() as Promise<EmailOverridesFile>));
-    let yandexHierarchy: Record<string, unknown>[] = [];
-    try {
-      yandexHierarchy = await fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
-    } catch (yandexHierarchyError) {
-      console.warn("Yandex hierarchy unavailable; continuing without hierarchy metrics", yandexHierarchyError);
-    }
+
+    // Kick off materialisation in the background — do NOT await before rendering.
+    // Dashboard data endpoints either build on-demand or read whatever snapshot is
+    // already in dataset_json, so the UI can load immediately with the previous
+    // (or freshly-computed) snapshot.  Materialisation will finish in the background
+    // and the next user action / page refresh will get fully-fresh data.
+    fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" })
+      .then((r) =>
+        r.json().then((j: { ok?: boolean; error?: string; skipped?: boolean }) => {
+          if (!j.ok && !j.skipped) console.warn(`Materialize error: ${j.error ?? "unknown"}`);
+        }),
+      )
+      .catch((err) => console.warn("Materialize request failed", err));
+
+    // Load email overrides and yandex hierarchy in parallel (independent of each other
+    // and of the background materialisation above).
+    const [emailOverridesRaw, yandexHierarchy] = await Promise.all([
+      fetch(staticUrl("data/email_group_overrides.json"))
+        .then((r) => r.json() as Promise<EmailOverridesFile>)
+        .catch(() => ({ groups: {} } as EmailOverridesFile)),
+      fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json").catch((err) => {
+        console.warn("Yandex hierarchy unavailable; continuing without hierarchy metrics", err);
+        return [] as Record<string, unknown>[];
+      }),
+    ]);
+
+    loadEmailOverridesMap(emailOverridesRaw);
     for (const r of yandexHierarchy) {
       const lvl = String(r["Level"] ?? "").trim();
       if (lvl === "Campaign") {
