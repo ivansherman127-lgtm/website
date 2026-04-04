@@ -66,5 +66,19 @@ module.exports = {
         B24_WEBHOOK_URL: serverSecrets.B24_WEBHOOK_URL || process.env.B24_WEBHOOK_URL || "",
       },
     },
+    {
+      name: "yandex-sync",
+      script: pythonBin,
+      args: "-m db.yandex_api_sync --watch --interval 180",
+      interpreter: "none",
+      cwd: repoRoot,
+      watch: false,
+      autorestart: true,
+      restart_delay: 30000,
+      env: {
+        WEBSITE_DB_PATH: process.env.WEBSITE_DB_PATH || path.join(repoRoot, "website.db"),
+        YANDEX_TOKEN: serverSecrets.YANDEX_TOKEN || process.env.YANDEX_TOKEN || "",
+      },
+    },
   ],
 };
