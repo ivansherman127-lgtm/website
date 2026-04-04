@@ -35,6 +35,8 @@ module.exports = {
       watch: false,
       autorestart: true,
       restart_delay: 3000,
+      kill_signal: "SIGTERM",
+      kill_timeout: 5000,
       env: {
         NODE_ENV: "production",
         PORT: process.env.PORT || "3000",

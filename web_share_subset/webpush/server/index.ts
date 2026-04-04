@@ -262,9 +262,11 @@ server.listen(PORT, () => {
   console.log(`  cwd:  ${process.cwd()}`);
 });
 
-process.on("SIGTERM", () => {
+function shutdown() {
   server.close(() => {
     db.close();
     process.exit(0);
   });
-});
+}
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
