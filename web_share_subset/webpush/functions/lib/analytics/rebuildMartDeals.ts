@@ -1,9 +1,11 @@
 import { parseAmount } from "./amt";
+import { extractCourseCodeFromText } from "./courseCodeLookup";
 import { classifyEventFromRow } from "./eventClassifier";
 import { funnelReportBucket } from "./funnelBucket";
 import { isAttackingJanuary } from "./isAttackingJanuary";
 import { monthFromCreated } from "./month";
 import { normalizeCourseCode } from "./normalizeCourseCode";
+import { loadCanonicalBitrixRows } from "./rawBitrixSource";
 import { variant3RevenueMask } from "./revenue";
 import { rowForClassifier, type StgDealAnalytics } from "./stagingTypes";
 
@@ -17,6 +19,9 @@ function buildMartRow(s: StgDealAnalytics) {
   const cls = classifyEventFromRow(rowForClassifier(s));
   let courseRaw = (s.code_site || "").trim();
   if (!courseRaw) courseRaw = (s.code_course || "").trim();
+  if (!courseRaw) courseRaw = extractCourseCodeFromText(s.deal_name);
+  if (!courseRaw) courseRaw = extractCourseCodeFromText(s.utm_campaign);
+  if (!courseRaw) courseRaw = extractCourseCodeFromText(s.utm_content);
   const courseNorm = normalizeCourseCode(courseRaw);
   const revMask = variant3RevenueMask({
     stage_raw: s.stage_raw,
@@ -56,16 +61,19 @@ function buildMartRow(s: StgDealAnalytics) {
     classification_pattern: cls.matched_pattern,
     classification_confidence: cls.confidence,
     is_attacking_january: aj,
+    invalid_type_lead: s.invalid_type_lead ?? "",
   };
 }
 
-/** Rebuild mart_deals_enriched from stg_deals_analytics (batched). */
-export async function rebuildMartDealsFromStaging(db: D1Database): Promise<{ rows: number }> {
+/**
+ * Rebuild mart_deals_enriched from canonical raw Bitrix rows.
+ * raw_bitrix_deals is the primary source of truth; stg_deals_analytics is only a fallback.
+ */
+export async function rebuildMartDealsFromStaging(db: D1Database): Promise<{ rows: number; source: string }> {
   await db.prepare("DELETE FROM mart_deals_enriched").run();
 
-  const { results } = await db.prepare("SELECT * FROM stg_deals_analytics").all<StgDealAnalytics>();
-  const rows = results ?? [];
-  if (!rows.length) return { rows: 0 };
+  const { rows, source } = await loadCanonicalBitrixRows(db);
+  if (!rows.length) return { rows: 0, source };
 
   const stmt = db.prepare(
     `INSERT INTO mart_deals_enriched (
@@ -75,8 +83,8 @@ export async function rebuildMartDealsFromStaging(db: D1Database): Promise<{ row
       "UTM Source", "UTM Medium", "UTM Campaign", "UTM Content",
       "Название сделки", "Код_курса_сайт", "Код курса",
       course_code_norm, event_class, classification_source, classification_pattern, classification_confidence,
-      is_attacking_january
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      is_attacking_january, "Типы некачественного лида"
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,  
   );
 
   for (const batch of chunks(rows, 80)) {
@@ -110,11 +118,12 @@ export async function rebuildMartDealsFromStaging(db: D1Database): Promise<{ row
           r.classification_pattern,
           r.classification_confidence,
           r.is_attacking_january,
+          r.invalid_type_lead,
         ),
       );
     }
     await db.batch(stmts);
   }
 
-  return { rows: rows.length };
+  return { rows: rows.length, source };
 }

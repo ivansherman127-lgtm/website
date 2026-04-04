@@ -6,7 +6,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
 import { materializeSliceDatasets } from "../../lib/analytics/materializeDatasets";
-import { evaluateFreshness, saveFreshnessMeta } from "../../lib/analytics/sourceFreshness";
+import { evaluateFreshness, saveFreshnessMeta, saveAttemptTimestamp } from "../../lib/analytics/sourceFreshness";
 
 interface Env {
   DB: D1Database;
@@ -44,6 +44,11 @@ export async function onRequestPost(context: {
   }
 
   try {
+    // Record attempt timestamp BEFORE running — so if D1 hits its CPU limit and this
+    // worker is killed, the cooldown prevents another immediate retry that would repeat
+    // the same partial-delete/no-insert corruption cycle.
+    await saveAttemptTimestamp(db).catch(() => {});
+
     // Run materialization FIRST — only delete stale paths after success.
     // Never delete upfront: if materialization fails mid-way, old data is
     // still readable instead of returning 404 for every path.

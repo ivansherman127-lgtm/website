@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 import pandas as pd
 from sqlalchemy import text
 
-from bitrix_union_io import load_bitrix_deals_union
+from bitrix_union_io import dedup_bitrix_deals_by_highest_amount, load_bitrix_deals_union
 from conn import ensure_schema, get_engine
 
 RAW_TABLE = "raw_bitrix_deals"
@@ -43,7 +43,7 @@ def main() -> None:
 
     bitrix = bitrix.copy()
     bitrix["ID"] = bitrix["ID"].map(_id)
-    bitrix = bitrix[bitrix["ID"].astype(str).str.strip().ne("")].drop_duplicates(subset=["ID"], keep="last")
+    bitrix = dedup_bitrix_deals_by_highest_amount(bitrix)
 
     ts = datetime.now(timezone.utc).isoformat()
     batch = args.source_batch or f"csv_union_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
@@ -64,7 +64,7 @@ def main() -> None:
             {
                 "source_batch": batch,
                 "source_type": "csv_union",
-                "source_ref": "sheets/fl_raw_09-03.csv + sheets/bitrix_upd_27.03.csv",
+                "source_ref": "bitrix_19.03.26.csv + bitrix_60_days_03.04.2026.csv",
                 "row_count": int(len(raw)),
                 "created_at": ts,
             },

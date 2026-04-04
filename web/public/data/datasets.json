@@ -1,0 +1,308 @@
+{
+  "generated_note": "Built by db/build_static_data.py from reports/slices",
+  "datasets": [
+    {
+      "id": "cohort_aj_contacts",
+      "title_ru": "Атакующий январь: контакты, ассоц. выручка",
+      "category": "cohort",
+      "jsonPath": "data/cohorts/attacking_january/cohort_assoc_contacts.json",
+      "csvRel": "cohorts/attacking_january/cohort_assoc_contacts.csv",
+      "rowCount": 1037,
+      "columns": [
+        "contact_id",
+        "deals_total",
+        "paid_deals",
+        "revenue",
+        "avg_check"
+      ],
+      "missing": false
+    },
+    {
+      "id": "cohort_aj_event_course",
+      "title_ru": "Атакующий январь: мероприятие × курс",
+      "category": "cohort",
+      "jsonPath": "data/cohorts/attacking_january/cohort_assoc_event_course.json",
+      "csvRel": "cohorts/attacking_january/cohort_assoc_event_course.csv",
+      "rowCount": 83,
+      "columns": [
+        "event_class",
+        "course_code_norm",
+        "deals",
+        "paid_deals",
+        "revenue"
+      ],
+      "missing": false
+    },
+    {
+      "id": "global_month_channel_sendsay",
+      "title_ru": "Sendsay / email: месяц",
+      "category": "global",
+      "jsonPath": "data/global/month_channel_sendsay.json",
+      "csvRel": "global/month_channel_sendsay.csv",
+      "rowCount": 0,
+      "columns": [
+        "month",
+        "sends",
+        "sent_total",
+        "delivered_total",
+        "unique_opens",
+        "unique_clicks"
+      ],
+      "missing": false
+    },
+    {
+      "id": "global_month_channel_bitrix",
+      "title_ru": "Битрикс: месяц × канал (utm)",
+      "category": "global",
+      "jsonPath": "data/global/month_channel_bitrix.json",
+      "csvRel": "global/month_channel_bitrix.csv",
+      "rowCount": 1020,
+      "columns": [
+        "month",
+        "utm_source",
+        "utm_medium",
+        "deals",
+        "paid_deals",
+        "revenue"
+      ],
+      "missing": false
+    },
+    {
+      "id": "global_funnel_stage",
+      "title_ru": "Воронка × стадия",
+      "category": "global",
+      "jsonPath": "data/global/funnel_stage.json",
+      "csvRel": "global/funnel_stage.csv",
+      "rowCount": 85,
+      "columns": [
+        "funnel",
+        "stage",
+        "deals",
+        "paid_deals",
+        "revenue"
+      ],
+      "missing": false
+    },
+    {
+      "id": "global_event_course",
+      "title_ru": "Мероприятие × код курса",
+      "category": "global",
+      "jsonPath": "data/global/event_course.json",
+      "csvRel": "global/event_course.csv",
+      "rowCount": 116,
+      "columns": [
+        "event_class",
+        "course_code_norm",
+        "deals",
+        "paid_deals",
+        "revenue"
+      ],
+      "missing": false
+    },
+    {
+      "id": "global_yandex_revenue_by_month",
+      "title_ru": "Яндекс: выручка по месяцам",
+      "category": "global",
+      "jsonPath": "data/global/yandex_projects_revenue_by_month.json",
+      "csvRel": "global/yandex_projects_revenue_by_month.csv",
+      "rowCount": 1,
+      "columns": [
+        "month",
+        "leads_raw",
+        "paid_deals_raw",
+        "revenue_raw",
+        "clicks",
+        "spend"
+      ],
+      "missing": false
+    },
+    {
+      "id": "global_month_channel_yandex",
+      "title_ru": "Яндекс: месяц",
+      "category": "global",
+      "jsonPath": "data/global/month_channel_yandex.json",
+      "csvRel": "global/month_channel_yandex.csv",
+      "rowCount": 1,
+      "columns": [
+        "month",
+        "rows_count",
+        "yandex_spend",
+        "clicks",
+        "conversions"
+      ],
+      "missing": false
+    },
+    {
+      "id": "global_yandex_revenue_no_month",
+      "title_ru": "Яндекс: проекты без месяца",
+      "category": "global",
+      "jsonPath": "data/global/yandex_projects_revenue_no_month.json",
+      "csvRel": "global/yandex_projects_revenue_no_month.csv",
+      "rowCount": 3,
+      "columns": [
+        "project_name",
+        "leads_raw",
+        "payments_count",
+        "paid_deals_raw",
+        "revenue_raw",
+        "spend"
+      ],
+      "missing": false
+    },
+    {
+      "id": "global_yandex_projects_raw_vs_dedup",
+      "title_ru": "Яндекс: проекты, raw vs dedup",
+      "category": "global",
+      "jsonPath": "data/global/yandex_projects_revenue_raw_vs_dedup.json",
+      "csvRel": "global/yandex_projects_revenue_raw_vs_dedup.csv",
+      "rowCount": 10,
+      "columns": [
+        "project_name",
+        "month",
+        "leads_raw",
+        "leads_dedup",
+        "paid_deals_raw",
+        "paid_deals_dedup",
+        "revenue_raw",
+        "revenue_dedup",
+        "spend"
+      ],
+      "missing": false
+    },
+    {
+      "id": "global_yandex_dedup_summary",
+      "title_ru": "Яндекс: сводка дедупа",
+      "category": "global",
+      "jsonPath": "data/global/yandex_dedup_summary.json",
+      "csvRel": "global/yandex_dedup_summary.csv",
+      "rowCount": 1,
+      "columns": [
+        "leads_raw",
+        "leads_dedup",
+        "paid_deals_raw",
+        "paid_deals_dedup",
+        "revenue_raw",
+        "revenue_dedup"
+      ],
+      "missing": false
+    },
+    {
+      "id": "qa_yandex_unmatched",
+      "title_ru": "QA: Яндекс без стыковки к Битрикс",
+      "category": "qa",
+      "jsonPath": "data/qa/yandex_unmatched_to_bitrix.json",
+      "csvRel": "qa/yandex_unmatched_to_bitrix.csv",
+      "rowCount": 13,
+      "columns": [
+        "project_name",
+        "campaign_id",
+        "month",
+        "yandex_rows"
+      ],
+      "missing": false
+    },
+    {
+      "id": "qa_yandex_delta",
+      "title_ru": "QA: дельта raw vs dedup (Яндекс)",
+      "category": "qa",
+      "jsonPath": "data/qa/yandex_raw_vs_dedup_delta.json",
+      "csvRel": "qa/yandex_raw_vs_dedup_delta.csv",
+      "rowCount": 1,
+      "columns": [
+        "leads_raw",
+        "leads_dedup",
+        "leads_delta",
+        "paid_deals_raw",
+        "paid_deals_dedup",
+        "paid_deals_delta",
+        "revenue_raw",
+        "revenue_dedup",
+        "revenue_delta"
+      ],
+      "missing": false
+    },
+    {
+      "id": "qa_other_share_global",
+      "title_ru": "QA: доля «Другое» (глобал)",
+      "category": "qa",
+      "jsonPath": "data/qa/other_share_global.json",
+      "csvRel": "qa/other_share_global.csv",
+      "rowCount": 1,
+      "columns": [
+        "revenue_deals",
+        "other_deals",
+        "other_share"
+      ],
+      "missing": false
+    },
+    {
+      "id": "qa_dedup_check",
+      "title_ru": "QA: проверка дедупа сделок",
+      "category": "qa",
+      "jsonPath": "data/qa/dedup_check.json",
+      "csvRel": "qa/dedup_check.csv",
+      "rowCount": 1,
+      "columns": [
+        "rows_in_mart",
+        "distinct_ids",
+        "duplicate_rows"
+      ],
+      "missing": false
+    },
+    {
+      "id": "qa_yandex_mapping_seed",
+      "title_ru": "QA: сид маппинга кампаний",
+      "category": "qa",
+      "jsonPath": "data/qa/yandex_campaign_mapping_seed.json",
+      "csvRel": "qa/yandex_campaign_mapping_seed.csv",
+      "rowCount": 10,
+      "columns": [
+        "project_name",
+        "campaign_id",
+        "month",
+        "yandex_rows",
+        "map_to_utm_campaign",
+        "map_to_project",
+        "map_confidence",
+        "comment"
+      ],
+      "missing": false
+    },
+    {
+      "id": "qa_yandex_collisions",
+      "title_ru": "QA: топ коллизий ключей Яндекс",
+      "category": "qa",
+      "jsonPath": "data/qa/yandex_dedup_keys_top_collisions.json",
+      "csvRel": "qa/yandex_dedup_keys_top_collisions.csv",
+      "rowCount": 59,
+      "columns": [
+        "lead_key",
+        "rows_count",
+        "projects_count",
+        "revenue_raw"
+      ],
+      "missing": false
+    },
+    {
+      "id": "qa_other_top50_cohort",
+      "title_ru": "QA: топ-50 «Другое» (когорта)",
+      "category": "qa",
+      "jsonPath": "data/qa/other_top50_cohort.json",
+      "csvRel": "qa/other_top50_cohort.csv",
+      "rowCount": 50,
+      "columns": [
+        "ID",
+        "contact_id",
+        "deal_name",
+        "course_code_site",
+        "course_code",
+        "utm_campaign",
+        "source_detail",
+        "source_ref",
+        "revenue_amount",
+        "classification_source"
+      ],
+      "missing": false
+    }
+  ]
+}

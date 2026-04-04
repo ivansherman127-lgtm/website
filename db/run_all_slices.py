@@ -15,7 +15,7 @@ from bitrix_lead_quality import (
     drop_rows_excluded_funnels,
     funnel_report_bucket_series,
 )
-from bitrix_union_io import load_bitrix_deals_union
+from bitrix_union_io import dedup_bitrix_deals_by_highest_amount, load_bitrix_deals_union
 from conn import get_engine, ensure_schema
 from event_classifier import classify_event_from_row, is_attacking_january, normalize_course_code
 from revenue_variant3 import variant3_revenue_mask
@@ -67,7 +67,7 @@ def _persist_raw_bitrix_snapshot(
         raise ValueError("Bitrix source frame must contain ID")
     snap = bitrix.copy()
     snap["ID"] = snap["ID"].map(_id)
-    snap = snap[snap["ID"].astype(str).str.strip().ne("")].drop_duplicates(subset=["ID"], keep="last")
+    snap = dedup_bitrix_deals_by_highest_amount(snap)
     snap = drop_rows_excluded_funnels(snap)
     ingested_at = datetime.now(timezone.utc).isoformat()
     snap["source_batch"] = source_batch
@@ -117,7 +117,7 @@ def _load_bitrix_from_raw_sql(engine) -> pd.DataFrame | None:
     if "ID" not in out.columns:
         return None
     out["ID"] = out["ID"].map(_id)
-    out = out[out["ID"].astype(str).str.strip().ne("")].drop_duplicates(subset=["ID"], keep="last")
+    out = dedup_bitrix_deals_by_highest_amount(out)
     return out.reset_index(drop=True)
 
 
@@ -133,7 +133,7 @@ def load_bitrix_deals_db_first(engine) -> tuple[pd.DataFrame, str]:
         union,
         source_batch=batch,
         source_type="csv_union",
-        source_ref="sheets/fl_raw_09-03.csv + sheets/bitrix_upd_27.03.csv",
+        source_ref="bitrix_19.03.26.csv + bitrix_60_days_03.04.2026.csv",
     )
     print(f"Backfilled {RAW_BITRIX_TABLE}: {rows} rows from CSV union", flush=True)
     return union, "csv_union_auto_backfill"
@@ -211,6 +211,7 @@ def _staging_deals_analytics_df(bitrix: pd.DataFrame) -> pd.DataFrame:
             "code_course": bitrix.get("Код курса", "").fillna("").astype(str).map(_n),
             "source_detail": bitrix.get("Источник (подробно)", "").fillna("").astype(str).map(_n),
             "source_inquiry": bitrix.get("Источник обращения", "").fillna("").astype(str).map(_n),
+            "invalid_type_lead": bitrix.get("Типы некачественного лида", "").fillna("").astype(str).map(_n),
         }
     )
 

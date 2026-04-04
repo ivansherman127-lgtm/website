@@ -359,7 +359,9 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
     if (pathname === "/api/assoc-revenue") {
       if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
       if (!isAnalyticsAuthenticated(req)) { jsonRes(res, 401, { ok: false, error: "unauthorized" }); return; }
-      const cached = datasetCache.get("/api/assoc-revenue");
+      // Cache key must include query params — assoc-revenue accepts dims/cohort/pnlmode/from/to
+      const cacheKey = rawUrl;
+      const cached = datasetCache.get(cacheKey);
       if (cached !== undefined) {
         res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
         res.end(cached);
@@ -370,7 +372,7 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       const webRes = await assocRevenueGet({ request: webReq, env: { DB: WEBSITEDB } as any });
       if (webRes.status === 200) {
         const body = await webRes.text();
-        datasetCache.set("/api/assoc-revenue", body);
+        datasetCache.set(cacheKey, body);
         res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
         res.end(body);
       } else {

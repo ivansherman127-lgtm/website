@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from bitrix_lead_quality import drop_rows_excluded_funnels
-from bitrix_union_io import load_bitrix_deals_union
+from bitrix_union_io import dedup_bitrix_deals_by_highest_amount, load_bitrix_deals_union
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONTACTS = PROJECT_ROOT / "sheets" / "bitrix_contact_export.csv"
@@ -142,16 +142,16 @@ def run(
     all_cohort_deals = drop_rows_excluded_funnels(all_cohort_deals)
     all_cohort_deals = all_cohort_deals.sort_values(["Контакт: ID", "Дата создания", "ID"], ascending=[True, True, True])
     # Important: Bitrix exports may contain repeated rows for same deal ID.
-    # Keep a single row per deal for revenue arithmetic.
-    all_cohort_deals = all_cohort_deals.drop_duplicates(subset=["ID"], keep="last").copy()
+    # Keep the row with the highest amount for revenue arithmetic.
+    all_cohort_deals = dedup_bitrix_deals_by_highest_amount(all_cohort_deals).copy()
 
-    # Revenue exists only for: closed deal OR installment/postpayment terms.
-    closed_mask = all_cohort_deals.get("Сделка закрыта", "").fillna("").astype(str).str.strip().str.lower().eq("да")
-    payment_pref = all_cohort_deals.get("Предпочитаемый способ оплаты", "").fillna("").astype(str).str.strip().str.lower()
-    installment_mask = payment_pref.str.contains("рассроч", na=False)
-    postpay_mask = payment_pref.str.contains("постоплат", na=False)
-    installment_dates_mask = all_cohort_deals.get("Даты платежей по рассрочке ", "").fillna("").astype(str).str.strip().ne("")
-    recognized_revenue_mask = closed_mask | installment_mask | postpay_mask | installment_dates_mask
+    # Revenue exists only for the canonical revenue stages.
+    stage = all_cohort_deals.get("Стадия сделки", "").fillna("").astype(str).str.lower()
+    recognized_revenue_mask = (
+        stage.str.contains("сделка заключена", na=False)
+        | stage.str.contains("постоплат", na=False)
+        | stage.str.contains("рассроч", na=False)
+    )
     all_cohort_deals["Выручка_учитывается"] = recognized_revenue_mask
     all_cohort_deals["Выручка_для_расчета"] = all_cohort_deals["Сумма_num"].where(recognized_revenue_mask, 0.0)
 

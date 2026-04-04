@@ -46,18 +46,24 @@ export async function buildBitrixContactsUidRows(db: D1Database): Promise<Record
       ),
       grouped AS (
         SELECT
-          COALESCE("Контакт: ID", '') AS uid,
+          CASE
+            WHEN TRIM(COALESCE("Контакт: E-mail", '')) <> ''
+            THEN lower(TRIM("Контакт: E-mail"))
+            ELSE COALESCE("Контакт: ID", '')
+          END AS uid,
+          GROUP_CONCAT(DISTINCT TRIM(COALESCE("Контакт: ID", '')), '; ') AS contact_ids,
           GROUP_CONCAT(DISTINCT TRIM(COALESCE("Контакт", '')), '; ') AS names_combined,
           GROUP_CONCAT(DISTINCT TRIM(COALESCE("Контакт: Телефон", '')), '; ') AS phone,
-          GROUP_CONCAT(DISTINCT TRIM(COALESCE("Контакт: E-mail", '')), '; ') AS email
+          MAX(NULLIF(TRIM(COALESCE("Контакт: E-mail", '')), '')) AS email
         FROM combined_raw
         GROUP BY uid
       )
       SELECT
         uid,
+        contact_ids,
         NULLIF(NULLIF(names_combined, ''), '; ') AS name,
         NULLIF(NULLIF(phone, ''), '; ') AS phone,
-        NULLIF(NULLIF(email, ''), '; ') AS email
+        email
       FROM grouped
       WHERE uid <> ''
       ORDER BY uid

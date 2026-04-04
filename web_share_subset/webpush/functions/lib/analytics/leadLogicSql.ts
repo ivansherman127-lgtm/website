@@ -40,14 +40,12 @@ type LeadLogicSql = {
 const LOGIC = leadLogic as LogicConfig;
 
 const INVALID_STAGE_TOKENS = [
+  "неквал",     // Некачественный лид and variants
+  "некачест",   // Некачественный
+  "дубл",       // Дубль / Дубликат
   "спам",
-  "дубль",
   "тест",
-  "некорректные данные",
-  "чс",
-  "неправильные данные",
-  "партнер или сотрудник cybered",
-  "партнеры, не нужно связываться",
+  "чс",         // ЧС (черный список)
 ];
 
 function sqlQuote(value: string): string {
@@ -134,4 +132,16 @@ export function buildLeadLogicSql(params: SqlBuildParamsWithInvalid): LeadLogicS
     inWork: `CASE WHEN ${joinConds(inWorkConds)} THEN 1 ELSE 0 END`,
     invalid: `CASE WHEN ${invalidCond} THEN 1 ELSE 0 END`,
   };
+}
+
+/**
+ * Returns a SQL CASE expression that flags leads in active pipeline stages
+ * (Потенциал 01, Выбор 03, Готов к покупке).
+ *
+ * @param stageExpr - SQL expression yielding the stage name column
+ */
+export function buildPotentialCond(stageExpr: string): string {
+  const stages = ["потенциал 01", "выбор 03", "готов к покупке"];
+  const cond = stages.map((s) => `lower(COALESCE(${stageExpr}, '')) = '${s}'`).join(" OR ");
+  return `CASE WHEN (${cond}) THEN 1 ELSE 0 END`;
 }

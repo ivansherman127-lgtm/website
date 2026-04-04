@@ -1,0 +1,112 @@
+[
+  {
+    "project_name": "vea-professiya-pentester_RSYA-270226_1_rm221125_City_ml",
+    "month": "2026-03",
+    "leads_raw": 75,
+    "leads_dedup": 67,
+    "paid_deals_raw": 2,
+    "paid_deals_dedup": 2,
+    "revenue_raw": 51000.0,
+    "revenue_dedup": 51000.0,
+    "spend": 9.68
+  },
+  {
+    "project_name": "vea-professiya-pentester_RSYA-270226_1_rm221125-RF",
+    "month": "2026-03",
+    "leads_raw": 71,
+    "leads_dedup": 66,
+    "paid_deals_raw": 0,
+    "paid_deals_dedup": 0,
+    "revenue_raw": 0.0,
+    "revenue_dedup": 0.0,
+    "spend": 1497.75
+  },
+  {
+    "project_name": "vea-professiya-pentester_RSYA-270226_1_rm221125-RF-PAY-CONV-200",
+    "month": "2026-03",
+    "leads_raw": 63,
+    "leads_dedup": 57,
+    "paid_deals_raw": 0,
+    "paid_deals_dedup": 0,
+    "revenue_raw": 0.0,
+    "revenue_dedup": 0.0,
+    "spend": 413.0
+  },
+  {
+    "project_name": "vea-professiya-pentester_RSYA-270226_1_rm221125-RF-SR-PAY-CONV-200",
+    "month": "2026-03",
+    "leads_raw": 68,
+    "leads_dedup": 58,
+    "paid_deals_raw": 0,
+    "paid_deals_dedup": 0,
+    "revenue_raw": 0.0,
+    "revenue_dedup": 0.0,
+    "spend": 0.0
+  },
+  {
+    "project_name": "vea-start-karery-v-blue-team_RSYA-270226_1_rm061125-City_ml",
+    "month": "2026-03",
+    "leads_raw": 33,
+    "leads_dedup": 31,
+    "paid_deals_raw": 0,
+    "paid_deals_dedup": 0,
+    "revenue_raw": 0.0,
+    "revenue_dedup": 0.0,
+    "spend": 3675.02
+  },
+  {
+    "project_name": "vea-start-karery-v-blue-team_RSYA-270226_1_rm061125-RF",
+    "month": "2026-03",
+    "leads_raw": 47,
+    "leads_dedup": 44,
+    "paid_deals_raw": 0,
+    "paid_deals_dedup": 0,
+    "revenue_raw": 0.0,
+    "revenue_dedup": 0.0,
+    "spend": 3095.73
+  },
+  {
+    "project_name": "vea-start-karery-v-blue-team_RSYA-270226_1_rm061125-RF-PAY-CONV-200",
+    "month": "2026-03",
+    "leads_raw": 11,
+    "leads_dedup": 10,
+    "paid_deals_raw": 0,
+    "paid_deals_dedup": 0,
+    "revenue_raw": 0.0,
+    "revenue_dedup": 0.0,
+    "spend": 1600.0
+  },
+  {
+    "project_name": "vea-start-karery-v-blue-team_RSYA-270226_1_rm061125-RF-SR-PAY-CONV-200",
+    "month": "2026-03",
+    "leads_raw": 16,
+    "leads_dedup": 16,
+    "paid_deals_raw": 0,
+    "paid_deals_dedup": 0,
+    "revenue_raw": 0.0,
+    "revenue_dedup": 0.0,
+    "spend": 1635.02
+  },
+  {
+    "project_name": "vea_b2c_start_RSYA_120226_rm120226-RF_City_ml",
+    "month": "2026-03",
+    "leads_raw": 19,
+    "leads_dedup": 19,
+    "paid_deals_raw": 0,
+    "paid_deals_dedup": 0,
+    "revenue_raw": 0.0,
+    "revenue_dedup": 0.0,
+    "spend": 10336.23
+  },
+  {
+    "project_name": "vea_cybered_start_v_ib_RSYA-110326_rm110326-RF_retarget",
+    "month": "2026-03",
+    "leads_raw": 34,
+    "leads_dedup": 33,
+    "paid_deals_raw": 0,
+    "paid_deals_dedup": 0,
+    "revenue_raw": 0.0,
+    "revenue_dedup": 0.0,
+    "spend": 6106.139999999999
+  }
+]

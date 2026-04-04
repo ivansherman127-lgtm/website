@@ -1,0 +1,11 @@
+project_name,month,leads_raw,leads_dedup,paid_deals_raw,paid_deals_dedup,revenue_raw,revenue_dedup,spend
+vea-professiya-pentester_RSYA-270226_1_rm221125_City_ml,2026-03,75,67,2,2,51000.0,51000.0,9.68
+vea-professiya-pentester_RSYA-270226_1_rm221125-RF,2026-03,71,66,0,0,0.0,0.0,1497.75
+vea-professiya-pentester_RSYA-270226_1_rm221125-RF-PAY-CONV-200,2026-03,63,57,0,0,0.0,0.0,413.0
+vea-professiya-pentester_RSYA-270226_1_rm221125-RF-SR-PAY-CONV-200,2026-03,68,58,0,0,0.0,0.0,0.0
+vea-start-karery-v-blue-team_RSYA-270226_1_rm061125-City_ml,2026-03,33,31,0,0,0.0,0.0,3675.02
+vea-start-karery-v-blue-team_RSYA-270226_1_rm061125-RF,2026-03,47,44,0,0,0.0,0.0,3095.73
+vea-start-karery-v-blue-team_RSYA-270226_1_rm061125-RF-PAY-CONV-200,2026-03,11,10,0,0,0.0,0.0,1600.0
+vea-start-karery-v-blue-team_RSYA-270226_1_rm061125-RF-SR-PAY-CONV-200,2026-03,16,16,0,0,0.0,0.0,1635.02
+vea_b2c_start_RSYA_120226_rm120226-RF_City_ml,2026-03,19,19,0,0,0.0,0.0,10336.23
+vea_cybered_start_v_ib_RSYA-110326_rm110326-RF_retarget,2026-03,34,33,0,0,0.0,0.0,6106.139999999999

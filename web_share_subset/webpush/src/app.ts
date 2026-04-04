@@ -280,6 +280,22 @@ function filterRowsByMonthsBack(rows: Record<string, unknown>[], dateCol: string
   });
 }
 
+function filterRowsByDateRange(
+  rows: Record<string, unknown>[],
+  dateCol: string,
+  from: string,
+  to: string,
+): Record<string, unknown>[] {
+  if (!dateCol || (!from && !to)) return rows;
+  return rows.filter((r) => {
+    const v = String(r[dateCol] ?? "").slice(0, 7);
+    if (!v || v.length < 7) return true;
+    if (from && v < from) return false;
+    if (to && v > to) return false;
+    return true;
+  });
+}
+
 function renderRowsTable(title: string, rows: Record<string, unknown>[]): string {
   if (!rows.length) {
     return `
@@ -509,6 +525,13 @@ type ViewKey =
   | "utm_constructor";
 
 type ViewMeta = { tab: TabKey; label: string; path: string; rowsLabel: string; title: string; kind?: "assoc" | "email" | "generic" };
+type PnlMode = "cohort" | "pnl";
+type RenderOptions = {
+  initialDateFrom?: string;
+  initialDateTo?: string;
+  initialPnlMode?: PnlMode;
+};
+
 const VIEW_META: Record<ViewKey, ViewMeta> = {
   assoc_dynamic: { tab: "assoc_builder", label: "Конструктор", path: "/api/assoc-revenue", rowsLabel: "Групп", title: "Ассоциативная выручка (конструктор)" },
   media_email: { tab: "media", label: "Имейл по месяцам", path: "data/email_hierarchy_by_send.json", rowsLabel: "Строк", title: "Рекламные медиумы" },
@@ -537,6 +560,16 @@ const VIEW_META: Record<ViewKey, ViewMeta> = {
 const ALL_VIEWS = Object.keys(VIEW_META) as ViewKey[];
 type MenuMode = "dashboard" | "reports" | "charts" | "utm";
 
+const PNL_PATH_BY_VIEW: Partial<Record<ViewKey, string>> = {
+  managers_sales_month: "data/manager_sales_by_month_pnl.json",
+  managers_firstline_month: "data/manager_firstline_by_month_pnl.json",
+  funnels_hierarchy: "data/bitrix_funnel_month_code_full_pnl.json",
+};
+
+function supportsPnlMode(view: ViewKey): boolean {
+  return view === "assoc_dynamic" || view === "funnels_hierarchy" || view.startsWith("managers_");
+}
+
 function isViewKey(v: string): v is ViewKey {
   return (ALL_VIEWS as string[]).includes(v);
 }
@@ -557,10 +590,15 @@ function writeUrlState(menu: MenuMode, view?: ViewKey): void {
   window.history.replaceState({}, "", url.toString());
 }
 
-function viewPath(view: ViewKey): string {
+function viewPath(view: ViewKey, options?: { pnlMode?: PnlMode; dateFrom?: string; dateTo?: string }): string {
   if (view === "assoc_dynamic") {
-    return "/api/assoc-revenue?dims=event";
+    const params = new URLSearchParams({ dims: "event" });
+    if (options?.dateFrom) params.set("from", options.dateFrom);
+    if (options?.dateTo) params.set("to", options.dateTo);
+    if (options?.pnlMode) params.set("pnlmode", options.pnlMode);
+    return `/api/assoc-revenue?${params.toString()}`;
   }
+  if (options?.pnlMode === "pnl" && PNL_PATH_BY_VIEW[view]) return PNL_PATH_BY_VIEW[view] as string;
   return VIEW_META[view].path;
 }
 
@@ -569,8 +607,50 @@ async function openTableView(view: ViewKey, dealsIndex: DealsIndex): Promise<voi
     await renderTable(view, utmSessionRows, dealsIndex);
     return;
   }
-  const rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
+  let rows: Record<string, unknown>[] = [];
+  try {
+    rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
+  } catch (e) {
+    // Show error inside the layout rather than breaking the whole app.
+    app.innerHTML = `<div class="app-layout">
+      <aside class="side-menu">
+        <button class="side-btn" data-menu="dashboard">Главная</button>
+        <button class="side-btn active" data-menu="reports">Детальные отчеты</button>
+        <button class="side-btn" data-menu="charts">Графики</button>
+        <button class="side-btn" data-menu="utm">UTM Конструктор</button>
+      </aside>
+      <main class="main-content">
+        <div class="err">Ошибка загрузки данных: ${escapeHtml(String(e))}</div>
+      </main>
+    </div>`;
+    app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
+      btn.onclick = async () => {
+        const m = btn.getAttribute("data-menu");
+        if (m === "dashboard") await openMenu("dashboard", dealsIndex, view);
+        else if (m === "reports") await openMenu("reports", dealsIndex, view);
+        else if (m === "charts") await openMenu("charts", dealsIndex, view);
+        else if (m === "utm") await openMenu("utm", dealsIndex, view);
+      };
+    });
+    return;
+  }
   await renderTable(view, rows, dealsIndex);
+}
+
+async function openMenu(menu: MenuMode, dealsIndex: DealsIndex, currentView?: ViewKey): Promise<void> {
+  if (menu === "dashboard") {
+    await renderDashboard(dealsIndex);
+    return;
+  }
+  if (menu === "charts") {
+    await renderCharts(dealsIndex);
+    return;
+  }
+  if (menu === "utm") {
+    await openTableView("utm_constructor", dealsIndex);
+    return;
+  }
+  await openTableView(currentView && currentView !== "utm_constructor" ? currentView : "year_total", dealsIndex);
 }
 
 function managerFormulaNote(_view: ViewKey): string {
@@ -1247,13 +1327,21 @@ function isHiddenUiColumn(col: string): boolean {
   return col.startsWith("__");
 }
 
-async function renderTable(view: ViewKey, rows: Record<string, unknown>[], dealsIndex: DealsIndex): Promise<void> {
+async function renderTable(view: ViewKey, rows: Record<string, unknown>[], dealsIndex: DealsIndex, options: RenderOptions = {}): Promise<void> {
   const isUtmConstructor = view === "utm_constructor";
+  const _now = new Date();
+  const _toY = _now.getFullYear();
+  const _toM = String(_now.getMonth() + 1).padStart(2, "0");
+  const _fromD = new Date(_now); _fromD.setMonth(_fromD.getMonth() - 11);
+  let dateFrom = options.initialDateFrom ?? `${_fromD.getFullYear()}-${String(_fromD.getMonth() + 1).padStart(2, "0")}`;
+  let dateTo = options.initialDateTo ?? `${_toY}-${_toM}`;
+  let pnlMode: PnlMode = options.initialPnlMode ?? "cohort";
+
   writeUrlState(isUtmConstructor ? "utm" : "reports", view);
   const meta = VIEW_META[view];
   const tab = meta.tab;
   const tabViews = (Object.keys(VIEW_META) as ViewKey[]).filter((k) => VIEW_META[k].tab === tab && VIEW_META[k].tab !== "utm");
-  const resolvedPath = viewPath(view);
+  const resolvedPath = viewPath(view, { pnlMode, dateFrom, dateTo });
   const aliasMetaRow = rows.length > 0 && String(rows[0]["__type"] ?? "") === "column_aliases" ? rows[0] : undefined;
   if (aliasMetaRow) {
     const viewAliases: Record<string, string> = {};
@@ -1281,17 +1369,44 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   }
   if (view === "managers_sales_course") {
     try {
-      managerCourseMonthRows = await fetchJson<Record<string, unknown>[]>("data/manager_sales_by_course_month.json");
+      managerCourseMonthRows = await fetchJson<Record<string, unknown>[]>(
+        pnlMode === "pnl" ? "data/manager_sales_by_course_month_pnl.json" : "data/manager_sales_by_course_month.json",
+      );
     } catch {
       managerCourseMonthRows = [];
     }
   }
   if (view === "managers_firstline_course") {
     try {
-      managerCourseMonthRows = await fetchJson<Record<string, unknown>[]>("data/manager_firstline_by_course_month.json");
+      managerCourseMonthRows = await fetchJson<Record<string, unknown>[]>(
+        pnlMode === "pnl" ? "data/manager_firstline_by_course_month_pnl.json" : "data/manager_firstline_by_course_month.json",
+      );
     } catch {
       managerCourseMonthRows = [];
     }
+  }
+  if (view === "assoc_dynamic") {
+    // Pre-populate so the column always appears in allCols even if the fetch fails
+    for (const r of viewRows) {
+      if (num(r["__assoc_event_detail"]) === 0 && String(r["Мероприятие"] ?? "").trim()) {
+        r["Новых с мероприятия"] = 0;
+      }
+    }
+    try {
+      const ecRows = await fetchJson<Record<string, unknown>[]>("data/bitrix_new_event_contacts_by_event.json");
+      const ecMap = new Map<string, number>();
+      for (const r of ecRows) {
+        const ev = String(r["Мероприятие"] ?? "").trim();
+        const n = num(r["Новых с мероприятия"]);
+        if (ev) ecMap.set(ev, n);
+      }
+      for (const r of viewRows) {
+        if (num(r["__assoc_event_detail"]) === 0) {
+          const ev = String(r["Мероприятие"] ?? "").trim();
+          if (ev) r["Новых с мероприятия"] = ecMap.get(ev) ?? 0;
+        }
+      }
+    } catch { /* ignore — pre-populated 0 remains */ }
   }
   const allCols = viewRows.length ? Object.keys(viewRows[0]) : [];
   let cols = allCols;
@@ -1299,7 +1414,6 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   let sortCol = initialDateCol || cols[0] || "";
   let sortDir: "asc" | "desc" = initialDateCol ? "desc" : "asc";
   let filter = "";
-  let dateWindowMonths = 12;
   let contactsFullOnly = false;
   const expanded = new Set<string>();
   const expandedEmailMonths = new Set<string>();
@@ -1338,19 +1452,13 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const isFunnelHierarchy = view === "funnels_hierarchy";
   const isBudgetHierarchy = view === "budget_monthly";
   const dateWindowCol = isManagerCourseView
-    ? "Месяц"
-    : (["Период", "Месяц", "month", "Год"].find((c) => allCols.includes(c)) || "");
-  const dateWindowViews = new Set<ViewKey>([
-    "assoc_dynamic",
-    "media_yandex",
-    "budget_monthly",
-    "managers_sales_month",
-    "managers_sales_course",
-    "managers_firstline_month",
-    "managers_firstline_course",
-    "funnels_hierarchy",
-  ]);
-  const hasDateWindowControl = dateWindowViews.has(view);
+    ? "month"
+    : isManagerHierarchy
+    ? (allCols.includes("month") ? "month" : "")
+    : (["month", "\u041f\u0435\u0440\u0438\u043e\u0434", "\u041c\u0435\u0441\u044f\u0446", "\u0413\u043e\u0434"].find((c) => allCols.includes(c)) || "");
+  const isAssocDynamic = view === "assoc_dynamic";
+  const hasDateWindowControl = !!dateWindowCol || isAssocDynamic;
+  const hasPnlToggle = supportsPnlMode(view);
   const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let visibleRows: Record<string, unknown>[] = [];
   const postJson = async (url: string, body: unknown): Promise<{ ok: boolean; rows?: number; error?: string }> => {
@@ -1400,12 +1508,13 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     if (sortCol && !cols.includes(sortCol)) sortCol = cols[0] || "";
 
     let data = [...viewRows];
-    if (hasDateWindowControl && dateWindowCol && !isManagerCourseView) {
-      data = filterRowsByMonthsBack(data, dateWindowCol, dateWindowMonths);
+    const effectiveDateCol = (pnlMode === "pnl" && allCols.includes("__pay_month")) ? "__pay_month" : dateWindowCol;
+    if (hasDateWindowControl && effectiveDateCol && !isManagerCourseView) {
+      data = filterRowsByDateRange(data, effectiveDateCol, dateFrom, dateTo);
     }
 
     if (view === "media_yandex" && hasDateWindowControl) {
-      const monthly = filterRowsByMonthsBack(mediaYandexMonthlyRows, "month", dateWindowMonths);
+      const monthly = filterRowsByDateRange(mediaYandexMonthlyRows, "month", dateFrom, dateTo);
       const mByProject = new Map<string, { leads: number; paid: number; revenue: number; spend: number }>();
       const assocRevenueByProject = new Map<string, number>();
       for (const r of viewRows) {
@@ -1426,7 +1535,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       }
 
       const ymByProject = new Map<string, YandexLeadMetrics>();
-      const campaignFiltered = filterRowsByMonthsBack(mediaYandexCampaignMonthRows, "month", dateWindowMonths);
+      const campaignFiltered = filterRowsByDateRange(mediaYandexCampaignMonthRows, "month", dateFrom, dateTo);
       for (const r of campaignFiltered) {
         const p = mapYandexProjectGroup(r["Название кампании"]);
         if (!p) continue;
@@ -1468,14 +1577,18 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
 
     if (isManagerHierarchy && hasDateWindowControl && view.endsWith("_month")) {
-      const months = filterRowsByMonthsBack(
+      const months = filterRowsByDateRange(
         viewRows.filter((r) => String(r["Level"] ?? "") === "Месяц"),
-        "Месяц",
-        dateWindowMonths,
+        "month",
+        dateFrom,
+        dateTo,
       );
       const mgr = new Map<string, Record<string, unknown>>();
+      const monthsByManager = new Map<string, Record<string, unknown>[]>();
       for (const r of months) {
         const m = String(r["Менеджер"] ?? "").trim() || "Unassigned";
+        if (!monthsByManager.has(m)) monthsByManager.set(m, []);
+        monthsByManager.get(m)!.push(r);
         if (!mgr.has(m)) {
           mgr.set(m, {
             "Level": "Manager",
@@ -1506,11 +1619,17 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         "Конверсия в работе": num(r["Лиды"]) > 0 ? num(r["В работе"]) / num(r["Лиды"]) : 0,
         "Средний_чек": num(r["Сделок_с_выручкой"]) > 0 ? num(r["Выручка"]) / num(r["Сделок_с_выручкой"]) : 0,
       }));
-      data = [...managers, ...months];
+      const interleaved: Record<string, unknown>[] = [];
+      for (const mRow of managers) {
+        const manager = String((mRow as Record<string, unknown>)["Менеджер"] ?? "").trim() || "Unassigned";
+        interleaved.push(mRow);
+        interleaved.push(...(monthsByManager.get(manager) || []));
+      }
+      data = interleaved;
     }
 
     if (isManagerCourseView && hasDateWindowControl) {
-      const monthRows = filterRowsByMonthsBack(managerCourseMonthRows, "Месяц", dateWindowMonths);
+      const monthRows = filterRowsByDateRange(managerCourseMonthRows, "month", dateFrom, dateTo);
       const byManager = new Map<string, Map<string, Record<string, unknown>[]>>();
       for (const r of monthRows) {
         const manager = String(r["Менеджер"] ?? "").trim() || "Unassigned";
@@ -1562,10 +1681,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
 
     if (isFunnelHierarchy && hasDateWindowControl) {
-      const codeRows = filterRowsByMonthsBack(
+      const codeRows = filterRowsByDateRange(
         viewRows.filter((r) => String(r["__node"] ?? "").trim() === "code"),
         "Месяц",
-        dateWindowMonths,
+        dateFrom,
+        dateTo,
       );
       const groupedByFunnel = new Map<string, Record<string, unknown>[]>();
       for (const r of codeRows) {
@@ -1585,6 +1705,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
           "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
           "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
+          "Неизвестно": items.reduce((a, x) => a + num(x["Неизвестно"]), 0),
           "Отказы": items.reduce((a, x) => a + num(x["Отказы"]), 0),
           "В работе": items.reduce((a, x) => a + num(x["В работе"]), 0),
           "Невалидные_лиды": items.reduce((a, x) => a + num(x["Невалидные_лиды"]), 0),
@@ -1610,6 +1731,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
             "Лиды": mItems.reduce((a, x) => a + num(x["Лиды"]), 0),
             "Квал": mItems.reduce((a, x) => a + num(x["Квал"]), 0),
             "Неквал": mItems.reduce((a, x) => a + num(x["Неквал"]), 0),
+            "Неизвестно": mItems.reduce((a, x) => a + num(x["Неизвестно"]), 0),
             "Отказы": mItems.reduce((a, x) => a + num(x["Отказы"]), 0),
             "В работе": mItems.reduce((a, x) => a + num(x["В работе"]), 0),
             "Невалидные_лиды": mItems.reduce((a, x) => a + num(x["Невалидные_лиды"]), 0),
@@ -1624,10 +1746,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
 
     if (isBudgetHierarchy && hasDateWindowControl) {
-      const months = filterRowsByMonthsBack(
+      const months = filterRowsByDateRange(
         viewRows.filter((r) => String(r["Level"] ?? "") === "Month"),
-        "Период",
-        dateWindowMonths,
+        effectiveDateCol || "month",
+        dateFrom,
+        dateTo,
       );
       const allowed = new Set(months.map((r) => String(r["month"] ?? r["Период"] ?? "").trim()).filter(Boolean));
       const details = viewRows.filter((r) => String(r["Level"] ?? "") === "Detail" && allowed.has(String(r["month"] ?? "").trim()));
@@ -1656,6 +1779,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     if (sortCol && !isEmailHierarchy && !isManagerHierarchy && !isFunnelHierarchy && !isYandexHierarchy && !isYandexProjectHierarchy && !isAssocEmailHierarchy && !isAssocEventHierarchy && !isAssocYandexHierarchy && !isBudgetHierarchy) {
       data.sort((a, b) => compareCell(sortCol, a[sortCol], b[sortCol], sortDir));
     }
+
+    // KPI boxes should reflect active period/filter selection, not collapse state.
+    const kpiBaseRows = [...data];
     if (isEmailHierarchy) {
       const ordered: Record<string, unknown>[] = [];
       for (const r of data) {
@@ -1771,8 +1897,37 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       data = ordered;
     }
 
+    const kpiRows =
+      view === "funnels_hierarchy"
+        ? kpiBaseRows.filter((r) => String(r["__node"] ?? "").trim() === "code")
+        : isManagerHierarchy
+          ? kpiBaseRows.filter((r) => String(r["Level"] ?? "").trim() === "Manager")
+        : isAssocEmailHierarchy
+          ? kpiBaseRows.filter((r) => num(r["__assoc_email_detail"]) === 0)
+        : isAssocEventHierarchy
+          ? kpiBaseRows.filter((r) => num(r["__assoc_event_detail"]) === 0)
+        : isAssocYandexHierarchy
+          ? kpiBaseRows.filter((r) => num(r["__assoc_yandex_detail"]) === 0)
+        : isYandexProjectHierarchy
+          ? kpiBaseRows.filter((r) => num(r["__yandex_project_detail"]) === 0)
+        : isBudgetHierarchy
+          ? kpiBaseRows.filter((r) => String(r["Level"] ?? "").trim() === "Month")
+          : kpiBaseRows;
+
     const topCountEl = app.querySelector<HTMLElement>(".kpi-grid .kpi:first-child .value");
-    if (topCountEl) topCountEl.textContent = data.length.toLocaleString("ru-RU");
+    if (topCountEl) topCountEl.textContent = kpiRows.length.toLocaleString("ru-RU");
+
+    const topDealsEl = app.querySelector<HTMLElement>(".kpi-grid .kpi:nth-child(2) .value");
+    if (topDealsEl) {
+      const dealsTotal = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Сделок_с_выручкой", "Сделок с выручкой"]), 0);
+      topDealsEl.textContent = dealsTotal.toLocaleString("ru-RU");
+    }
+
+    const topRevenueEl = app.querySelector<HTMLElement>(".kpi-grid .kpi:nth-child(3) .value");
+    if (topRevenueEl) {
+      const revenueTotal = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Выручка", "выручка"]), 0);
+      topRevenueEl.textContent = formatRub(revenueTotal);
+    }
 
     const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isYandexProjectHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy || isAssocYandexHierarchy || isBudgetHierarchy;
     visibleRows = data;
@@ -1866,6 +2021,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     const table = app.querySelector(".table-scroll table");
     if (!table) return;
     table.innerHTML = `<thead><tr>${th}</tr></thead><tbody>${body}</tbody>`;
+    app.querySelectorAll<HTMLButtonElement>(".pnl-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.getAttribute("data-mode") === pnlMode);
+    });
     app.querySelectorAll<HTMLTableCellElement>("th[data-col]").forEach((h) => {
       h.style.color = h.getAttribute("data-col") === sortCol ? "var(--accent)" : "";
       h.onclick = (ev) => {
@@ -2179,7 +2337,18 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       }
       ${
         hasDateWindowControl
-          ? `<label class="date-window-inline">Период: <input class="date-window-slider" type="range" min="1" max="24" step="1" value="${dateWindowMonths}" /> <span class="date-window-value">${escapeHtml(monthsBackRangeLabel(viewRows, dateWindowCol, dateWindowMonths))}</span></label>`
+          ? `<span class="date-range-controls">
+              <label>С: <input type="month" class="date-from-input" value="${dateFrom}" /></label>
+              <label>По: <input type="month" class="date-to-input" value="${dateTo}" /></label>
+              ${
+                hasPnlToggle
+                  ? `<span class="pnl-toggle">
+                       <button class="pnl-btn${pnlMode === "cohort" ? " active" : ""}" data-mode="cohort">Когорта</button>
+                       <button class="pnl-btn${pnlMode !== "cohort" ? " active" : ""}" data-mode="pnl">PNL</button>
+                     </span>`
+                  : ""
+              }
+            </span>`
           : ""
       }
       ${
@@ -2241,8 +2410,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   </div>`;
 
   const filterInput = app.querySelector<HTMLInputElement>(".filter-input");
-  const dateWindowSlider = app.querySelector<HTMLInputElement>(".date-window-slider");
-  const dateWindowValue = app.querySelector<HTMLElement>(".date-window-value");
+  const dateFromInput = app.querySelector<HTMLInputElement>(".date-from-input");
+  const dateToInput = app.querySelector<HTMLInputElement>(".date-to-input");
+  const rowNote = app.querySelector<HTMLSpanElement>(".row-note");
   const contactsFullBtn = app.querySelector<HTMLButtonElement>(".contacts-full-btn");
   const copyTableBtn = app.querySelector<HTMLButtonElement>(".copy-table-btn");
   const downloadTableBtn = app.querySelector<HTMLButtonElement>(".download-table-btn");
@@ -2302,20 +2472,76 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   if (filterInput) {
     filterInput.oninput = () => { filter = filterInput.value; draw(); };
   }
-  if (dateWindowSlider && dateWindowValue) {
-    dateWindowSlider.oninput = () => {
-      const next = Number(dateWindowSlider.value);
-      dateWindowMonths = Number.isFinite(next) && next > 0 ? Math.round(next) : 12;
-      dateWindowValue.textContent = monthsBackRangeLabel(viewRows, dateWindowCol, dateWindowMonths);
-      draw();
+
+  let pnlRetryDone = false;
+  const rerenderForCurrentState = async (): Promise<void> => {
+    try {
+      if (rowNote) rowNote.textContent = "";
+      const nextRows = await fetchJson<Record<string, unknown>[]>(viewPath(view, { pnlMode, dateFrom, dateTo }));
+      await renderTable(view, nextRows, dealsIndex, {
+        initialDateFrom: dateFrom,
+        initialDateTo: dateTo,
+        initialPnlMode: pnlMode,
+      });
+      pnlRetryDone = false;
+    } catch (e) {
+      const msg = String(e ?? "");
+      const canRetryMaterialize =
+        !pnlRetryDone &&
+        pnlMode === "pnl" &&
+        !isAssocDynamic &&
+        /:\s*404\b/.test(msg);
+
+      if (canRetryMaterialize) {
+        pnlRetryDone = true;
+        try {
+          if (rowNote) rowNote.textContent = "PNL данные не найдены, запускаю пересборку...";
+          await fetch("/api/analytics/materialize?force=true", { method: "POST" });
+          const nextRows = await fetchJson<Record<string, unknown>[]>(viewPath(view, { pnlMode, dateFrom, dateTo }));
+          await renderTable(view, nextRows, dealsIndex, {
+            initialDateFrom: dateFrom,
+            initialDateTo: dateTo,
+            initialPnlMode: pnlMode,
+          });
+          return;
+        } catch (retryErr) {
+          if (rowNote) rowNote.textContent = `PNL недоступен: ${String(retryErr)}`;
+          if (status) status.textContent = `Ошибка загрузки: ${String(retryErr)}`;
+          return;
+        }
+      }
+
+      if (rowNote) rowNote.textContent = `Ошибка загрузки: ${msg}`;
+      if (status) status.textContent = `Ошибка загрузки: ${String(e)}`;
+    }
+  };
+
+  if (dateFromInput) {
+    dateFromInput.onchange = () => {
+      dateFrom = dateFromInput.value || "";
+      if (isAssocDynamic) void rerenderForCurrentState();
+      else draw();
     };
   }
+  if (dateToInput) {
+    dateToInput.onchange = () => {
+      dateTo = dateToInput.value || "";
+      if (isAssocDynamic) void rerenderForCurrentState();
+      else draw();
+    };
+  }
+  app.querySelectorAll<HTMLButtonElement>(".pnl-btn").forEach((btn) => {
+    btn.onclick = () => {
+      pnlMode = (btn.getAttribute("data-mode") || "cohort") as PnlMode;
+      void rerenderForCurrentState();
+    };
+  });
   app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
     btn.onclick = async () => {
       const m = btn.getAttribute("data-menu");
-      if (m === "dashboard") await renderDashboard(dealsIndex);
-      else if (m === "charts") await renderCharts(dealsIndex);
-      else if (m === "utm") await openTableView("utm_constructor", dealsIndex);
+      if (m === "dashboard" || m === "reports" || m === "charts" || m === "utm") {
+        await openMenu(m, dealsIndex, view);
+      }
     };
   });
   if (contactsFullBtn) {
@@ -2537,12 +2763,9 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
   app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
     btn.onclick = async () => {
       const m = btn.getAttribute("data-menu");
-      if (m === "dashboard") await renderDashboard(dealsIndex);
-      else if (m === "reports") {
-        const view: ViewKey = "year_total";
-        await openTableView(view, dealsIndex);
+      if (m === "dashboard" || m === "reports" || m === "charts" || m === "utm") {
+        await openMenu(m, dealsIndex, "year_total");
       }
-      else if (m === "utm") await openTableView("utm_constructor", dealsIndex);
     };
   });
 
@@ -2898,15 +3121,46 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
 }
 
 async function boot(): Promise<void> {
+  // Show loading skeleton immediately — before any async operations so the page
+  // is never a blank white/black void while waiting for data.
+  app.innerHTML = `<div class="boot-loading"><div class="boot-spinner"></div><p class="boot-msg">Загрузка данных…</p></div>`;
+
   try {
     dealRevenueById.clear();
     yandexProjectLeadMetrics.clear();
     yandexMonthLeadMetrics.clear();
-    // Datasets are pre-built server-side (rebuild triggered by b24-sync).
-    // Fire a background refresh so stale data catches up without blocking the UI.
-    void fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" }).catch(() => {});
-    loadEmailOverridesMap(await fetch(staticUrl("data/email_group_overrides.json")).then(r => r.json() as Promise<EmailOverridesFile>));
-    const yandexHierarchy = await fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
+
+    // Trigger materialisation and wait for it.
+    // Server-side cache means this returns in <50ms when data is fresh (skipped).
+    // We await it so we never render a page from partially-deleted dataset_json rows.
+    try {
+      const matRes = await fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" });
+      if (!matRes.ok) {
+        const errText = await matRes.text().catch(() => matRes.status.toString());
+        console.warn(`Materialize skipped (${matRes.status}): ${errText}`);
+      } else {
+        const matJson = await matRes.json() as { ok?: boolean; error?: string; skipped?: boolean };
+        if (!matJson.ok && !matJson.skipped) {
+          console.warn(`Materialize error: ${matJson.error ?? "unknown"}`);
+        }
+      }
+    } catch (matErr) {
+      console.warn("Materialize request failed", matErr);
+    }
+
+    // Load email overrides and yandex hierarchy in parallel (independent of each other
+    // and of the background materialisation above).
+    const [emailOverridesRaw, yandexHierarchy] = await Promise.all([
+      fetch(staticUrl("data/email_group_overrides.json"))
+        .then((r) => r.json() as Promise<EmailOverridesFile>)
+        .catch(() => ({ groups: {} } as EmailOverridesFile)),
+      fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json").catch((err) => {
+        console.warn("Yandex hierarchy unavailable; continuing without hierarchy metrics", err);
+        return [] as Record<string, unknown>[];
+      }),
+    ]);
+
+    loadEmailOverridesMap(emailOverridesRaw);
     for (const r of yandexHierarchy) {
       const lvl = String(r["Level"] ?? "").trim();
       if (lvl === "Campaign") {
@@ -2948,9 +3202,9 @@ async function boot(): Promise<void> {
 async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
   writeUrlState("dashboard");
   const [contacts, bitrixWeekFunnel, yandexWeekCampaign, contactsTotals] = await Promise.all([
-    fetchJson<Record<string, unknown>[]>("data/bitrix_contacts_uid.json"),
-    fetchJson<Record<string, unknown>[]>("data/bitrix_week_funnel_total.json"),
-    fetchJson<Record<string, unknown>[]>("data/yandex_week_campaign_total.json"),
+    fetchJson<Record<string, unknown>[]>("data/bitrix_contacts_uid.json").catch(() => []),
+    fetchJson<Record<string, unknown>[]>("data/bitrix_week_funnel_total.json").catch(() => []),
+    fetchJson<Record<string, unknown>[]>("data/yandex_week_campaign_total.json").catch(() => []),
     fetchJson<Record<string, unknown>[]>("data/dashboard_contacts_total.json").catch(() => []),
   ]);
 
@@ -3056,13 +3310,8 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
     app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
       btn.onclick = async () => {
         const m = btn.getAttribute("data-menu");
-        if (m === "reports") {
-          const view: ViewKey = "year_total";
-          await openTableView(view, dealsIndex);
-        } else if (m === "charts") {
-          await renderCharts(dealsIndex);
-        } else if (m === "utm") {
-          await openTableView("utm_constructor", dealsIndex);
+        if (m === "dashboard" || m === "reports" || m === "charts" || m === "utm") {
+          await openMenu(m, dealsIndex, "year_total");
         }
       };
     });

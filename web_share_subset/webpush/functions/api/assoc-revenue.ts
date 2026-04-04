@@ -17,6 +17,7 @@ interface Env {
 }
 
 type Cohort = "all" | "attacking_january";
+type PnlMode = "cohort" | "pnl";
 type DimKey =
   | "yandex_campaign"
   | "yandex_ad"
@@ -93,6 +94,10 @@ function parseDims(raw: string | null): DimKey[] {
 
 function parseCohort(raw: string | null): Cohort {
   return raw === "attacking_january" ? "attacking_january" : "all";
+}
+
+function parsePnlMode(raw: string | null): PnlMode {
+  return raw === "pnl" ? "pnl" : "cohort";
 }
 
 function isIsoMonth(raw: string | null): boolean {
@@ -371,11 +376,12 @@ async function computeSourceWatermark(db: D1Database, cohort: Cohort): Promise<s
 function makeCacheKey(params: {
   dims: DimKey[];
   cohort: Cohort;
+  pnlMode: PnlMode;
   fromMonth: string | null;
   toMonth: string | null;
 }): string {
-  const { dims, cohort, fromMonth, toMonth } = params;
-  return `v9|dims=${dims.join(",")}|cohort=${cohort}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
+  const { dims, cohort, pnlMode, fromMonth, toMonth } = params;
+  return `v10|dims=${dims.join(",")}|cohort=${cohort}|pnlmode=${pnlMode}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
 }
 
 export async function onRequestGet(context: {
@@ -393,6 +399,7 @@ export async function onRequestGet(context: {
   }
 
   const cohort = parseCohort(url.searchParams.get("cohort"));
+  const pnlMode = parsePnlMode(url.searchParams.get("pnlmode"));
   const fromMonth = url.searchParams.get("from");
   const toMonth = url.searchParams.get("to");
   const forceRecalc = /^(1|true|yes)$/i.test((url.searchParams.get("recalc") || "").trim());
@@ -406,20 +413,38 @@ export async function onRequestGet(context: {
   const table = cohort === "attacking_january" ? "mart_attacking_january_cohort_deals" : "mart_deals_enriched";
   const specs = dims.map((d) => DIMENSIONS[d]);
 
-  const selectParts = specs.map((d, i) => `${d.expr} AS d${i + 1}`);
+  const selectParts = specs.map((d, i) => {
+    const expr = d.key === "month"
+      ? "COALESCE(NULLIF(period_month, ''), '(без месяца)')"
+      : d.expr;
+    return `${expr} AS d${i + 1}`;
+  });
   const dimColumns = specs.map((_, i) => `d${i + 1}`).join(", ");
   const dimColumnsQualified = specs.map((_, i) => `s.d${i + 1}`).join(", ");
   const emailSourceExpr = "LOWER(TRIM(COALESCE(\"UTM Source\", ''))) = 'sendsay'";
+  const payMonthExprSource = `CASE
+    WHEN COALESCE(src."Дата оплаты", '') LIKE '____-__%' THEN SUBSTR(src."Дата оплаты", 1, 7)
+    WHEN COALESCE(src."Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR(src."Дата оплаты", 7, 4) || '-' || SUBSTR(src."Дата оплаты", 4, 2)
+    ELSE ''
+  END`;
+  const payMonthExprPlain = `CASE
+    WHEN COALESCE("Дата оплаты", '') LIKE '____-__%' THEN SUBSTR("Дата оплаты", 1, 7)
+    WHEN COALESCE("Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR("Дата оплаты", 7, 4) || '-' || SUBSTR("Дата оплаты", 4, 2)
+    ELSE ''
+  END`;
+  const periodMonthExprSource = pnlMode === "pnl"
+    ? payMonthExprSource
+    : "COALESCE(src.month, '')";
 
   const wheres: string[] = [];
   const binds: unknown[] = [];
 
   if (fromMonth) {
-    wheres.push("month >= ?");
+    wheres.push("period_month >= ?");
     binds.push(fromMonth);
   }
   if (toMonth) {
-    wheres.push("month <= ?");
+    wheres.push("period_month <= ?");
     binds.push(toMonth);
   }
 
@@ -440,7 +465,7 @@ export async function onRequestGet(context: {
     await ensureCacheTable(context.env.DB);
 
     const sourceWatermark = await computeSourceWatermark(context.env.DB, cohort);
-    const cacheKey = makeCacheKey({ dims, cohort, fromMonth, toMonth });
+    const cacheKey = makeCacheKey({ dims, cohort, pnlMode, fromMonth, toMonth });
 
     if (!forceRecalc) {
       const cached = await context.env.DB
@@ -599,6 +624,7 @@ export async function onRequestGet(context: {
       source_deals AS (
         SELECT
           src.*,
+          ${periodMonthExprSource} AS period_month,
           ${yandexCampaignExpr} AS yandex_campaign_group,
           ${hasYandexStats ? `COALESCE(ym.ad_label, '(без маппинга в Yandex raw)')` : `'(без маппинга в Yandex raw)'`} AS yandex_ad_group,
           ${emailCampaignExpr} AS email_release_group,
@@ -613,6 +639,14 @@ export async function onRequestGet(context: {
           ON ycm.campaign_id = REPLACE(TRIM(COALESCE(src."UTM Campaign", '')), '.0', '')
         ` : ""}
       )`;
+
+    const paidRevenueDateWhereSql = (() => {
+      if (pnlMode !== "pnl") return "";
+      const parts: string[] = ["COALESCE(pd.pay_month, '') <> ''"];
+      if (fromMonth) parts.push(`pd.pay_month >= ${sqlQuote(fromMonth)}`);
+      if (toMonth) parts.push(`pd.pay_month <= ${sqlQuote(toMonth)}`);
+      return ` AND ${parts.join(" AND ")}`;
+    })();
 
     const sourceContactExpr = `REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '')`;
     const contactPoolCteSql = hasContactsUid
@@ -641,12 +675,13 @@ export async function onRequestGet(context: {
         FROM (
           SELECT
             REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id,
-            COALESCE(revenue_amount, 0) AS revenue_amount
+            COALESCE(revenue_amount, 0) AS revenue_amount,
+            ${payMonthExprPlain} AS pay_month
           FROM mart_deals_enriched
           WHERE is_revenue_variant3 = 1
         ) pd
         LEFT JOIN stg_contacts_uid cu ON cu.contact_id = pd.contact_id
-        WHERE pd.contact_id <> ''
+        WHERE pd.contact_id <> ''${paidRevenueDateWhereSql}
         GROUP BY COALESCE(cu.contact_uid, pd.contact_id)
       )`
       : `paid_by_contact AS (
@@ -656,6 +691,9 @@ export async function onRequestGet(context: {
           COALESCE(SUM(revenue_amount), 0) AS revenue
         FROM mart_deals_enriched
         WHERE is_revenue_variant3 = 1
+          ${pnlMode === "pnl" ? `AND ${payMonthExprPlain} <> ''` : ""}
+          ${pnlMode === "pnl" && fromMonth ? `AND ${payMonthExprPlain} >= ${sqlQuote(fromMonth)}` : ""}
+          ${pnlMode === "pnl" && toMonth ? `AND ${payMonthExprPlain} <= ${sqlQuote(toMonth)}` : ""}
           AND REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') <> ''
         GROUP BY REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '')
       )`;
@@ -757,11 +795,15 @@ export async function onRequestGet(context: {
             SELECT
               REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id,
               COALESCE(revenue_amount, 0) AS revenue,
+              ${payMonthExprPlain} AS pay_month,
               COALESCE(is_attacking_january, 0) AS is_attacking_january,
               COALESCE(event_class, '') AS event_class,
               COALESCE("UTM Source", '') AS utm_source
             FROM mart_deals_enriched
             WHERE is_revenue_variant3 = 1
+              ${pnlMode === "pnl" ? `AND ${payMonthExprPlain} <> ''` : ""}
+              ${pnlMode === "pnl" && fromMonth ? `AND ${payMonthExprPlain} >= ${sqlQuote(fromMonth)}` : ""}
+              ${pnlMode === "pnl" && toMonth ? `AND ${payMonthExprPlain} <= ${sqlQuote(toMonth)}` : ""}
               AND REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') <> ''
           ) pd
           ${hasContactsUid ? `LEFT JOIN stg_contacts_uid cu ON cu.contact_id = pd.contact_id` : ``}

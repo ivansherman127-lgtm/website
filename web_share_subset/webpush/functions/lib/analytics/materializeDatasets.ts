@@ -5,15 +5,17 @@ import { groupYandexProjectsNoMonth } from "./yandexProjectsNoMonth";
 import { sqlExtractYandexAdId } from "./yandexAdId";
 import { buildYdHierarchyRows } from "./ydHierarchy";
 import { buildBitrixContactsUidRows } from "./bitrixContactsUid";
-import { buildLeadLogicSql } from "./leadLogicSql";
+import { buildLeadLogicSql, buildPotentialCond } from "./leadLogicSql";
 import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS, YANDEX_KNOWN_GROUPS, mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
 import managerFirstlineNames from "../../config/manager_firstline.json";
 import {
   sqlMonthLabel,
   buildManagerBaseSql,
+  buildManagerPnlBaseSql,
   buildManagerByMonthSql,
   buildManagerByCourseSql,
   buildManagerByCourseMonthSql,
+  buildFirstlineFilter,
   type ManagerBaseExprs,
 } from "./managerSql";
 import { buildAssocQaSql, buildAssocQaByAdSql, buildAdPerfSql, type AssocRevenueExprs } from "./assocRevenueSql";
@@ -24,6 +26,14 @@ async function tableExists(db: D1Database, tableName: string): Promise<boolean> 
     .bind(tableName)
     .first<{ name: string }>();
   return !!row?.name;
+}
+
+function sqlMonthFromDateExpr(expr: string): string {
+  return `CASE
+    WHEN COALESCE(${expr}, '') LIKE '____-__%' THEN SUBSTR(${expr}, 1, 7)
+    WHEN COALESCE(${expr}, '') LIKE '__.__.____%' THEN SUBSTR(${expr}, 7, 4) || '-' || SUBSTR(${expr}, 4, 2)
+    ELSE ''
+  END`;
 }
 
 async function columnExists(db: D1Database, tableName: string, columnName: string): Promise<boolean> {
@@ -61,16 +71,25 @@ function rowsToJson(rows: Record<string, unknown>[]): string {
 const CHUNK_SIZE = 900_000; // bytes (safe margin under 1 MB)
 
 async function upsertDataset(db: D1Database, path: string, body: string): Promise<void> {
-  await db.prepare(`DELETE FROM dataset_json WHERE path = ?`).bind(path).run();
   const chunks: string[] = [];
   for (let i = 0; i < body.length; i += CHUNK_SIZE) {
     chunks.push(body.slice(i, i + CHUNK_SIZE));
   }
   const stmt = db.prepare(
-    `INSERT INTO dataset_json (path, chunk, body, updated_at) VALUES (?, ?, ?, datetime('now'))`,
+    `INSERT OR REPLACE INTO dataset_json (path, chunk, body, updated_at) VALUES (?, ?, ?, datetime('now'))`,
   );
-  // D1 batch max is 100 statements; chunks per dataset will be far fewer than that
+  // Upsert chunks in-place. Using INSERT OR REPLACE avoids a DELETE-then-INSERT window where
+  // old data would be gone but new data not yet written (catastrophic if D1 hits CPU limit mid-write).
+  // If D1 resets mid-batch, the worst case is some chunks have new data and some have old data —
+  // the path remains partially readable rather than completely missing.
   await db.batch(chunks.map((chunk, idx) => stmt.bind(path, idx, chunk)));
+  // Remove any stale extra chunks from a previous version that needed more chunks than the new one.
+  // Best-effort: if this fails the extra chunks are harmless (they'll be overwritten next run).
+  await db
+    .prepare(`DELETE FROM dataset_json WHERE path = ? AND chunk >= ?`)
+    .bind(path, chunks.length)
+    .run()
+    .catch(() => {});
 }
 
 function sqlQuote(value: string): string {
@@ -155,8 +174,8 @@ function buildYandexNoMonthHierarchyRows(
 
   const out: Record<string, unknown>[] = [];
   for (const row of projectRows) {
-    const project = String(row.project_name ?? "").trim();
-    if (!project) continue;
+    const project = toKnownGroup(String(row.project_name ?? "").trim());
+    if (!project || project === "UNMAPPED") continue;
     const details = (byProject.get(project) || []).sort((a, b) => {
       const spendDiff = (Number(b.spend ?? 0) || 0) - (Number(a.spend ?? 0) || 0);
       if (spendDiff !== 0) return spendDiff;
@@ -274,20 +293,26 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     ]);
   const hasTypyInMart = hasTypyInMart1 || hasTypyInMart2;
 
-  const [hasTypyInRaw1, hasTypyInRaw2] = hasRawP01
+  const [hasTypyInRaw1, hasTypyInRaw2, hasPassedByFirstLine, hasModifyDateRu, hasModifyDateShortRu, hasModifyDateEn] = hasRawP01
     ? await Promise.all([
         columnExists(db, "raw_bitrix_deals_p01", "Типы некачественного лида"),
         columnExists(db, "raw_bitrix_deals_p01", "Типы некачественных лидов"),
+        columnExists(db, "raw_bitrix_deals_p01", "Передан первой линией"),
+        columnExists(db, "raw_bitrix_deals_p01", "Дата изменения сделки"),
+        columnExists(db, "raw_bitrix_deals_p01", "Дата изменения"),
+        columnExists(db, "raw_bitrix_deals_p01", "date_modify"),
       ])
-    : ([false, false] as const);
+    : ([false, false, false, false, false, false] as const);
   const hasTypyInRaw = hasTypyInRaw1 || hasTypyInRaw2;
 
   // ── Build SQL expression fragments ──────────────────────────────────────────
   const bitrixInvalidCond = hasTypyInMart
     ? buildInvalidTokenCond(BITRIX_INVALID_TOKENS, "")
-    : hasTypyInRaw
-    ? buildInvalidTokenCond(BITRIX_INVALID_TOKENS, "p.")
     : "0";
+  // bitrixInvalidExpr is used in queries that SELECT directly from mart_deals_enriched
+  // (no p. alias). When the column is only in raw p01, the stage-token detection in
+  // buildLeadLogicSql (via extraInvalidCond) handles it; we still expose a direct expr
+  // so that explicit SUM(is_invalid) lines in Batch 1 queries are consistent.
   const bitrixInvalidExpr = hasTypyInMart
     ? `CASE WHEN (${bitrixInvalidCond}) THEN 1 ELSE 0 END`
     : `CASE WHEN 0 THEN 1 ELSE 0 END`;
@@ -350,16 +375,20 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
   const firstlineList = Array.isArray(managerFirstlineNames)
     ? managerFirstlineNames.map((s) => String(s ?? "").trim()).filter(Boolean)
     : [];
-  const firstlineFilter = firstlineList.length
-    ? `trim(manager) IN (${firstlineList.map((n) => sqlQuote(n)).join(", ")})`
-    : `0`;
+  const firstlineFilter = buildFirstlineFilter(firstlineList, hasPassedByFirstLine);
   const salesFilter = `trim(manager) IN ('Анастасия Крисанова', 'Василий Гореленков', 'Глеб Барбазанов', 'Елена Лобода')`;
+
+  const managerPotentialExpr = buildPotentialCond(`m."Стадия сделки"`);
   const managerBaseExprs: ManagerBaseExprs = {
     qual: managerLeadLogic.qual,
     unqual: managerLeadLogic.unqual,
     refusal: managerLeadLogic.refusal,
     invalidExpr: managerInvalidExpr,
     inWork: managerLeadLogic.inWork,
+    potential: managerPotentialExpr,
+    firstlineFilter,
+    firstlineHybridMode: hasPassedByFirstLine,
+    hasPassedByFirstLine,
   };
   const managerBaseSql = buildManagerBaseSql(hasRawP01, managerBaseExprs);
 
@@ -471,6 +500,11 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
       `WITH flags AS (
          SELECT
            month,
+           CASE
+             WHEN COALESCE("Дата оплаты", '') LIKE '____-__%' THEN SUBSTR("Дата оплаты", 1, 7)
+             WHEN COALESCE("Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR("Дата оплаты", 7, 4) || '-' || SUBSTR("Дата оплаты", 4, 2)
+             ELSE ''
+           END AS pay_month,
            COALESCE("ID", '') AS deal_id,
            COALESCE("Стадия сделки", '') AS stage,
            COALESCE("Воронка", '') AS funnel,
@@ -478,8 +512,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.qual} AS is_qual,
            ${bitrixLeadLogic.unqual} AS is_unqual,
            ${bitrixLeadLogic.refusal} AS is_refusal,
-           ${bitrixInvalidExpr} AS is_invalid,
+           ${bitrixLeadLogic.invalid} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
+           ${buildPotentialCond(`"Стадия сделки"`)} AS is_potential,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched
          WHERE COALESCE(month, '') <> ''
@@ -493,12 +528,14 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          SUM(is_refusal) AS "Отказы",
          SUM(is_in_work) AS "В работе",
          SUM(is_invalid) AS "Невалидные_лиды",
+         SUM(is_potential) AS "В потенциале",
          SUM(is_revenue) AS "Сделок_с_выручкой",
          SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
+         CASE WHEN SUM(is_qual) = 0 THEN 0 ELSE SUM(is_revenue) * 1.0 / SUM(is_qual) END AS "Конверсия Квал→Оплата",
          CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
        FROM flags
        GROUP BY month
@@ -529,6 +566,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     r_bitrixContactsUid,
     r_dashContactsCount,
     r_bitrixFunnelCode,
+    r_newEventContacts,
   ] = await Promise.all([
     db.prepare(
       `WITH src AS (
@@ -1033,8 +1071,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            ${bitrixLeadLogic.qual} AS is_qual,
            ${bitrixLeadLogic.unqual} AS is_unqual,
            ${bitrixLeadLogic.refusal} AS is_refusal,
-           ${bitrixInvalidExpr} AS is_invalid,
+           ${bitrixLeadLogic.invalid} AS is_invalid,
            ${bitrixLeadLogic.inWork} AS is_in_work,
+           ${buildPotentialCond(`"Стадия сделки"`)} AS is_potential,
            CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched
          WHERE COALESCE(month, '') <> ''
@@ -1046,19 +1085,51 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          COUNT(*) AS "Лиды",
          SUM(is_qual) AS "Квал",
          SUM(is_unqual) AS "Неквал",
+         SUM(CASE WHEN is_qual = 0 AND is_unqual = 0 THEN 1 ELSE 0 END) AS "Неизвестно",
          SUM(is_refusal) AS "Отказы",
          SUM(is_in_work) AS "В работе",
          SUM(is_invalid) AS "Невалидные_лиды",
+         SUM(is_potential) AS "В потенциале",
          SUM(is_revenue) AS "Сделок_с_выручкой",
          SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS "Выручка",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / COUNT(*) END AS "Конверсия в Квал",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / COUNT(*) END AS "Конверсия в Неквал",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / COUNT(*) END AS "Конверсия в Отказ",
          CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / COUNT(*) END AS "Конверсия в работе",
+         CASE WHEN SUM(is_qual) = 0 THEN 0 ELSE SUM(is_revenue) * 1.0 / SUM(is_qual) END AS "Конверсия Квал→Оплата",
          CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
        FROM flags
        GROUP BY funnel_group, month, course_code
        ORDER BY funnel_group, month, course_code`,
+    ).all<RR>(),
+    db.prepare(
+      `WITH first_contact_months AS (
+         SELECT
+           "Контакт: ID" AS cid,
+           MIN(month) AS first_month
+         FROM mart_deals_enriched
+         WHERE COALESCE("Контакт: ID", '') <> ''
+           AND COALESCE(month, '') <> ''
+         GROUP BY "Контакт: ID"
+       ),
+       first_event_classes AS (
+         SELECT
+           fcm.cid,
+           fcm.first_month,
+           MAX(CASE WHEN lower(COALESCE(m.event_class, '')) IN ('webinar', 'demo', 'event') THEN 1 ELSE 0 END) AS has_event
+         FROM first_contact_months fcm
+         JOIN mart_deals_enriched m
+           ON m."Контакт: ID" = fcm.cid
+           AND m.month = fcm.first_month
+         GROUP BY fcm.cid, fcm.first_month
+       )
+       SELECT
+         first_month AS "Месяц",
+         COUNT(*) AS "Контактов всего",
+         SUM(has_event) AS "Новых с мероприятия"
+       FROM first_event_classes
+       GROUP BY first_month
+       ORDER BY first_month`,
     ).all<RR>(),
   ]);
 
@@ -1078,6 +1149,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     upsertDataset(db, "bitrix_contacts_uid.json", rowsToJson(bitrixContactsUidRows)),
     upsertDataset(db, "dashboard_contacts_total.json", rowsToJson(dashboardContactsTotalRows)),
     upsertDataset(db, "bitrix_funnel_month_code_full.json", rowsToJson(r_bitrixFunnelCode.results ?? [])),
+    upsertDataset(db, "bitrix_new_event_contacts_by_event.json", rowsToJson(r_newEventContacts.results ?? [])),
   ]);
   paths.push(
     "bitrix_week_funnel_total.json",
@@ -1087,6 +1159,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     "bitrix_contacts_uid.json",
     "dashboard_contacts_total.json",
     "bitrix_funnel_month_code_full.json",
+    "bitrix_new_event_contacts_by_event.json",
   );
 
   // ── Batch 3: Manager reports — 6 queries in parallel ─────────────────────────
@@ -1120,6 +1193,145 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     "manager_sales_by_month.json",
     "manager_sales_by_course.json",
     "manager_sales_by_course_month.json",
+  );
+
+  // ── Batch 3b: PNL variants — mixed clocks by report month:
+  // leads by created month, qual-state by modified month, revenue by pay month.
+  const managerPnlBaseSql = buildManagerPnlBaseSql(hasRawP01, managerBaseExprs);
+  const PAY_MONTH_EXPR = sqlMonthFromDateExpr(`m."Дата оплаты"`);
+  const FUNNEL_MODIFY_MONTH_EXPR = hasRawP01
+    ? sqlMonthFromDateExpr(`p.modify_raw`)
+    : "COALESCE(m.month, '')";
+  const FUNNEL_RAW_WITH_SQL = hasRawP01
+    ? `p01 AS (
+         SELECT
+           COALESCE("ID", '') AS deal_id,
+           MAX(COALESCE("Дата изменения сделки", "Дата изменения", "date_modify", '')) AS modify_raw
+         FROM raw_bitrix_deals_p01
+         GROUP BY COALESCE("ID", '')
+       ),`
+    : "";
+  const FUNNEL_RAW_JOIN_SQL = hasRawP01 ? `LEFT JOIN p01 p ON p.deal_id = m."ID"` : "";
+  const [
+    r_mgr_fl_month_pnl,
+    r_mgr_fl_course_month_pnl,
+    r_mgr_sales_month_pnl,
+    r_mgr_sales_course_month_pnl,
+    r_bitrixFunnelCodePnl,
+  ] = await Promise.all([
+    db.prepare(buildManagerByMonthSql(managerPnlBaseSql, firstlineFilter)).all<RR>(),
+    db.prepare(buildManagerByCourseMonthSql(managerPnlBaseSql, firstlineFilter)).all<RR>(),
+    db.prepare(buildManagerByMonthSql(managerPnlBaseSql, salesFilter)).all<RR>(),
+    db.prepare(buildManagerByCourseMonthSql(managerPnlBaseSql, salesFilter)).all<RR>(),
+    db.prepare(
+      `WITH ${FUNNEL_RAW_WITH_SQL}
+       source AS (
+         SELECT
+           COALESCE(NULLIF(trim(funnel_group), ''), 'Другое') AS funnel_group,
+           COALESCE(month, '') AS create_month,
+           ${FUNNEL_MODIFY_MONTH_EXPR} AS modify_month,
+           ${PAY_MONTH_EXPR} AS pay_month,
+           COALESCE(NULLIF(trim(course_code_norm), ''), '—') AS course_code,
+           COALESCE(revenue_amount, 0) AS revenue_amount,
+           ${bitrixLeadLogic.qual} AS is_qual,
+           ${bitrixLeadLogic.unqual} AS is_unqual,
+           ${bitrixLeadLogic.refusal} AS is_refusal,
+           ${bitrixLeadLogic.invalid} AS is_invalid,
+           ${bitrixLeadLogic.inWork} AS is_in_work,
+           ${buildPotentialCond(`"Стадия сделки"`)} AS is_potential,
+           CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
+         FROM mart_deals_enriched m
+         ${FUNNEL_RAW_JOIN_SQL}
+       ),
+       events AS (
+         SELECT
+           funnel_group,
+           create_month AS month,
+           course_code,
+           1 AS is_lead,
+           0 AS is_qual,
+           0 AS is_unqual,
+           0 AS is_refusal,
+           0 AS is_invalid,
+           0 AS is_in_work,
+           0 AS is_potential,
+           0 AS is_revenue,
+           0 AS revenue_amount
+         FROM source
+         WHERE COALESCE(create_month, '') <> ''
+         UNION ALL
+         SELECT
+           funnel_group,
+           modify_month AS month,
+           course_code,
+           0 AS is_lead,
+           is_qual,
+           is_unqual,
+           is_refusal,
+           is_invalid,
+           is_in_work,
+           is_potential,
+           0 AS is_revenue,
+           0 AS revenue_amount
+         FROM source
+         WHERE COALESCE(modify_month, '') <> ''
+         UNION ALL
+         SELECT
+           funnel_group,
+           pay_month AS month,
+           course_code,
+           0 AS is_lead,
+           0 AS is_qual,
+           0 AS is_unqual,
+           0 AS is_refusal,
+           0 AS is_invalid,
+           0 AS is_in_work,
+           0 AS is_potential,
+           is_revenue,
+           CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END AS revenue_amount
+         FROM source
+         WHERE COALESCE(pay_month, '') <> ''
+           AND is_revenue = 1
+       )
+       SELECT
+         funnel_group AS "Воронка",
+         month AS "Месяц",
+         course_code AS "Код_курса_норм",
+         SUM(is_lead) AS "Лиды",
+         SUM(is_qual) AS "Квал",
+         SUM(is_unqual) AS "Неквал",
+         SUM(CASE WHEN is_qual = 0 AND is_unqual = 0 THEN 1 ELSE 0 END) AS "Неизвестно",
+         SUM(is_refusal) AS "Отказы",
+         SUM(is_in_work) AS "В работе",
+         SUM(is_invalid) AS "Невалидные_лиды",
+         SUM(is_potential) AS "В потенциале",
+         SUM(is_revenue) AS "Сделок_с_выручкой",
+         SUM(revenue_amount) AS "Выручка",
+         CASE WHEN SUM(is_lead) = 0 THEN 0 ELSE SUM(is_qual) * 1.0 / SUM(is_lead) END AS "Конверсия в Квал",
+         CASE WHEN SUM(is_lead) = 0 THEN 0 ELSE SUM(is_unqual) * 1.0 / SUM(is_lead) END AS "Конверсия в Неквал",
+         CASE WHEN SUM(is_lead) = 0 THEN 0 ELSE SUM(is_refusal) * 1.0 / SUM(is_lead) END AS "Конверсия в Отказ",
+         CASE WHEN SUM(is_lead) = 0 THEN 0 ELSE SUM(is_in_work) * 1.0 / SUM(is_lead) END AS "Конверсия в работе",
+         CASE WHEN SUM(is_qual) = 0 THEN 0 ELSE SUM(is_revenue) * 1.0 / SUM(is_qual) END AS "Конверсия Квал→Оплата",
+         CASE WHEN SUM(is_revenue) = 0 THEN 0 ELSE SUM(revenue_amount) * 1.0 / SUM(is_revenue) END AS "Средний_чек"
+       FROM events
+       WHERE month <> ''
+       GROUP BY funnel_group, month, course_code
+       ORDER BY funnel_group, month, course_code`,
+    ).all<RR>(),
+  ]);
+  await Promise.all([
+    upsertDataset(db, "manager_firstline_by_month_pnl.json", rowsToJson(r_mgr_fl_month_pnl.results ?? [])),
+    upsertDataset(db, "manager_firstline_by_course_month_pnl.json", rowsToJson(r_mgr_fl_course_month_pnl.results ?? [])),
+    upsertDataset(db, "manager_sales_by_month_pnl.json", rowsToJson(r_mgr_sales_month_pnl.results ?? [])),
+    upsertDataset(db, "manager_sales_by_course_month_pnl.json", rowsToJson(r_mgr_sales_course_month_pnl.results ?? [])),
+    upsertDataset(db, "bitrix_funnel_month_code_full_pnl.json", rowsToJson(r_bitrixFunnelCodePnl.results ?? [])),
+  ]);
+  paths.push(
+    "manager_firstline_by_month_pnl.json",
+    "manager_firstline_by_course_month_pnl.json",
+    "manager_sales_by_month_pnl.json",
+    "manager_sales_by_course_month_pnl.json",
+    "bitrix_funnel_month_code_full_pnl.json",
   );
 
   // ── Batch 4: Yandex KPIs + hierarchy + project revenue + cohort + QA (parallel) ─

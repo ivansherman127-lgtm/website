@@ -1,0 +1,814 @@
+[
+  {
+    "event_class": "Другое",
+    "course_code_norm": "Другое",
+    "deals": 13727,
+    "paid_deals": 725,
+    "revenue": 28685811.47
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-430",
+    "deals": 425,
+    "paid_deals": 121,
+    "revenue": 4736848.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "B-410",
+    "deals": 277,
+    "paid_deals": 64,
+    "revenue": 2941770.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "F-401",
+    "deals": 257,
+    "paid_deals": 66,
+    "revenue": 2803513.84
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "S-410",
+    "deals": 417,
+    "paid_deals": 68,
+    "revenue": 2144294.2
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-301",
+    "deals": 711,
+    "paid_deals": 46,
+    "revenue": 1964932.35
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-301-A",
+    "deals": 145,
+    "paid_deals": 16,
+    "revenue": 1622597.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-420",
+    "deals": 138,
+    "paid_deals": 31,
+    "revenue": 1547733.5
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-801",
+    "deals": 25760,
+    "paid_deals": 49,
+    "revenue": 1465930.4
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "B-236",
+    "deals": 139,
+    "paid_deals": 38,
+    "revenue": 1157499.6
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "B-228",
+    "deals": 205,
+    "paid_deals": 43,
+    "revenue": 1087066.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "MAIN_PAGE",
+    "deals": 340,
+    "paid_deals": 24,
+    "revenue": 999286.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "ATTACKINGJANUARY",
+    "deals": 1154,
+    "paid_deals": 10,
+    "revenue": 883102.4
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-319",
+    "deals": 79,
+    "paid_deals": 22,
+    "revenue": 815956.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "МАРАФОНПРОФЕССИЙ",
+    "deals": 644,
+    "paid_deals": 6,
+    "revenue": 670374.35
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "I-106",
+    "deals": 716,
+    "paid_deals": 23,
+    "revenue": 663728.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "S-123",
+    "deals": 58,
+    "paid_deals": 12,
+    "revenue": 628764.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-101",
+    "deals": 160,
+    "paid_deals": 12,
+    "revenue": 589030.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-215",
+    "deals": 49,
+    "paid_deals": 16,
+    "revenue": 582984.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "S-232",
+    "deals": 105,
+    "paid_deals": 24,
+    "revenue": 572440.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "S_1",
+    "deals": 228,
+    "paid_deals": 11,
+    "revenue": 501999.6
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "S-235",
+    "deals": 71,
+    "paid_deals": 13,
+    "revenue": 473950.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-317",
+    "deals": 37,
+    "paid_deals": 7,
+    "revenue": 459064.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "В-301-А",
+    "deals": 24,
+    "paid_deals": 4,
+    "revenue": 420863.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "F-111",
+    "deals": 54,
+    "paid_deals": 22,
+    "revenue": 402307.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "UNDEFINED",
+    "deals": 58,
+    "paid_deals": 5,
+    "revenue": 400680.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-218",
+    "deals": 40,
+    "paid_deals": 9,
+    "revenue": 393568.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "B-301",
+    "deals": 518,
+    "paid_deals": 16,
+    "revenue": 384105.4
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "FORM_INACTIVE",
+    "deals": 252,
+    "paid_deals": 6,
+    "revenue": 384048.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-220",
+    "deals": 52,
+    "paid_deals": 6,
+    "revenue": 353736.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "BR3D",
+    "deals": 25,
+    "paid_deals": 8,
+    "revenue": 303628.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "I-107",
+    "deals": 33,
+    "paid_deals": 21,
+    "revenue": 259500.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "F-110",
+    "deals": 35,
+    "paid_deals": 9,
+    "revenue": 230400.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "W-4",
+    "deals": 37,
+    "paid_deals": 23,
+    "revenue": 221000.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "TIA",
+    "deals": 20,
+    "paid_deals": 3,
+    "revenue": 186060.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "B-301-M0A",
+    "deals": 144,
+    "paid_deals": 5,
+    "revenue": 183405.68
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "FUNCTIONTRIM_NATIVECODE",
+    "deals": 27,
+    "paid_deals": 7,
+    "revenue": 177240.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-301-M0A",
+    "deals": 637,
+    "paid_deals": 6,
+    "revenue": 176000.3
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "W-2",
+    "deals": 36,
+    "paid_deals": 25,
+    "revenue": 175000.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "F-108",
+    "deals": 18,
+    "paid_deals": 5,
+    "revenue": 160995.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "B-101",
+    "deals": 29,
+    "paid_deals": 2,
+    "revenue": 152800.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "I-108",
+    "deals": 13,
+    "paid_deals": 10,
+    "revenue": 150000.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "S-224",
+    "deals": 50,
+    "paid_deals": 5,
+    "revenue": 147900.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "B-207",
+    "deals": 37,
+    "paid_deals": 4,
+    "revenue": 146466.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "V_2",
+    "deals": 186,
+    "paid_deals": 4,
+    "revenue": 127842.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "W-3",
+    "deals": 59,
+    "paid_deals": 11,
+    "revenue": 125000.0
+  },
+  {
+    "event_class": "Blue Team Stepik",
+    "course_code_norm": "R-101",
+    "deals": 1,
+    "paid_deals": 1,
+    "revenue": 122467.2
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "B-208",
+    "deals": 45,
+    "paid_deals": 7,
+    "revenue": 121236.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "F-109",
+    "deals": 46,
+    "paid_deals": 6,
+    "revenue": 105884.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "I-107-1",
+    "deals": 24,
+    "paid_deals": 9,
+    "revenue": 105000.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-319-KD",
+    "deals": 6,
+    "paid_deals": 3,
+    "revenue": 101088.0
+  },
+  {
+    "event_class": "Blue Team Stepik",
+    "course_code_norm": "R-801",
+    "deals": 25,
+    "paid_deals": 2,
+    "revenue": 82320.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "ПРОГРАММАПРОФЕССИОНАЛЬНОЙПЕРЕПОДГОТОВКИДЛЯНАЧИНАЮЩИХСПЕЦИАЛИСТОВB_410",
+    "deals": 3,
+    "paid_deals": 3,
+    "revenue": 77760.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-319-A",
+    "deals": 23,
+    "paid_deals": 1,
+    "revenue": 75432.0
+  },
+  {
+    "event_class": "Blue Team Stepik",
+    "course_code_norm": "Другое",
+    "deals": 2,
+    "paid_deals": 1,
+    "revenue": 66600.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "ХАКЕР",
+    "deals": 1,
+    "paid_deals": 1,
+    "revenue": 66600.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "W-1",
+    "deals": 24,
+    "paid_deals": 9,
+    "revenue": 63000.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-316",
+    "deals": 34,
+    "paid_deals": 4,
+    "revenue": 60192.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "B-802",
+    "deals": 19,
+    "paid_deals": 3,
+    "revenue": 59106.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "F-410",
+    "deals": 1,
+    "paid_deals": 1,
+    "revenue": 54600.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "S-235-A",
+    "deals": 7,
+    "paid_deals": 1,
+    "revenue": 49900.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-301-GM3",
+    "deals": 4,
+    "paid_deals": 1,
+    "revenue": 44800.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-301-3",
+    "deals": 2,
+    "paid_deals": 1,
+    "revenue": 41400.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "V_6",
+    "deals": 136,
+    "paid_deals": 1,
+    "revenue": 39100.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "W-112",
+    "deals": 61,
+    "paid_deals": 4,
+    "revenue": 30000.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "W-114",
+    "deals": 122,
+    "paid_deals": 1,
+    "revenue": 28786.0
+  },
+  {
+    "event_class": "Опен дэй",
+    "course_code_norm": "Другое",
+    "deals": 421,
+    "paid_deals": 1,
+    "revenue": 20975.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "W-113",
+    "deals": 6,
+    "paid_deals": 3,
+    "revenue": 20970.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "M-365",
+    "deals": 283,
+    "paid_deals": 1,
+    "revenue": 12333.5
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "HR_CONSULT",
+    "deals": 12,
+    "paid_deals": 1,
+    "revenue": 7000.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "F-107",
+    "deals": 8,
+    "paid_deals": 1,
+    "revenue": 4900.0
+  },
+  {
+    "event_class": "Blue Team Stepik",
+    "course_code_norm": "B-101",
+    "deals": 8698,
+    "paid_deals": 1,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Blue Team Stepik",
+    "course_code_norm": "B-802",
+    "deals": 1093,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Встреча с экспертом",
+    "course_code_norm": "Другое",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Демо Блю",
+    "course_code_norm": "B-301-M0A",
+    "deals": 335,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Демо Ред",
+    "course_code_norm": "R-301-M0A",
+    "deals": 541,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "ABOUT_PAGE",
+    "deals": 9,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "ADA",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "BS0C",
+    "deals": 4,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "F-401-А",
+    "deals": 9,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "F-402",
+    "deals": 1,
+    "paid_deals": 1,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "I-108-1",
+    "deals": 6,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "I-108-2",
+    "deals": 4,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "INFOSEC_START",
+    "deals": 227,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "PHD21",
+    "deals": 278,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-102-A",
+    "deals": 14,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-302-A",
+    "deals": 105,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R-501",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "RE101_A",
+    "deals": 39,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "R_801НАНОВОМБЕСПЛАТНОМОНЛАЙН_КУРСЕ_ПРОФЕССИЯБЕЛЫЙХАКЕР",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "S41",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "SEA",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "TEACHERS",
+    "deals": 4,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "THANKS_PAGE",
+    "deals": 64,
+    "paid_deals": 1,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "THREATINTELLIGENCE",
+    "deals": 1,
+    "paid_deals": 1,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "TILDA_HTTPS_CYBER_ED_RU_PENTESTER_NEW",
+    "deals": 6,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "TILDA_HTTPS_CYBER_ED_RU_PENTESTER_NEW_UTM_CAMPAIGN_TRACK_PENTESTER_151025_UTM_MEDIUM_EMAIL_UTM_SOURCE_SENDSAY",
+    "deals": 7,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "TILDA_HTTPS_CYBER_ED_RU_PENTESTER_TRACK",
+    "deals": 9,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "TILDA_HTTPS_CYBER_ED_RU_PENTESTER_TRACK_UTM_SOURCE_HACKER_BLOG_UTM_MEDIUM_HACKER_UTM_CAMPAIGN_HACKER_CERTIFICATION_ERID_2SDNJC2NRPB",
+    "deals": 86,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "TILDA_HTTPS_CYBER_ED_RU_PENTESTER_TRACK_UTM_SOURCE_HACKER_BLOG_UTM_MEDIUM_HACKER_UTM_CAMPAIGN_HACKER_CERTIFICATION_ERID_2SDNJCW2W7Q",
+    "deals": 17,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "V_1",
+    "deals": 226,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "V_10",
+    "deals": 4,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "WORKSHOP_OFFZONE_2023",
+    "deals": 75,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "W_OF24",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "ZIM_OWN",
+    "deals": 4909,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "АЭС_402",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "В-207",
+    "deals": 3,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "ПЕНТЕСТЕР",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Другое",
+    "course_code_norm": "ПРОГРАММАПРОФЕССИОНАЛЬНОЙПЕРЕПОДГОТОВКИДЛЯНАЧИНАЮЩИХСПЕЦИАЛИСТОВR_430",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "ПБХ",
+    "course_code_norm": "ATTACKINGJANUARY",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "ПБХ",
+    "course_code_norm": "B-301",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "ПБХ",
+    "course_code_norm": "F-402",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "ПБХ",
+    "course_code_norm": "R-101",
+    "deals": 1208,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "ПБХ",
+    "course_code_norm": "Другое",
+    "deals": 1182,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Тренд репорты",
+    "course_code_norm": "R-301-M0A",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "event_class": "Тренд репорты",
+    "course_code_norm": "Другое",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  }
+]

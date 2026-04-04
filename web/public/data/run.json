@@ -1,0 +1,46 @@
+{
+  "generated_at_utc": "2026-04-03T10:30:31.071656+00:00",
+  "logic_version": "variant3+smart_event_classification_v1",
+  "paths": {
+    "root": "/Users/ivan/Documents/website/reports/slices",
+    "global": "/Users/ivan/Documents/website/reports/slices/global",
+    "cohort": "/Users/ivan/Documents/website/reports/slices/cohorts/attacking_january",
+    "qa": "/Users/ivan/Documents/website/reports/slices/qa"
+  },
+  "marts": {
+    "bitrix_source": "raw_bitrix_deals",
+    "raw_bitrix_rows": 68726,
+    "mart_deals_enriched_rows": 68726,
+    "attacking_january_contacts": 1037,
+    "stg_yandex_rows": 0
+  },
+  "yandex_marts": {
+    "yandex_raw_rows": 437,
+    "yandex_dedup_rows": 401,
+    "yandex_projects_raw_rows": 10,
+    "yandex_projects_dedup_rows": 10
+  },
+  "exports": {
+    "global_month_channel": 1020,
+    "global_month_yandex": 1,
+    "global_month_sendsay": 0,
+    "global_funnel_stage": 85,
+    "global_event_course": 116,
+    "cohort_assoc_contacts": 1037,
+    "cohort_assoc_event_course": 83,
+    "yandex_dedup_summary": 1,
+    "yandex_projects_revenue_raw_vs_dedup": 10,
+    "yandex_projects_revenue_no_month": 3,
+    "yandex_projects_revenue_by_month": 1
+  },
+  "qa_exports": {
+    "other_share_global": 1,
+    "other_top50_cohort": 50,
+    "dedup_check": 1,
+    "yandex_dedup_keys_top_collisions": 59,
+    "yandex_raw_vs_dedup_delta": 1,
+    "yandex_unmatched_to_bitrix": 13,
+    "yandex_campaign_mapping_seed": 10
+  },
+  "next_step_integration_hint": "Use yandex_projects_revenue_raw_vs_dedup.csv + month_channel_sendsay.csv as input blocks for final_clean_report"
+}
