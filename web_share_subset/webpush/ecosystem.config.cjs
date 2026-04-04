@@ -33,6 +33,8 @@ module.exports = {
       interpreter: tsxBin,
       cwd: __dirname,
       watch: false,
+      autorestart: true,
+      restart_delay: 3000,
       env: {
         NODE_ENV: "production",
         PORT: process.env.PORT || "3000",
