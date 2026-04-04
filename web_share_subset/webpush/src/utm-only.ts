@@ -61,9 +61,10 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 function buildCopyText(row: UtmRow): string {
-  return Object.entries(row)
-    .map(([k, v]) => `${k}\t${v ?? ""}`)
-    .join("\n");
+  const entries = Object.entries(row);
+  const headers = entries.map(([k]) => k).join("\t");
+  const values = entries.map(([, v]) => v ?? "").join("\t");
+  return `${headers}\n${values}`;
 }
 
 function renderRows(rows: UtmRow[]): string {
