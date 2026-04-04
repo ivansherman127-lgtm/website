@@ -2,8 +2,9 @@
 // CommonJS (.cjs) so PM2 can load it even when package.json has "type":"module".
 //
 // Usage:
-//   PORT=3000 UTM_DB_PATH=/opt/utm-app/utm.db pm2 start ecosystem.config.cjs
-//   pm2 save
+//   pm2 start ecosystem.config.cjs          — start all apps
+//   pm2 start ecosystem.config.cjs --only utm-server
+//   pm2 start ecosystem.config.cjs --only b24-sync
 
 const path = require("path");
 
@@ -11,9 +12,18 @@ const path = require("path");
 const tsxBin = path.join(__dirname, "node_modules", ".bin", "tsx");
 
 // Load secrets from a local file not tracked by git.
-// Create .env.server.json on the server: { "UTM_PASSWORD": "..." }
+// Create .env.server.json on the server:
+//   { "UTM_PASSWORD": "...", "B24_WEBHOOK_URL": "https://your.bitrix24.ru/rest/1/TOKEN/" }
 let serverSecrets = {};
 try { serverSecrets = require("./.env.server.json"); } catch (_) {}
+
+// Repo root is two levels up from webpush/
+const repoRoot = path.resolve(__dirname, "..", "..");
+
+// Python interpreter — use virtualenv if present, otherwise system python3
+const venvPython = path.join(repoRoot, ".venv", "bin", "python");
+const fs = require("fs");
+const pythonBin = fs.existsSync(venvPython) ? venvPython : "python3";
 
 module.exports = {
   apps: [
@@ -26,9 +36,23 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: process.env.PORT || "3000",
-        UTM_DB_PATH: process.env.UTM_DB_PATH || require("path").join(__dirname, "..", "..", "utm.db"),
-        DIST_DIR: process.env.DIST_DIR || require("path").join(__dirname, "dist-utm"),
+        UTM_DB_PATH: process.env.UTM_DB_PATH || path.join(__dirname, "..", "..", "utm.db"),
+        DIST_DIR: process.env.DIST_DIR || path.join(__dirname, "dist-utm"),
         UTM_PASSWORD: serverSecrets.UTM_PASSWORD || process.env.UTM_PASSWORD || "",
+      },
+    },
+    {
+      name: "b24-sync",
+      script: "-m db.b24_fetch_crm --watch --interval 60",
+      interpreter: pythonBin,
+      cwd: repoRoot,
+      watch: false,
+      autorestart: true,
+      // Don't restart immediately on crash — wait 10s to avoid hammering the API
+      restart_delay: 10000,
+      env: {
+        WEBSITE_DB_PATH: process.env.WEBSITE_DB_PATH || path.join(repoRoot, "website.db"),
+        B24_WEBHOOK_URL: serverSecrets.B24_WEBHOOK_URL || process.env.B24_WEBHOOK_URL || "",
       },
     },
   ],
