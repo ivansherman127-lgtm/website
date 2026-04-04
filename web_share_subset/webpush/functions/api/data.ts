@@ -4,6 +4,7 @@
 import { buildYdHierarchyRows } from "../lib/analytics/ydHierarchy";
 import { buildBitrixContactsUidRows } from "../lib/analytics/bitrixContactsUid";
 import { buildLeadLogicSql, buildPotentialCond } from "../lib/analytics/leadLogicSql";
+import { sqlQuote, buildInvalidTokenCond } from "../lib/analytics/sqlHelpers";
 
 interface Env {
   DB: D1Database;
@@ -20,19 +21,6 @@ const BITRIX_INVALID_TOKENS = [
   "партнеры, не нужно связываться",
 ];
 
-function sqlQuote(value: string): string {
-  return `'${String(value ?? "").replace(/'/g, "''")}'`;
-}
-
-function buildInvalidTokenCond(tokens: string[]): string {
-  return tokens
-    .flatMap((token) => [
-      `lower(COALESCE("Типы некачественного лида", '')) LIKE ${sqlQuote("%" + token + "%")}`,
-      `lower(COALESCE("Типы некачественных лидов", '')) LIKE ${sqlQuote("%" + token + "%")}`,
-    ])
-    .join(" OR ");
-}
-
 async function columnExists(db: D1Database, tableName: string, columnName: string): Promise<boolean> {
   const row = await db
     .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1`)
@@ -46,7 +34,7 @@ async function columnExists(db: D1Database, tableName: string, columnName: strin
 async function buildBitrixMonthTotalRows(db: D1Database): Promise<Record<string, unknown>[]> {
   const hasTypySingular = await columnExists(db, "mart_deals_enriched", "Типы некачественного лида");
   const hasTypyPlural = await columnExists(db, "mart_deals_enriched", "Типы некачественных лидов");
-  const extraInvalidCond = hasTypySingular || hasTypyPlural ? buildInvalidTokenCond(BITRIX_INVALID_TOKENS) : "";
+  const extraInvalidCond = hasTypySingular || hasTypyPlural ? buildInvalidTokenCond(BITRIX_INVALID_TOKENS, "", "like") : "";
   const bitrixLeadLogic = buildLeadLogicSql({
     funnelExpr: `"Воронка"`,
     stageExpr: `"Стадия сделки"`,

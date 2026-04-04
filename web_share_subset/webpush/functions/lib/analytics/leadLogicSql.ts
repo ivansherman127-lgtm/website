@@ -1,4 +1,5 @@
 import leadLogic from "../../../../../bitrix_lead_logic.json";
+import { sqlQuote } from "./sqlHelpers";
 
 type QualState = "qual" | "refusal" | "not_qual" | "not_yet" | "unassigned" | "qual_from_date";
 type WorkingState = "yes" | "no";
@@ -47,10 +48,6 @@ const INVALID_STAGE_TOKENS = [
   "тест",
   "чс",         // ЧС (черный список)
 ];
-
-function sqlQuote(value: string): string {
-  return `'${String(value ?? "").replace(/'/g, "''")}'`;
-}
 
 function normalizeDateToMonth(dateLike: string | undefined): string {
   const src = String(dateLike ?? "").trim();

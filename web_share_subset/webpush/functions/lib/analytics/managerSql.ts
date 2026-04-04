@@ -5,10 +5,7 @@
  * Each builder takes the shared base CTE string and a filter expression,
  * returning the full SQL to pass to db.prepare().
  */
-
-function sqlQuote(value: string): string {
-  return `'${String(value ?? "").replace(/'/g, "''")}'`;
-}
+import { sqlQuote } from "./sqlHelpers";
 
 /**
  * Builds the WHERE filter expression used for the firstline manager segment.

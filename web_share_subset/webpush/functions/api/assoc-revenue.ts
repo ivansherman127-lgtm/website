@@ -1,4 +1,5 @@
 import { sqlExtractYandexAdId } from "../lib/analytics/yandexAdId";
+import { sqlQuote, isValidYandexAdId, sqlNormalizeLookupExpr } from "../lib/analytics/sqlHelpers";
 import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS } from "../../src/yandexProjectGroups";
 
 interface D1PreparedStatement {
@@ -126,10 +127,6 @@ function safeJsonParseArray(raw: string): unknown[] | null {
   }
 }
 
-function sqlQuote(value: string): string {
-  return `'${String(value).replace(/'/g, "''")}'`;
-}
-
 function buildYandexProjectGroupSqlExpr(rawExpr: string): string {
   const trimmed = `NULLIF(TRIM(COALESCE(${rawExpr}, '')), '')`;
   if (!YANDEX_PROJECT_GROUP_ALIAS_PAIRS.length) return `COALESCE(${trimmed}, '(без маппинга в Yandex raw)')`;
@@ -151,35 +148,6 @@ function buildYandexProjectGroupSqlExpr(rawExpr: string): string {
     END,
     '(без маппинга в Yandex raw)'
   )`;
-}
-
-function isValidYandexAdId(value: unknown): boolean {
-  return /^17\d{9}$/.test(String(value ?? "").trim());
-}
-
-function sqlNormalizeLookupExpr(expr: string): string {
-  const replacements: Array<[string, string]> = [
-    ["ё", "е"],
-    ["-", ""],
-    ["_", ""],
-    [" ", ""],
-    [".", ""],
-    ["/", ""],
-    [":", ""],
-    [",", ""],
-    ["'", ""],
-    ['"', ""],
-    ["«", ""],
-    ["»", ""],
-    ["(", ""],
-    [")", ""],
-  ];
-
-  let out = `LOWER(TRIM(COALESCE(${expr}, '')))`;
-  for (const [from, to] of replacements) {
-    out = `REPLACE(${out}, ${sqlQuote(from)}, ${sqlQuote(to)})`;
-  }
-  return out;
 }
 
 function normalizeLookupKey(value: unknown): string {

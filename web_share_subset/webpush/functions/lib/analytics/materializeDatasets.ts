@@ -4,6 +4,7 @@
 import { groupYandexProjectsNoMonth } from "./yandexProjectsNoMonth";
 import { sqlExtractYandexAdId } from "./yandexAdId";
 import { buildYdHierarchyRows } from "./ydHierarchy";
+import { sqlQuote, sqlMonthFromDateExpr, isValidYandexAdId, buildInvalidTokenCond } from "./sqlHelpers";
 import { buildBitrixContactsUidRows } from "./bitrixContactsUid";
 import { buildLeadLogicSql, buildPotentialCond } from "./leadLogicSql";
 import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS, YANDEX_KNOWN_GROUPS, mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
@@ -26,14 +27,6 @@ async function tableExists(db: D1Database, tableName: string): Promise<boolean> 
     .bind(tableName)
     .first<{ name: string }>();
   return !!row?.name;
-}
-
-function sqlMonthFromDateExpr(expr: string): string {
-  return `CASE
-    WHEN COALESCE(${expr}, '') LIKE '____-__%' THEN SUBSTR(${expr}, 1, 7)
-    WHEN COALESCE(${expr}, '') LIKE '__.__.____%' THEN SUBSTR(${expr}, 7, 4) || '-' || SUBSTR(${expr}, 4, 2)
-    ELSE ''
-  END`;
 }
 
 async function columnExists(db: D1Database, tableName: string, columnName: string): Promise<boolean> {
@@ -92,10 +85,6 @@ async function upsertDataset(db: D1Database, path: string, body: string): Promis
     .catch(() => {});
 }
 
-function sqlQuote(value: string): string {
-  return `'${String(value ?? "").replace(/'/g, "''")}'`;
-}
-
 function buildYandexProjectGroupSqlExpr(rawExpr: string): string {
   const trimmed = `NULLIF(TRIM(COALESCE(${rawExpr}, '')), '')`;
   if (!YANDEX_PROJECT_GROUP_ALIAS_PAIRS.length) return `COALESCE(${trimmed}, 'UNMAPPED')`;
@@ -112,10 +101,6 @@ function toKnownGroup(rawOrMapped: unknown): string {
   // Already a known group name passed through (SQL pre-mapped) or a raw alias that maps to a group.
   if (YANDEX_KNOWN_GROUPS.has(String(rawOrMapped ?? "").trim())) return String(rawOrMapped ?? "").trim();
   return "UNMAPPED";
-}
-
-function isValidYandexAdId(value: unknown): boolean {
-  return /^17\d{9}$/.test(String(value ?? "").trim());
 }
 
 function groupAssocQaRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
@@ -250,33 +235,7 @@ const BITRIX_INVALID_TOKENS = [
   "партнеры, не нужно связываться",
 ];
 
-/**
- * Builds an OR-joined SQL condition checking the two invalid-type columns.
- * @param tableAlias - Table alias prefix: "" (no prefix), "m.", or "p."
- * @param pattern    - "instr" (default) uses instr(); "like" uses LIKE with % wildcards.
- */
-function buildInvalidTokenCond(
-  tokens: string[],
-  tableAlias: "" | "m." | "p.",
-  pattern: "instr" | "like" = "instr",
-): string {
-  const col1 = `${tableAlias}"Типы некачественного лида"`;
-  const col2 = `${tableAlias}"Типы некачественных лидов"`;
-  return tokens
-    .flatMap((tok) => {
-      if (pattern === "like") {
-        return [
-          `lower(COALESCE(${col1}, '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-          `lower(COALESCE(${col2}, '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-        ];
-      }
-      return [
-        `instr(lower(COALESCE(${col1}, '')), ${sqlQuote(tok)}) > 0`,
-        `instr(lower(COALESCE(${col2}, '')), ${sqlQuote(tok)}) > 0`,
-      ];
-    })
-    .join(" OR ");
-}
+// buildInvalidTokenCond is imported from sqlHelpers.ts
 
 export async function materializeSliceDatasets(db: D1Database): Promise<{ paths: string[] }> {
   const paths: string[] = [];
