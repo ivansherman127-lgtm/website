@@ -28,7 +28,15 @@ const PORT = parseInt(process.env.PORT ?? "3000", 10);
 const DB_PATH = process.env.UTM_DB_PATH ?? join(process.cwd(), "utm.db");
 const DIST_DIR = process.env.DIST_DIR ?? join(process.cwd(), "dist-utm");
 const SCHEMA_PATH = join(process.cwd(), "server", "utm-schema.sql");
-const UTM_PASSWORD = process.env.UTM_PASSWORD ?? "";
+
+// Read secrets from .env.server.json if present (takes priority over process.env)
+let _serverSecrets: Record<string, string> = {};
+try {
+  const secretsPath = join(process.cwd(), ".env.server.json");
+  _serverSecrets = JSON.parse(readFileSync(secretsPath, "utf8"));
+} catch { /* file optional */ }
+const UTM_PASSWORD: string = _serverSecrets["UTM_PASSWORD"] ?? process.env.UTM_PASSWORD ?? "";
+console.log(`[auth] UTM_PASSWORD set: ${UTM_PASSWORD ? "yes" : "NO - open access"}`);
 
 // Auth helpers
 const COOKIE_NAME = "utm_auth";
