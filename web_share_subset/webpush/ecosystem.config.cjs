@@ -43,12 +43,13 @@ module.exports = {
     },
     {
       name: "b24-sync",
-      script: "-m db.b24_fetch_crm --watch --interval 60",
-      interpreter: pythonBin,
+      // PM2: set script to the binary, args to the arguments, interpreter to "none"
+      script: pythonBin,
+      args: "-m db.b24_fetch_crm --watch --interval 60",
+      interpreter: "none",
       cwd: repoRoot,
       watch: false,
       autorestart: true,
-      // Don't restart immediately on crash — wait 10s to avoid hammering the API
       restart_delay: 10000,
       env: {
         WEBSITE_DB_PATH: process.env.WEBSITE_DB_PATH || path.join(repoRoot, "website.db"),
