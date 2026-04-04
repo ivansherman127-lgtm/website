@@ -151,6 +151,32 @@ th {
   background: #fafbff;
 }
 
+.link-field {
+  grid-column: 1 / -1;
+}
+
+.link-field input {
+  min-height: 48px;
+  font-size: 1rem;
+}
+
+.copy-btn {
+  min-height: unset;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.copy-btn:not(:disabled):hover {
+  background: var(--primary);
+  color: var(--primary-contrast);
+  transform: none;
+}
+
 @media (max-width: 900px) {
   .grid {
     grid-template-columns: 1fr;

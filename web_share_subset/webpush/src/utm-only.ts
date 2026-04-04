@@ -60,12 +60,22 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
+function buildCopyText(row: UtmRow): string {
+  return Object.entries(row)
+    .map(([k, v]) => `${k}\t${v ?? ""}`)
+    .join("\n");
+}
+
 function renderRows(rows: UtmRow[]): string {
   if (!rows.length) return '<p class="muted">Пока нет записей</p>';
   const cols = Object.keys(rows[0]) as Array<keyof UtmRow>;
-  const head = cols.map((c) => `<th>${escapeHtml(prettyColName(String(c)))}</th>`).join("");
+  const head = `<th></th>` + cols.map((c) => `<th>${escapeHtml(prettyColName(String(c)))}</th>`).join("");
   const body = rows
-    .map((row) => `<tr>${cols.map((c) => `<td>${escapeHtml(String(row[c] ?? ""))}</td>`).join("")}</tr>`)
+    .map((row) => {
+      const copyText = escapeHtml(buildCopyText(row));
+      const cells = cols.map((c) => `<td>${escapeHtml(String(row[c] ?? ""))}</td>`).join("");
+      return `<tr><td><button class="copy-btn" data-copy="${copyText}">copy</button></td>${cells}</tr>`;
+    })
     .join("");
   return `<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
@@ -78,6 +88,9 @@ function renderShell(): void {
         <p class="muted">Отдельная страница без аналитических данных.</p>
 
         <div class="grid">
+          <label class="link-field"><span class="label-text">Link <span class="required-marker">*</span></span>
+            <input class="link-input" type="url" placeholder="https://example.com/campaign" />
+          </label>
           <label><span class="label-text">Medium <span class="required-marker">*</span></span>
             <select class="medium-select"></select>
           </label>
@@ -93,9 +106,6 @@ function renderShell(): void {
           </label>
           <label><span class="label-text">Автор</span>
             <input class="created-by-input" type="text" placeholder="Автор (опционально)" />
-          </label>
-          <label><span class="label-text">Link <span class="required-marker">*</span></span>
-            <input class="link-input" type="url" placeholder="https://example.com/campaign" />
           </label>
           <label><span class="label-text">Content</span>
             <input class="content-input" type="text" placeholder="Например, banner_a" />
@@ -143,6 +153,16 @@ async function main(): Promise<void> {
     try {
       const rows = await fetchJson<UtmRow[]>("/api/utm");
       rowsContainer.innerHTML = renderRows(rows);
+      rowsContainer.querySelectorAll<HTMLButtonElement>(".copy-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const text = (btn.dataset.copy ?? "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
+          navigator.clipboard.writeText(text).then(() => {
+            const orig = btn.textContent;
+            btn.textContent = "✓";
+            setTimeout(() => { btn.textContent = orig; }, 1200);
+          }).catch(() => {});
+        });
+      });
     } catch (err) {
       rowsContainer.innerHTML = `<p class="status error">Ошибка загрузки истории: ${escapeHtml(String(err))}</p>`;
     }
