@@ -53,6 +53,11 @@ TOKEN_URL          = "https://oauth.yandex.ru/token"
 OAUTH_CLIENT_ID     = "c0519acddcac4f1797a5414762522492"
 OAUTH_CLIENT_SECRET = "57d8bde7268d49518e635dd087413204"
 
+# Optional: agency/representative account login.
+# Set YANDEX_CLIENT_LOGIN to the advertiser's Yandex login when the token
+# belongs to a representative (agency) account.
+DEFAULT_CLIENT_LOGIN = os.environ.get("YANDEX_CLIENT_LOGIN", "").strip()
+
 # How far back to fetch on the first full sync
 DEFAULT_LOOKBACK_DAYS = 90
 
@@ -150,7 +155,9 @@ def _build_report_body(date_from: str, date_to: str) -> bytes:
     return json.dumps(payload, ensure_ascii=False).encode()
 
 
-def fetch_report(token: str, date_from: str, date_to: str) -> List[Dict[str, str]]:
+def fetch_report(
+    token: str, date_from: str, date_to: str, client_login: str = ""
+) -> List[Dict[str, str]]:
     """
     Fetch daily stats from the Reports API using offline (queued) mode.
     Polls every POLL_INTERVAL seconds on HTTP 201/202 until 200.
@@ -166,6 +173,8 @@ def fetch_report(token: str, date_from: str, date_to: str) -> List[Dict[str, str
         "skipReportHeader":  "true",      # omit report-name line
         "skipReportSummary": "true",      # omit totals line
     }
+    if client_login:
+        headers["Client-Login"] = client_login
 
     for attempt in range(MAX_POLL):
         req = urllib.request.Request(
@@ -181,6 +190,7 @@ def fetch_report(token: str, date_from: str, date_to: str) -> List[Dict[str, str
             status = exc.code
             raw = exc.read().decode(errors="replace")
             if status not in (200, 201, 202):
+                _explain_api_error(status, raw)
                 raise RuntimeError(
                     f"Reports API error HTTP {status}: {raw[:400]}"
                 ) from exc
@@ -208,6 +218,32 @@ def fetch_report(token: str, date_from: str, date_to: str) -> List[Dict[str, str
     raise RuntimeError(f"Reports API: timed out after {MAX_POLL} polling attempts")
 
 
+def _explain_api_error(status: int, body: str) -> None:
+    """Print a human-readable hint for common Yandex Direct API errors."""
+    try:
+        err = json.loads(body).get("error", {})
+        code = int(err.get("error_code", 0))
+    except Exception:
+        return
+    if code == 513:
+        print(
+            "\n[hint] Error 513: The authorized Yandex account is not connected to "
+            "Yandex.Direct.\n"
+            "  If this is an agency/representative account, set YANDEX_CLIENT_LOGIN "
+            "to the advertiser's Yandex login in .env.server.json, e.g.:\n"
+            '    { "YANDEX_CLIENT_LOGIN": "advertiser-login" }\n',
+            file=sys.stderr,
+        )
+    elif code == 58:
+        print(
+            "\n[hint] Error 58: The OAuth application has not been approved for "
+            "Yandex.Direct API access yet.\n"
+            "  Go to https://direct.yandex.ru → API → submit access application\n"
+            "  and wait for confirmation. This is a one-time step.\n",
+            file=sys.stderr,
+        )
+
+
 def _parse_tsv(raw: str) -> List[Dict[str, str]]:
     """Parse TSV text where the first non-empty line is the header."""
     lines = [ln for ln in raw.splitlines() if ln.strip()]
@@ -225,7 +261,9 @@ def _parse_tsv(raw: str) -> List[Dict[str, str]]:
 # Ads API
 # ---------------------------------------------------------------------------
 
-def _call_ads(token: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+def _call_ads(
+    token: str, payload: Dict[str, Any], client_login: str = ""
+) -> Dict[str, Any]:
     """POST to Ads API with exponential back-off on transient errors."""
     body = json.dumps(payload, ensure_ascii=False).encode()
     headers = {
@@ -233,6 +271,8 @@ def _call_ads(token: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         "Accept-Language": "ru",
         "Content-Type":    "application/json",
     }
+    if client_login:
+        headers["Client-Login"] = client_login
     for attempt in range(MAX_RETRIES):
         req = urllib.request.Request(
             DIRECT_ADS_URL, data=body, headers=headers, method="POST"
@@ -247,12 +287,15 @@ def _call_ads(token: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                 time.sleep(wait)
                 continue
             body_text = exc.read().decode(errors="replace")
+            _explain_api_error(exc.code, body_text)
             raise RuntimeError(f"Ads API error HTTP {exc.code}: {body_text[:400]}") from exc
     raise RuntimeError("Ads API: max retries exceeded")
 
 
 def fetch_ads(
-    token: str, ad_ids: Optional[List[int]] = None
+    token: str,
+    ad_ids: Optional[List[int]] = None,
+    client_login: str = "",
 ) -> List[Dict[str, str]]:
     """
     Fetch ad metadata via Ads.get.
@@ -276,7 +319,7 @@ def fetch_ads(
                 "Page":              {"Limit": ADS_PAGE_SIZE, "Offset": offset},
             },
         }
-        resp = _call_ads(token, payload)
+        resp = _call_ads(token, payload, client_login=client_login)
         result = resp.get("result", {})
         ads_page: List[Dict[str, Any]] = result.get("Ads", [])
 
@@ -536,6 +579,7 @@ def run_stats(
     full: bool = False,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
+    client_login: str = "",
 ) -> List[int]:
     """Fetch daily stats, store in raw_yandex_stats. Returns list of seen AdIds."""
     print("── Stats ───────────────────────────────────────────────")
@@ -554,7 +598,9 @@ def run_stats(
                 date_from = _days_ago(DEFAULT_LOOKBACK_DAYS)
 
     print(f"  Date range : {date_from} → {date_to}")
-    rows = fetch_report(token, date_from, date_to)
+    if client_login:
+        print(f"  Client     : {client_login}")
+    rows = fetch_report(token, date_from, date_to, client_login=client_login)
     print(f"  Received   : {len(rows)} daily rows from Reports API")
 
     n = insert_stats_rows(conn, rows, ingested_at=_now_iso())
@@ -569,10 +615,11 @@ def run_ads(
     token: str,
     conn: sqlite3.Connection,
     ad_ids: Optional[List[int]] = None,
+    client_login: str = "",
 ) -> None:
     """Fetch ad metadata, upsert into raw_yandex_ads."""
     print("── Ads metadata ────────────────────────────────────────")
-    ads = fetch_ads(token, ad_ids=ad_ids)
+    ads = fetch_ads(token, ad_ids=ad_ids, client_login=client_login)
     n = upsert_ads_rows(conn, ads, ingested_at=_now_iso())
     print(f"  Written    : {n} rows into raw_yandex_ads")
 
@@ -584,15 +631,20 @@ def run_once(
     full: bool,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
+    client_login: str = "",
 ) -> None:
     t0 = time.time()
     ad_ids: Optional[List[int]] = None
 
     if entity in ("stats", "all"):
-        ad_ids = run_stats(token, conn, full=full, date_from=date_from, date_to=date_to)
+        ad_ids = run_stats(
+            token, conn, full=full,
+            date_from=date_from, date_to=date_to,
+            client_login=client_login,
+        )
 
     if entity in ("ads", "all"):
-        run_ads(token, conn, ad_ids=ad_ids)
+        run_ads(token, conn, ad_ids=ad_ids, client_login=client_login)
 
     if entity in ("stats", "all"):
         print("── Aggregating yandex_stats ────────────────────────────")
@@ -648,6 +700,12 @@ def main() -> None:
         help="Minutes between syncs in --watch mode (default: 180)",
     )
     parser.add_argument(
+        "--client-login",
+        default=DEFAULT_CLIENT_LOGIN,
+        metavar="LOGIN",
+        help="Yandex advertiser login for agency/representative accounts (env: YANDEX_CLIENT_LOGIN)",
+    )
+    parser.add_argument(
         "--get-token",
         metavar="CODE",
         help="Exchange an OAuth authorisation code for a token and save it",
@@ -699,6 +757,8 @@ def main() -> None:
         print(f"Mode     : full re-download (last {DEFAULT_LOOKBACK_DAYS} days)")
     else:
         print(f"Mode     : incremental")
+    if args.client_login:
+        print(f"Client   : {args.client_login}")
     print()
 
     conn = sqlite3.connect(db_path)
@@ -710,6 +770,7 @@ def main() -> None:
                 token, conn, args.entity, args.full,
                 date_from=args.date_from,
                 date_to=args.date_to,
+                client_login=args.client_login,
             )
         finally:
             conn.close()
@@ -722,7 +783,10 @@ def main() -> None:
             ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
             print(f"[watch] {ts}")
             try:
-                run_once(token, conn, args.entity, args.full)
+                run_once(
+                    token, conn, args.entity, args.full,
+                    client_login=args.client_login,
+                )
                 # After the first successful run, always do incremental
                 args.full = False
             except Exception as exc:

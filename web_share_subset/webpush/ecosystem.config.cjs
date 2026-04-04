@@ -78,6 +78,7 @@ module.exports = {
       env: {
         WEBSITE_DB_PATH: process.env.WEBSITE_DB_PATH || path.join(repoRoot, "website.db"),
         YANDEX_TOKEN: serverSecrets.YANDEX_TOKEN || process.env.YANDEX_TOKEN || "",
+        YANDEX_CLIENT_LOGIN: serverSecrets.YANDEX_CLIENT_LOGIN || process.env.YANDEX_CLIENT_LOGIN || "",
       },
     },
   ],
