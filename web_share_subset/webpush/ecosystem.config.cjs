@@ -10,6 +10,11 @@ const path = require("path");
 // Resolve tsx binary relative to this file so it works regardless of cwd.
 const tsxBin = path.join(__dirname, "node_modules", ".bin", "tsx");
 
+// Load secrets from a local file not tracked by git.
+// Create .env.server.json on the server: { "UTM_PASSWORD": "..." }
+let serverSecrets = {};
+try { serverSecrets = require("./.env.server.json"); } catch (_) {}
+
 module.exports = {
   apps: [
     {
@@ -23,9 +28,7 @@ module.exports = {
         PORT: process.env.PORT || "3000",
         UTM_DB_PATH: process.env.UTM_DB_PATH || require("path").join(__dirname, "..", "..", "utm.db"),
         DIST_DIR: process.env.DIST_DIR || require("path").join(__dirname, "dist-utm"),
-        // Set this on the server: UTM_PASSWORD=yourpassword pm2 start ...
-        // Or export UTM_PASSWORD=yourpassword before running pm2 reload
-        UTM_PASSWORD: process.env.UTM_PASSWORD || "",
+        UTM_PASSWORD: serverSecrets.UTM_PASSWORD || process.env.UTM_PASSWORD || "",
       },
     },
   ],
