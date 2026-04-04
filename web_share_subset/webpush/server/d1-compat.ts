@@ -16,6 +16,7 @@ type BoundStatement = {
 
 export type D1Compat = {
   prepare: (query: string) => BoundStatement;
+  batch: (stmts: BoundStatement[]) => Promise<{ results?: unknown[] }[]>;
 };
 
 export function createD1Compat(db: Database.Database): D1Compat {
@@ -35,12 +36,28 @@ export function createD1Compat(db: Database.Database): D1Compat {
       async run(): Promise<unknown> {
         return db.prepare(query).run(...args);
       },
-    };
+      _query: query,
+      _args: args,
+    } as BoundStatement & { _query: string; _args: unknown[] };
   }
 
   return {
     prepare(query: string): BoundStatement {
       return makeBound(query, []);
+    },
+    async batch(stmts: BoundStatement[]): Promise<{ results?: unknown[] }[]> {
+      // Run all statements inside a single transaction for atomicity and performance.
+      const runAll = db.transaction(() => {
+        const out: { results?: unknown[] }[] = [];
+        for (const stmt of stmts) {
+          const s = stmt as unknown as { _query: string; _args: unknown[] };
+          const prepared = db.prepare(s._query);
+          const result = prepared.run(...(s._args ?? []));
+          out.push({ results: [result] });
+        }
+        return out;
+      });
+      return runAll();
     },
   };
 }
