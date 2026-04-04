@@ -1378,8 +1378,8 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
               "Код_курса_сайт" AS course_code_site,
               "Код курса" AS course_code,
               "UTM Campaign" AS utm_campaign,
-              "Источник (подробно)" AS source_detail,
-              "Источник обращения" AS source_ref,
+              NULL AS source_detail,
+              NULL AS source_ref,
               revenue_amount,
               classification_source
        FROM mart_attacking_january_cohort_deals
