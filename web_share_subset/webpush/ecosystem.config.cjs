@@ -8,8 +8,11 @@
 
 const path = require("path");
 
-// Resolve tsx binary relative to this file so it works regardless of cwd.
-const tsxBin = path.join(__dirname, "node_modules", ".bin", "tsx");
+// tsx v4 uses spawnSync internally, so PM2 kills tsx but its child node process
+// (which holds the HTTP port) survives as an orphan. Fix: run node directly with
+// tsx registered as an ESM loader via --import, so PM2 manages node itself.
+const tsxEsmPath = require.resolve("tsx/esm", { paths: [__dirname] });
+const tsxEsmUrl = `file://${tsxEsmPath}`;
 
 // Load secrets from a local file not tracked by git.
 // Create .env.server.json on the server:
@@ -29,8 +32,11 @@ module.exports = {
   apps: [
     {
       name: "utm-server",
-      script: "server/index.ts",
-      interpreter: tsxBin,
+      // Run node directly with tsx as ESM loader so PM2 manages the node
+      // process itself. SIGTERM goes straight to node → our shutdown() handler.
+      script: "node",
+      args: `--no-warnings --import ${tsxEsmUrl} server/index.ts`,
+      interpreter: "none",
       cwd: __dirname,
       watch: false,
       autorestart: true,
