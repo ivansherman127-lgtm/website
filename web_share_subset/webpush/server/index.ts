@@ -21,6 +21,21 @@ import {
   onRequestGet as utmGet,
   onRequestPost as utmPost,
 } from "../functions/api/utm.js";
+import {
+  onRequestGet as dataGet,
+} from "../functions/api/data.js";
+import {
+  onRequestGet as assocRevenueGet,
+} from "../functions/api/assoc-revenue.js";
+import {
+  onRequestGet as cohortDealsGet,
+} from "../functions/api/cohort-deals.js";
+import {
+  onRequestPost as analyticsRebuildPost,
+} from "../functions/api/analytics/rebuild.js";
+import {
+  onRequestPost as analyticsMaterializePost,
+} from "../functions/api/analytics/materialize.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -28,6 +43,11 @@ const PORT = parseInt(process.env.PORT ?? "3000", 10);
 const DB_PATH = process.env.UTM_DB_PATH ?? join(process.cwd(), "utm.db");
 const DIST_DIR = process.env.DIST_DIR ?? join(process.cwd(), "dist-utm");
 const SCHEMA_PATH = join(process.cwd(), "server", "utm-schema.sql");
+
+// Analytics DB and SPA dist dir (website.db + dist-analytics/)
+const WEBSITE_DB_PATH = process.env.WEBSITE_DB_PATH ?? join(process.cwd(), "website.db");
+const ANALYTICS_DIST_DIR = process.env.ANALYTICS_DIST_DIR ?? join(process.cwd(), "dist-analytics");
+const ANALYTICS_REBUILD_SECRET = process.env.ANALYTICS_REBUILD_SECRET ?? "";
 
 // Read secrets from .env.server.json if present (takes priority over process.env)
 let _serverSecrets: Record<string, string> = {};
@@ -37,12 +57,18 @@ try {
 } catch { /* file optional */ }
 const UTM_PASSWORD: string = _serverSecrets["UTM_PASSWORD"] ?? process.env.UTM_PASSWORD ?? "";
 console.log(`[auth] UTM_PASSWORD set: ${UTM_PASSWORD ? "yes" : "NO - open access"}`);
-
+const ANALYTICS_PASSWORD: string = _serverSecrets["ANALYTICS_PASSWORD"] ?? process.env.ANALYTICS_PASSWORD ?? UTM_PASSWORD;
+const _analyticsRebuildSecret: string = _serverSecrets["ANALYTICS_REBUILD_SECRET"] ?? ANALYTICS_REBUILD_SECRET;
 // Auth helpers
 const COOKIE_NAME = "utm_auth";
+const ANALYTICS_COOKIE_NAME = "analytics_auth";
 
 function cookieToken(): string {
   return createHash("sha256").update("utm:" + UTM_PASSWORD).digest("hex");
+}
+
+function analyticsCookieToken(): string {
+  return createHash("sha256").update("analytics:" + ANALYTICS_PASSWORD).digest("hex");
 }
 
 function parseCookies(req: IncomingMessage): Record<string, string> {
@@ -61,8 +87,18 @@ function isAuthenticated(req: IncomingMessage): boolean {
   return parseCookies(req)[COOKIE_NAME] === cookieToken();
 }
 
+function isAnalyticsAuthenticated(req: IncomingMessage): boolean {
+  if (!ANALYTICS_PASSWORD) return true;
+  const cookies = parseCookies(req);
+  return (
+    cookies[ANALYTICS_COOKIE_NAME] === analyticsCookieToken() ||
+    // Also accept utm_auth cookie so users already logged into the UTM tool
+    // don't need to log in again for analytics.
+    cookies[COOKIE_NAME] === cookieToken()
+  );
+}
+
 const LOGIN_HTML = (error: boolean) => `<!DOCTYPE html>
-<html lang="ru">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -89,6 +125,33 @@ const LOGIN_HTML = (error: boolean) => `<!DOCTYPE html>
 </body>
 </html>`;
 
+const ANALYTICS_LOGIN_HTML = (error: boolean) => `<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Аналитика — вход</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f5f7fa; }
+    form { background: #fff; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,.1); display: flex; flex-direction: column; gap: 1rem; width: 300px; }
+    h2 { margin: 0; font-size: 1.25rem; color: #111; }
+    input[type=password] { padding: .65rem .85rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; outline: none; }
+    input[type=password]:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.2); }
+    button { padding: .65rem; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600; }
+    button:hover { background: #1d4ed8; }
+    .err { color: #dc2626; font-size: .875rem; margin: 0; }
+  </style>
+</head>
+<body>
+  <form method="POST" action="/analytics/login">
+    <h2>Аналитика</h2>
+    ${error ? "<p class=\"err\">Неверный пароль</p>" : ""}
+    <input type="password" name="password" placeholder="Пароль" autofocus required />
+    <button type="submit">Войти</button>
+  </form>
+</body>
+</html>`;
+
 // Initialise database and apply schema if present
 const db = new Database(DB_PATH);
 db.pragma("journal_mode = WAL");
@@ -105,6 +168,35 @@ for (const stmt of COLUMN_MIGRATIONS) {
 }
 
 const UTM = createD1Compat(db);
+
+// Analytics DB (website.db) — opened read-write for rebuild endpoint, WAL for concurrency.
+let websiteDb: Database.Database | null = null;
+let WEBSITEDB: ReturnType<typeof createD1Compat> | null = null;
+try {
+  if (existsSync(WEBSITE_DB_PATH)) {
+    websiteDb = new Database(WEBSITE_DB_PATH);
+    websiteDb.pragma("journal_mode = WAL");
+    // Ensure analytics_build_meta table exists (needed by rebuild/materialize)
+    websiteDb.exec(`CREATE TABLE IF NOT EXISTS analytics_build_meta (
+      k TEXT PRIMARY KEY NOT NULL,
+      v TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`);
+    websiteDb.exec(`CREATE TABLE IF NOT EXISTS dataset_json (
+      path TEXT NOT NULL,
+      chunk INTEGER NOT NULL DEFAULT 0,
+      body TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (path, chunk)
+    )`);
+    WEBSITEDB = createD1Compat(websiteDb);
+    console.log(`[analytics] website.db opened: ${WEBSITE_DB_PATH}`);
+  } else {
+    console.log(`[analytics] website.db not found at ${WEBSITE_DB_PATH} — analytics disabled`);
+  }
+} catch (e) {
+  console.error("[analytics] Failed to open website.db:", e);
+}
 
 const MIME: Record<string, string> = {
   ".html":  "text/html; charset=utf-8",
@@ -147,6 +239,17 @@ function serveStatic(res: ServerResponse, urlPath: string): void {
   createReadStream(filePath).pipe(res);
 }
 
+function serveAnalytics(res: ServerResponse, urlPath: string): void {
+  const stripped = urlPath.replace(/^\/analytics(\/|$)/, "/") || "/";
+  const cleanPath = stripped.split("?")[0] ?? "/";
+  let filePath = join(ANALYTICS_DIST_DIR, cleanPath);
+  if (!existsSync(filePath) || filePath.endsWith("/")) filePath = join(ANALYTICS_DIST_DIR, "index.html");
+  if (!existsSync(filePath)) { res.writeHead(404); res.end("Not Found"); return; }
+  const mime = MIME[extname(filePath)] ?? "application/octet-stream";
+  res.writeHead(200, { "content-type": mime });
+  createReadStream(filePath).pipe(res);
+}
+
 function toWebRequest(req: IncomingMessage, body?: Buffer): Request {
   const host = req.headers.host ?? "localhost";
   const url = `http://${host}${req.url ?? "/"}`;
@@ -182,6 +285,113 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
   const pathname = rawUrl.split("?")[0] ?? "/";
 
   try {
+    // ── Analytics login (no auth required) ──────────────────────────────────
+    if (pathname === "/analytics/login") {
+      if (req.method === "GET") {
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+        res.end(ANALYTICS_LOGIN_HTML(false));
+      } else if (req.method === "POST") {
+        const body = await readBody(req);
+        const params = new URLSearchParams(body.toString());
+        const submitted = params.get("password") ?? "";
+        if (ANALYTICS_PASSWORD && submitted === ANALYTICS_PASSWORD) {
+          const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString();
+          res.writeHead(302, {
+            "set-cookie": `${ANALYTICS_COOKIE_NAME}=${analyticsCookieToken()}; HttpOnly; SameSite=Lax; Path=/; Expires=${expires}`,
+            "location": "/analytics/",
+          });
+          res.end();
+        } else {
+          res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+          res.end(ANALYTICS_LOGIN_HTML(true));
+        }
+      } else {
+        res.writeHead(405); res.end();
+      }
+      return;
+    }
+
+    // ── Analytics auth gate ───────────────────────────────────────────────────
+    if (
+      (pathname.startsWith("/analytics") || pathname === "/analytics") &&
+      !isAnalyticsAuthenticated(req)
+    ) {
+      if (pathname.startsWith("/api/")) {
+        jsonRes(res, 401, { ok: false, error: "unauthorized" });
+      } else {
+        res.writeHead(302, { "location": "/analytics/login" });
+        res.end();
+      }
+      return;
+    }
+
+    // ── Analytics API routes (authenticated) ─────────────────────────────────
+    if (pathname === "/api/data" || pathname.startsWith("/api/data?")) {
+      if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
+      if (!isAnalyticsAuthenticated(req)) { jsonRes(res, 401, { ok: false, error: "unauthorized" }); return; }
+      const webReq = toWebRequest(req);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const webRes = await dataGet({ request: webReq, env: { DB: WEBSITEDB } as any });
+      await sendWebResponse(webRes, res);
+      return;
+    }
+
+    if (pathname === "/api/assoc-revenue") {
+      if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
+      if (!isAnalyticsAuthenticated(req)) { jsonRes(res, 401, { ok: false, error: "unauthorized" }); return; }
+      const webReq = toWebRequest(req);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const webRes = await assocRevenueGet({ request: webReq, env: { DB: WEBSITEDB } as any });
+      await sendWebResponse(webRes, res);
+      return;
+    }
+
+    if (pathname === "/api/cohort-deals") {
+      if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
+      if (!isAnalyticsAuthenticated(req)) { jsonRes(res, 401, { ok: false, error: "unauthorized" }); return; }
+      const webReq = toWebRequest(req);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const webRes = await cohortDealsGet({ request: webReq, env: { DB: WEBSITEDB } as any });
+      await sendWebResponse(webRes, res);
+      return;
+    }
+
+    if (pathname === "/api/analytics/rebuild") {
+      if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
+      if (req.method !== "POST") { jsonRes(res, 405, { ok: false, error: "method_not_allowed" }); return; }
+      const body = await readBody(req);
+      const webReq = toWebRequest(req, body);
+      // Override secret so the handler can verify the bearer token
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const webRes = await analyticsRebuildPost({ request: webReq, env: { DB: WEBSITEDB, ANALYTICS_REBUILD_SECRET: _analyticsRebuildSecret } as any });
+      await sendWebResponse(webRes, res);
+      return;
+    }
+
+    if (pathname === "/api/analytics/materialize") {
+      if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
+      if (req.method !== "POST") { jsonRes(res, 405, { ok: false, error: "method_not_allowed" }); return; }
+      if (!isAnalyticsAuthenticated(req)) { jsonRes(res, 401, { ok: false, error: "unauthorized" }); return; }
+      const body = await readBody(req);
+      const webReq = toWebRequest(req, body);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const webRes = await analyticsMaterializePost({ request: webReq, env: { DB: WEBSITEDB } as any });
+      await sendWebResponse(webRes, res);
+      return;
+    }
+
+    // ── Analytics SPA static files ────────────────────────────────────────────
+    if (pathname === "/analytics" || pathname.startsWith("/analytics/")) {
+      if (!isAnalyticsAuthenticated(req)) {
+        res.writeHead(302, { "location": "/analytics/login" }); res.end(); return;
+      }
+      if (pathname === "/analytics") {
+        res.writeHead(302, { "location": "/analytics/" }); res.end(); return;
+      }
+      serveAnalytics(res, pathname);
+      return;
+    }
+
     // Login endpoints — always accessible
     if (pathname === "/utm/login") {
       if (req.method === "GET") {
@@ -265,6 +475,7 @@ server.listen(PORT, () => {
 function shutdown() {
   server.close(() => {
     db.close();
+    try { websiteDb?.close(); } catch { /* ignore */ }
     process.exit(0);
   });
 }

@@ -7,7 +7,7 @@
     "dev:utm": "vite --config vite.config.utm.ts",
     "prebuild": "rm -f public/data/attacking_january_associative_deals_base.json",
     "build": "VITE_DATA_SOURCE=d1 vite build",
-    "build:utm": "vite build --config vite.config.utm.ts",
+    "build:analytics": "VITE_DATA_SOURCE=d1 vite build --config vite.config.analytics.ts",
     "postbuild:utm": "cp dist-utm/utm.html dist-utm/index.html",
     "preview": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",

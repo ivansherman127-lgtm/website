@@ -49,6 +49,10 @@ module.exports = {
         UTM_DB_PATH: process.env.UTM_DB_PATH || path.join(__dirname, "..", "..", "utm.db"),
         DIST_DIR: process.env.DIST_DIR || path.join(__dirname, "dist-utm"),
         UTM_PASSWORD: serverSecrets.UTM_PASSWORD || process.env.UTM_PASSWORD || "",
+        ANALYTICS_PASSWORD: serverSecrets.ANALYTICS_PASSWORD || process.env.ANALYTICS_PASSWORD || "",
+        WEBSITE_DB_PATH: process.env.WEBSITE_DB_PATH || path.join(repoRoot, "website.db"),
+        ANALYTICS_DIST_DIR: process.env.ANALYTICS_DIST_DIR || path.join(__dirname, "dist-analytics"),
+        ANALYTICS_REBUILD_SECRET: serverSecrets.ANALYTICS_REBUILD_SECRET || process.env.ANALYTICS_REBUILD_SECRET || "",
       },
     },
     {
