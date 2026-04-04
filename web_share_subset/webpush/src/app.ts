@@ -72,6 +72,24 @@ function num(v: unknown): number {
   return 0;
 }
 
+function sumField(rows: Record<string, unknown>[], field: string): number {
+  return rows.reduce((a, x) => a + num(x[field]), 0);
+}
+
+function makeSimpleToggle(
+  selector: string,
+  attrName: string,
+  expandSet: Set<string>,
+  redraw: () => void,
+): void {
+  app.querySelectorAll<HTMLButtonElement>(selector).forEach((b) => (b.onclick = () => {
+    const k = b.getAttribute(attrName) || "";
+    if (!k) return;
+    if (expandSet.has(k)) expandSet.delete(k); else expandSet.add(k);
+    redraw();
+  }));
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -361,15 +379,15 @@ function renderWeeklyBitrixExpandableTable(rows: Record<string, unknown>[], expa
     const totals: Record<string, unknown> = {
       "Неделя": week,
       "Воронка": "Всего",
-      "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
-      "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
-      "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
-      "Неизвестно": items.reduce((a, x) => a + num(x["Неизвестно"]), 0),
-      "Отказы": items.reduce((a, x) => a + num(x["Отказы"]), 0),
-      "В работе": items.reduce((a, x) => a + num(x["В работе"]), 0),
-      "Сделок_с_выручкой": items.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
-      "Выручка_сделки_недели": items.reduce((a, x) => a + num(x["Выручка_сделки_недели"]), 0),
-      "Выручка_получена_на_неделе": items.reduce((a, x) => a + num(x["Выручка_получена_на_неделе"]), 0),
+      "Лиды": sumField(items, "Лиды"),
+      "Квал": sumField(items, "Квал"),
+      "Неквал": sumField(items, "Неквал"),
+      "Неизвестно": sumField(items, "Неизвестно"),
+      "Отказы": sumField(items, "Отказы"),
+      "В работе": sumField(items, "В работе"),
+      "Сделок_с_выручкой": sumField(items, "Сделок_с_выручкой"),
+      "Выручка_сделки_недели": sumField(items, "Выручка_сделки_недели"),
+      "Выручка_получена_на_неделе": sumField(items, "Выручка_получена_на_неделе"),
     };
     const leads = num(totals["Лиды"]);
     const qual = num(totals["Квал"]);
@@ -453,15 +471,15 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
       "Неделя": week,
       "Кампания": "Всего",
       "ID кампании": "-",
-      "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
-      "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
-      "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
-      "Неизвестно": items.reduce((a, x) => a + num(x["Неизвестно"]), 0),
-      "Отказы": items.reduce((a, x) => a + num(x["Отказы"]), 0),
-      "Сделок_с_выручкой": items.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
-      "Ассоц_выручка": items.reduce((a, x) => a + num(x["Ассоц_выручка"]), 0),
-      "Расход, ₽": items.reduce((a, x) => a + num(x["Расход, ₽"]), 0),
-      "Прибыль": items.reduce((a, x) => a + num(x["Прибыль"]), 0),
+      "Лиды": sumField(items, "Лиды"),
+      "Квал": sumField(items, "Квал"),
+      "Неквал": sumField(items, "Неквал"),
+      "Неизвестно": sumField(items, "Неизвестно"),
+      "Отказы": sumField(items, "Отказы"),
+      "Сделок_с_выручкой": sumField(items, "Сделок_с_выручкой"),
+      "Ассоц_выручка": sumField(items, "Ассоц_выручка"),
+      "Расход, ₽": sumField(items, "Расход, ₽"),
+      "Прибыль": sumField(items, "Прибыль"),
     };
     const leads = num(totals["Лиды"]);
     const qual = num(totals["Квал"]);
@@ -1117,14 +1135,14 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
     }
     const out: Record<string, unknown>[] = [];
     for (const [year, rowsInYear] of groups.entries()) {
-      const leads = rowsInYear.reduce((a, x) => a + num(x["Лиды"]), 0);
-      const qual = rowsInYear.reduce((a, x) => a + num(x["Квал"]), 0);
-      const unqual = rowsInYear.reduce((a, x) => a + num(x["Неквал"]), 0);
-      const unknown = rowsInYear.reduce((a, x) => a + num(x["Неизвестно"]), 0);
-      const refusal = rowsInYear.reduce((a, x) => a + num(x["Отказы"]), 0);
-      const inWork = rowsInYear.reduce((a, x) => a + num(x["В работе"]), 0);
-      const deals = rowsInYear.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0);
-      const revenue = rowsInYear.reduce((a, x) => a + num(x["Выручка"]), 0);
+      const leads = sumField(rowsInYear, "Лиды");
+      const qual = sumField(rowsInYear, "Квал");
+      const unqual = sumField(rowsInYear, "Неквал");
+      const unknown = sumField(rowsInYear, "Неизвестно");
+      const refusal = sumField(rowsInYear, "Отказы");
+      const inWork = sumField(rowsInYear, "В работе");
+      const deals = sumField(rowsInYear, "Сделок_с_выручкой");
+      const revenue = sumField(rowsInYear, "Выручка");
       const avgCheck = deals > 0 ? revenue / deals : 0;
 
       const acc: Record<string, unknown> = {
@@ -1650,7 +1668,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           "Код курса": "-",
           "fl_IDs": managerItems.map((x) => String(x["fl_IDs"] ?? "").trim()).filter(Boolean).join(",").slice(0, 50000),
         };
-        for (const k of metricKeys) managerRow[k] = managerItems.reduce((a, x) => a + num(x[k]), 0);
+        for (const k of metricKeys) managerRow[k] = sumField(managerItems, k);
         managerRow["Конверсия в Квал"] = num(managerRow["Лиды"]) > 0 ? num(managerRow["Квал"]) / num(managerRow["Лиды"]) : 0;
         managerRow["Конверсия в Неквал"] = num(managerRow["Лиды"]) > 0 ? num(managerRow["Неквал"]) / num(managerRow["Лиды"]) : 0;
         managerRow["Конверсия в Отказ"] = num(managerRow["Лиды"]) > 0 ? num(managerRow["Отказы"]) / num(managerRow["Лиды"]) : 0;
@@ -1668,7 +1686,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
             "Код курса": code,
             "fl_IDs": items.map((x) => String(x["fl_IDs"] ?? "").trim()).filter(Boolean).join(",").slice(0, 50000),
           };
-          for (const k of metricKeys) codeRow[k] = items.reduce((a, x) => a + num(x[k]), 0);
+          for (const k of metricKeys) codeRow[k] = sumField(items, k);
           codeRow["Конверсия в Квал"] = num(codeRow["Лиды"]) > 0 ? num(codeRow["Квал"]) / num(codeRow["Лиды"]) : 0;
           codeRow["Конверсия в Неквал"] = num(codeRow["Лиды"]) > 0 ? num(codeRow["Неквал"]) / num(codeRow["Лиды"]) : 0;
           codeRow["Конверсия в Отказ"] = num(codeRow["Лиды"]) > 0 ? num(codeRow["Отказы"]) / num(codeRow["Лиды"]) : 0;
@@ -1702,15 +1720,15 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           "Код_курса_норм": "-",
           "__node": "funnel",
           "__funnel": funnel,
-          "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
-          "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
-          "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
-          "Неизвестно": items.reduce((a, x) => a + num(x["Неизвестно"]), 0),
-          "Отказы": items.reduce((a, x) => a + num(x["Отказы"]), 0),
-          "В работе": items.reduce((a, x) => a + num(x["В работе"]), 0),
-          "Невалидные_лиды": items.reduce((a, x) => a + num(x["Невалидные_лиды"]), 0),
-          "Сделок_с_выручкой": items.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
-          "Выручка": items.reduce((a, x) => a + num(x["Выручка"]), 0),
+          "Лиды": sumField(items, "Лиды"),
+          "Квал": sumField(items, "Квал"),
+          "Неквал": sumField(items, "Неквал"),
+          "Неизвестно": sumField(items, "Неизвестно"),
+          "Отказы": sumField(items, "Отказы"),
+          "В работе": sumField(items, "В работе"),
+          "Невалидные_лиды": sumField(items, "Невалидные_лиды"),
+          "Сделок_с_выручкой": sumField(items, "Сделок_с_выручкой"),
+          "Выручка": sumField(items, "Выручка"),
         });
         rebuilt.push(fRow);
         const byMonth = new Map<string, Record<string, unknown>[]>();
@@ -1728,15 +1746,15 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
             "__node": "month",
             "__funnel": funnel,
             "__month": month,
-            "Лиды": mItems.reduce((a, x) => a + num(x["Лиды"]), 0),
-            "Квал": mItems.reduce((a, x) => a + num(x["Квал"]), 0),
-            "Неквал": mItems.reduce((a, x) => a + num(x["Неквал"]), 0),
-            "Неизвестно": mItems.reduce((a, x) => a + num(x["Неизвестно"]), 0),
-            "Отказы": mItems.reduce((a, x) => a + num(x["Отказы"]), 0),
-            "В работе": mItems.reduce((a, x) => a + num(x["В работе"]), 0),
-            "Невалидные_лиды": mItems.reduce((a, x) => a + num(x["Невалидные_лиды"]), 0),
-            "Сделок_с_выручкой": mItems.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
-            "Выручка": mItems.reduce((a, x) => a + num(x["Выручка"]), 0),
+            "Лиды": sumField(mItems, "Лиды"),
+            "Квал": sumField(mItems, "Квал"),
+            "Неквал": sumField(mItems, "Неквал"),
+            "Неизвестно": sumField(mItems, "Неизвестно"),
+            "Отказы": sumField(mItems, "Отказы"),
+            "В работе": sumField(mItems, "В работе"),
+            "Невалидные_лиды": sumField(mItems, "Невалидные_лиды"),
+            "Сделок_с_выручкой": sumField(mItems, "Сделок_с_выручкой"),
+            "Выручка": sumField(mItems, "Выручка"),
           });
           rebuilt.push(mRow);
           rebuilt.push(...mItems);
@@ -2105,12 +2123,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         input.select();
       };
     });
-    app.querySelectorAll<HTMLButtonElement>(".email-expand-btn").forEach((b) => (b.onclick = () => {
-      const k = b.getAttribute("data-month") || "";
-      if (!k) return;
-      if (expandedEmailMonths.has(k)) expandedEmailMonths.delete(k); else expandedEmailMonths.add(k);
-      draw();
-    }));
+    makeSimpleToggle(".email-expand-btn", "data-month", expandedEmailMonths, draw);
     app.querySelectorAll<HTMLButtonElement>(".email-other-expand-btn").forEach((b) => (b.onclick = () => {
       const m = b.getAttribute("data-month") || "";
       if (!m) return;
@@ -2160,18 +2173,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       if (expandedAssocOtherRows.has(k)) expandedAssocOtherRows.delete(k); else expandedAssocOtherRows.add(k);
       draw();
     }));
-    app.querySelectorAll<HTMLButtonElement>(".assoc-event-expand-btn").forEach((b) => (b.onclick = () => {
-      const ctx = b.getAttribute("data-ctx") || "";
-      if (!ctx) return;
-      if (expandedAssocEventRows.has(ctx)) expandedAssocEventRows.delete(ctx); else expandedAssocEventRows.add(ctx);
-      draw();
-    }));
-    app.querySelectorAll<HTMLButtonElement>(".assoc-yandex-expand-btn").forEach((b) => (b.onclick = () => {
-      const ctx = b.getAttribute("data-ctx") || "";
-      if (!ctx) return;
-      if (expandedAssocYandexRows.has(ctx)) expandedAssocYandexRows.delete(ctx); else expandedAssocYandexRows.add(ctx);
-      draw();
-    }));
+    makeSimpleToggle(".assoc-event-expand-btn", "data-ctx", expandedAssocEventRows, draw);
+    makeSimpleToggle(".assoc-yandex-expand-btn", "data-ctx", expandedAssocYandexRows, draw);
     app.querySelectorAll<HTMLButtonElement>(".yd-project-expand-btn").forEach((b) => (b.onclick = () => {
       const ctx = b.getAttribute("data-ctx") || "";
       if (!ctx) return;
@@ -2179,12 +2182,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       if (expandedYandexProjectRows.has(key)) expandedYandexProjectRows.delete(key); else expandedYandexProjectRows.add(key);
       draw();
     }));
-    app.querySelectorAll<HTMLButtonElement>(".budget-expand-btn").forEach((b) => (b.onclick = () => {
-      const pm = b.getAttribute("data-paymonth") || "";
-      if (!pm) return;
-      if (expandedBudget.has(pm)) expandedBudget.delete(pm); else expandedBudget.add(pm);
-      draw();
-    }));
+    makeSimpleToggle(".budget-expand-btn", "data-paymonth", expandedBudget, draw);
 
     const expandAllBtn = app.querySelector<HTMLButtonElement>(".expand-all-toggle-btn");
     if (expandAllBtn && showCtrl) {

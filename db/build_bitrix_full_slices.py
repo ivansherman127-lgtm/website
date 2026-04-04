@@ -14,6 +14,7 @@ from bitrix_lead_quality import (
 )
 from bitrix_union_io import load_bitrix_deals_union
 from revenue_variant3 import variant3_revenue_mask
+from utils import _n, _amt
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB_DIR = ROOT / "web" / "public" / "data"
@@ -21,23 +22,6 @@ OUT_MONTH = WEB_DIR / "bitrix_month_total_full.json"
 OUT_FUNNEL = WEB_DIR / "bitrix_funnel_month_code_full.json"
 
 INVALID_MONTH = "Невалидная дата оплаты"
-
-
-def _n(v: object) -> str:
-    if v is None or pd.isna(v):
-        return ""
-    s = str(v).strip()
-    return "" if s.lower() in {"", "nan", "none", "null"} else s
-
-
-def _amt(v: object) -> float:
-    s = _n(v).replace(" ", "").replace("\xa0", "").replace(",", ".")
-    if not s:
-        return 0.0
-    try:
-        return float(s)
-    except ValueError:
-        return 0.0
 
 
 def _add_kpi(df: pd.DataFrame) -> pd.DataFrame:

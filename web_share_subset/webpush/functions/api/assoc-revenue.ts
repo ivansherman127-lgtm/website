@@ -333,7 +333,7 @@ async function computeSourceWatermark(db: D1Database, cohort: Cohort): Promise<s
     "mart_deals_enriched",
     "stg_email_sends",
     "stg_yandex_stats",
-    "mart_yandex_revenue_projects_raw",
+    "mart_yandex_revenue_projects",
     cohort === "attacking_january" ? "mart_attacking_january_cohort_deals" : "mart_deals_enriched",
   ];
   const uniq = [...new Set(watchedTables)];

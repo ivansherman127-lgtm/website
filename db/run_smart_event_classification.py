@@ -10,30 +10,11 @@ from bitrix_lead_quality import drop_rows_excluded_funnels
 from bitrix_union_io import load_bitrix_deals_union
 from event_classifier import classify_event_from_row, is_attacking_january, normalize_course_code
 from revenue_variant3 import variant3_revenue_mask
+from utils import _n, _id, _amt
 
 
 ROOT = Path(__file__).resolve().parent.parent
 CONTACTS_PATH = ROOT / "sheets" / "bitrix_contact_export.csv"
-
-
-def _n(v: object) -> str:
-    if v is None or pd.isna(v):
-        return ""
-    s = str(v).strip()
-    return "" if s.lower() in {"", "nan", "none", "null"} else s
-
-
-def _id(v: object) -> str:
-    s = _n(v)
-    return s.split(".", 1)[0] if re.fullmatch(r"\d+\.0+", s) else s
-
-
-def _amt(v: object) -> float:
-    s = _n(v).replace(" ", "").replace("\xa0", "").replace(",", ".")
-    try:
-        return float(s) if s else 0.0
-    except ValueError:
-        return 0.0
 
 
 def _apply_revenue_variant3(df: pd.DataFrame) -> pd.DataFrame:

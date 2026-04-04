@@ -30,22 +30,15 @@ export async function runAnalyticsRebuild(
     mart = await rebuildMartDealsFromStaging(db);
 
     await db.prepare("DELETE FROM mart_attacking_january_cohort_deals").run();
-    await db.prepare("DELETE FROM mart_attacking_january_contacts").run();
-
-    await db
-      .prepare(
-        `INSERT INTO mart_attacking_january_contacts (contact_id)
-       SELECT DISTINCT "Контакт: ID" AS contact_id
-       FROM mart_deals_enriched
-       WHERE is_attacking_january = 1 AND COALESCE("Контакт: ID", '') <> ''`,
-      )
-      .run();
 
     await db
       .prepare(
         `INSERT INTO mart_attacking_january_cohort_deals
        SELECT d.* FROM mart_deals_enriched d
-       INNER JOIN mart_attacking_january_contacts c ON d."Контакт: ID" = c.contact_id`,
+       WHERE d."Контакт: ID" IN (
+         SELECT DISTINCT "Контакт: ID" FROM mart_deals_enriched
+         WHERE is_attacking_january = 1 AND COALESCE("Контакт: ID", '') <> ''
+       )`,
       )
       .run();
 

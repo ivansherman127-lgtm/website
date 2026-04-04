@@ -1472,19 +1472,17 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
               (SELECT COALESCE(SUM(revenue),0) FROM mart_yandex_leads_dedup) AS revenue_dedup`,
     ).all<RR>(),
     db.prepare(
-      `SELECT r.project_name,
-              r.yandex_month AS month,
-              r.leads_raw,
-              d.leads_dedup,
-              r.paid_deals_raw,
-              d.paid_deals_dedup,
-              r.revenue_raw,
-              d.revenue_dedup,
-              r.spend
-       FROM mart_yandex_revenue_projects_raw r
-       LEFT JOIN mart_yandex_revenue_projects_dedup d
-         ON r.project_name = d.project_name AND r.yandex_month = d.yandex_month
-       ORDER BY r.revenue_raw DESC`,
+      `SELECT project_name,
+              yandex_month AS month,
+              leads_raw,
+              leads_dedup,
+              paid_deals_raw,
+              paid_deals_dedup,
+              revenue_raw,
+              revenue_dedup,
+              spend
+       FROM mart_yandex_revenue_projects
+       ORDER BY revenue_raw DESC`,
     ).all<RR>(),
     db.prepare(
       `WITH matched AS (
@@ -1492,7 +1490,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
                 SUM(leads_raw) AS leads_raw,
                 SUM(paid_deals_raw) AS paid_deals_raw,
                 SUM(revenue_raw) AS revenue_raw
-         FROM mart_yandex_revenue_projects_raw
+         FROM mart_yandex_revenue_projects
          GROUP BY yandex_month
        ),
        ystats AS (
@@ -1526,7 +1524,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
               SUM(paid_deals_raw) AS paid_deals_raw,
               SUM(revenue_raw) AS revenue_raw,
               SUM(spend) AS spend
-       FROM mart_yandex_revenue_projects_raw
+       FROM mart_yandex_revenue_projects
        GROUP BY project_name
        ORDER BY revenue_raw DESC`,
     ).all<RR>(),
