@@ -3130,23 +3130,11 @@ async function boot(): Promise<void> {
     yandexProjectLeadMetrics.clear();
     yandexMonthLeadMetrics.clear();
 
-    // Trigger materialisation and wait for it.
-    // Server-side cache means this returns in <50ms when data is fresh (skipped).
-    // We await it so we never render a page from partially-deleted dataset_json rows.
-    try {
-      const matRes = await fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" });
-      if (!matRes.ok) {
-        const errText = await matRes.text().catch(() => matRes.status.toString());
-        console.warn(`Materialize skipped (${matRes.status}): ${errText}`);
-      } else {
-        const matJson = await matRes.json() as { ok?: boolean; error?: string; skipped?: boolean };
-        if (!matJson.ok && !matJson.skipped) {
-          console.warn(`Materialize error: ${matJson.error ?? "unknown"}`);
-        }
-      }
-    } catch (matErr) {
-      console.warn("Materialize request failed", matErr);
-    }
+    // Fire-and-forget materialisation — do NOT block page load on it.
+    // dataset_json already holds the last materialized data; b24-sync triggers a
+    // full rebuild after each ingestion, keeping the cache warm between page loads.
+    // The page renders immediately from existing cached rows in the DB.
+    void fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" }).catch(() => {});
 
     // Load email overrides and yandex hierarchy in parallel (independent of each other
     // and of the background materialisation above).
