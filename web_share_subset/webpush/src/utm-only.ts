@@ -11,7 +11,7 @@ type MediumEntry = {
 
 type UtmRow = {
   "Дата создания": string;
-  "Создал"?: string;
+  "Создал": string;
   "UTM Source": string;
   "UTM Medium": string;
   "UTM Campaign": string;
@@ -104,8 +104,8 @@ function renderShell(): void {
           <label><span class="label-text">Partner</span>
             <input class="partner-input" type="text" placeholder="Опционально" />
           </label>
-          <label><span class="label-text">Автор</span>
-            <input class="created-by-input" type="text" placeholder="Автор (опционально)" />
+          <label><span class="label-text">Автор <span class="required-marker">*</span></span>
+            <input class="created-by-input" type="text" placeholder="Автор" />
           </label>
           <label><span class="label-text">Content</span>
             <input class="content-input" type="text" placeholder="Например, banner_a" />
@@ -206,7 +206,7 @@ async function main(): Promise<void> {
   const syncWriteState = (): void => {
     const entry = MEDIUMS.find((m) => m.value === mediumSelect.value);
     const source = entry?.sourceType === "freetext" ? sourceFreetext.value : sourceSelect.value;
-    const ready = [mediumSelect.value, source, campaignInput.value, linkInput.value]
+    const ready = [mediumSelect.value, source, campaignInput.value, linkInput.value, createdByInput.value]
       .every((value) => String(value || "").trim() !== "");
     writeBtn.disabled = !ready;
   };
@@ -227,6 +227,7 @@ async function main(): Promise<void> {
   contentInput.oninput = syncWriteState;
   termInput.oninput = syncWriteState;
   partnerInput.oninput = syncWriteState;
+  createdByInput.oninput = syncWriteState;
 
   writeBtn.onclick = async () => {
     const entry = MEDIUMS.find((m) => m.value === mediumSelect.value);
@@ -244,7 +245,7 @@ async function main(): Promise<void> {
       created_by: createdByInput.value.trim(),
     };
 
-    if (!payload.utm_medium || !payload.utm_source || !payload.utm_campaign || !payload.campaign_link) {
+    if (!payload.utm_medium || !payload.utm_source || !payload.utm_campaign || !payload.campaign_link || !payload.created_by) {
       setStatus("Заполните обязательные поля", "error");
       return;
     }
