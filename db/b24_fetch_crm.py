@@ -266,7 +266,8 @@ def insert_rows(
 # Entity runners
 # ---------------------------------------------------------------------------
 
-def run_deals(webhook_url: str, conn: sqlite3.Connection, full: bool = False) -> None:
+def run_deals(webhook_url: str, conn: sqlite3.Connection, full: bool = False) -> int:
+    """Returns number of new rows written."""
     print("── Deals ──────────────────────────────────────────────")
     since = None if full else get_last_sync(conn, "deals")
     sync_start = _now_iso()
@@ -275,15 +276,17 @@ def run_deals(webhook_url: str, conn: sqlite3.Connection, full: bool = False) ->
     if not rows:
         print("  No new/modified deals.")
         set_last_sync(conn, "deals", sync_start)
-        return
+        return 0
 
     print(f"  Inserting {len(rows)} deal rows into raw_b24_deals…")
     n = insert_rows(conn, "raw_b24_deals", rows, ingested_at=sync_start)
     set_last_sync(conn, "deals", sync_start)
     print(f"  Done — {n} rows written.")
+    return n
 
 
-def run_contacts(webhook_url: str, conn: sqlite3.Connection, full: bool = False) -> None:
+def run_contacts(webhook_url: str, conn: sqlite3.Connection, full: bool = False) -> int:
+    """Returns number of new rows written."""
     print("── Contacts ───────────────────────────────────────────")
     since = None if full else get_last_sync(conn, "contacts")
     sync_start = _now_iso()
@@ -292,21 +295,47 @@ def run_contacts(webhook_url: str, conn: sqlite3.Connection, full: bool = False)
     if not rows:
         print("  No new/modified contacts.")
         set_last_sync(conn, "contacts", sync_start)
-        return
+        return 0
 
     print(f"  Inserting {len(rows)} contact rows into raw_b24_contacts…")
     n = insert_rows(conn, "raw_b24_contacts", rows, ingested_at=sync_start)
     set_last_sync(conn, "contacts", sync_start)
     print(f"  Done — {n} rows written.")
+    return n
 
 
-def run_once(webhook_url: str, conn: sqlite3.Connection, entity: str, full: bool) -> None:
+def trigger_analytics_rebuild() -> None:
+    """POST to the analytics rebuild endpoint so dataset_json is refreshed after new ingestion."""
+    url = os.environ.get("ANALYTICS_REBUILD_URL", "http://127.0.0.1:3000/api/analytics/rebuild")
+    secret = os.environ.get("ANALYTICS_REBUILD_SECRET", "")
+    try:
+        payload = json.dumps({"force": False}).encode("utf-8")
+        req = urllib.request.Request(url, data=payload, method="POST")
+        req.add_header("Content-Type", "application/json")
+        if secret:
+            req.add_header("Authorization", f"Bearer {secret}")
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            result = json.load(resp)
+        skipped = result.get("skipped") or result.get("result", {}).get("skipped")
+        if skipped:
+            print("  [rebuild] Analytics up to date — skipped.")
+        else:
+            paths = (result.get("result") or {}).get("dataset_paths", "?")
+            print(f"  [rebuild] Analytics rebuild complete — {paths} paths materialized.")
+    except Exception as exc:
+        print(f"  [rebuild] Warning: analytics rebuild call failed: {exc}", file=sys.stderr)
+
+
+def run_once(webhook_url: str, conn: sqlite3.Connection, entity: str, full: bool) -> int:
+    """Returns total number of new rows written across entities."""
     t0 = time.time()
+    new_rows = 0
     if entity in ("deals", "all"):
-        run_deals(webhook_url, conn, full=full)
+        new_rows += run_deals(webhook_url, conn, full=full)
     if entity in ("contacts", "all"):
-        run_contacts(webhook_url, conn, full=full)
-    print(f"\nSync complete in {time.time() - t0:.1f}s")
+        new_rows += run_contacts(webhook_url, conn, full=full)
+    print(f"\nSync complete in {time.time() - t0:.1f}s — {new_rows} new rows")
+    return new_rows
 
 
 # ---------------------------------------------------------------------------
@@ -379,7 +408,10 @@ def main() -> None:
             now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
             print(f"[watch] {now}")
             try:
-                run_once(webhook_url, conn, args.entity, args.full)
+                run_once_result = run_once(webhook_url, conn, args.entity, args.full)
+                if run_once_result > 0:
+                    print(f"  [rebuild] {run_once_result} new rows — triggering analytics rebuild…")
+                    trigger_analytics_rebuild()
                 # After first run in watch mode, always incremental
                 args.full = False
             except Exception as exc:

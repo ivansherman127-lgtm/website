@@ -2902,18 +2902,9 @@ async function boot(): Promise<void> {
     dealRevenueById.clear();
     yandexProjectLeadMetrics.clear();
     yandexMonthLeadMetrics.clear();
-    // Refresh materialized datasets only when D1 source fingerprint changed.
-    // Server-side gate skips recomputation on unchanged raw/staging data.
-    // This must succeed before we fetch any table data, otherwise we'd read stale/missing rows.
-    const matRes = await fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" });
-    if (!matRes.ok) {
-      const errText = await matRes.text().catch(() => matRes.status.toString());
-      throw new Error(`Materialize failed (${matRes.status}): ${errText}`);
-    }
-    const matJson = await matRes.json() as { ok?: boolean; error?: string; skipped?: boolean };
-    if (!matJson.ok) {
-      throw new Error(`Materialize error: ${matJson.error ?? "unknown"}`);
-    }
+    // Datasets are pre-built server-side (rebuild triggered by b24-sync).
+    // Fire a background refresh so stale data catches up without blocking the UI.
+    void fetch("/api/analytics/materialize", { method: "POST", cache: "no-store" }).catch(() => {});
     loadEmailOverridesMap(await fetch(staticUrl("data/email_group_overrides.json")).then(r => r.json() as Promise<EmailOverridesFile>));
     const yandexHierarchy = await fetchJson<Record<string, unknown>[]>("data/yd_hierarchy.json");
     for (const r of yandexHierarchy) {

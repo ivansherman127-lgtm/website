@@ -59,6 +59,12 @@ const UTM_PASSWORD: string = _serverSecrets["UTM_PASSWORD"] ?? process.env.UTM_P
 console.log(`[auth] UTM_PASSWORD set: ${UTM_PASSWORD ? "yes" : "NO - open access"}`);
 const ANALYTICS_PASSWORD: string = _serverSecrets["ANALYTICS_PASSWORD"] ?? process.env.ANALYTICS_PASSWORD ?? UTM_PASSWORD;
 const _analyticsRebuildSecret: string = _serverSecrets["ANALYTICS_REBUILD_SECRET"] ?? ANALYTICS_REBUILD_SECRET;
+
+// In-memory cache for dataset_json API responses (path → JSON body string).
+// Populated lazily on first read; cleared whenever rebuild or materialize succeeds.
+// This keeps repeat page loads fast without any DB round-trips.
+const datasetCache = new Map<string, string>();
+
 // Auth helpers
 const COOKIE_NAME = "utm_auth";
 const ANALYTICS_COOKIE_NAME = "analytics_auth";
@@ -329,30 +335,70 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
     if (pathname === "/api/data" || pathname.startsWith("/api/data?")) {
       if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
       if (!isAnalyticsAuthenticated(req)) { jsonRes(res, 401, { ok: false, error: "unauthorized" }); return; }
+      const cacheKey = rawUrl;
+      const cached = datasetCache.get(cacheKey);
+      if (cached !== undefined) {
+        res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+        res.end(cached);
+        return;
+      }
       const webReq = toWebRequest(req);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const webRes = await dataGet({ request: webReq, env: { DB: WEBSITEDB } as any });
-      await sendWebResponse(webRes, res);
+      if (webRes.status === 200) {
+        const body = await webRes.text();
+        datasetCache.set(cacheKey, body);
+        res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+        res.end(body);
+      } else {
+        await sendWebResponse(webRes, res);
+      }
       return;
     }
 
     if (pathname === "/api/assoc-revenue") {
       if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
       if (!isAnalyticsAuthenticated(req)) { jsonRes(res, 401, { ok: false, error: "unauthorized" }); return; }
+      const cached = datasetCache.get("/api/assoc-revenue");
+      if (cached !== undefined) {
+        res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+        res.end(cached);
+        return;
+      }
       const webReq = toWebRequest(req);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const webRes = await assocRevenueGet({ request: webReq, env: { DB: WEBSITEDB } as any });
-      await sendWebResponse(webRes, res);
+      if (webRes.status === 200) {
+        const body = await webRes.text();
+        datasetCache.set("/api/assoc-revenue", body);
+        res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+        res.end(body);
+      } else {
+        await sendWebResponse(webRes, res);
+      }
       return;
     }
 
     if (pathname === "/api/cohort-deals") {
       if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
       if (!isAnalyticsAuthenticated(req)) { jsonRes(res, 401, { ok: false, error: "unauthorized" }); return; }
+      const cached = datasetCache.get("/api/cohort-deals");
+      if (cached !== undefined) {
+        res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+        res.end(cached);
+        return;
+      }
       const webReq = toWebRequest(req);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const webRes = await cohortDealsGet({ request: webReq, env: { DB: WEBSITEDB } as any });
-      await sendWebResponse(webRes, res);
+      if (webRes.status === 200) {
+        const body = await webRes.text();
+        datasetCache.set("/api/cohort-deals", body);
+        res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+        res.end(body);
+      } else {
+        await sendWebResponse(webRes, res);
+      }
       return;
     }
 
@@ -364,6 +410,7 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       // Override secret so the handler can verify the bearer token
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const webRes = await analyticsRebuildPost({ request: webReq, env: { DB: WEBSITEDB, ANALYTICS_REBUILD_SECRET: _analyticsRebuildSecret } as any });
+      if (webRes.status === 200) datasetCache.clear();
       await sendWebResponse(webRes, res);
       return;
     }
@@ -376,6 +423,7 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       const webReq = toWebRequest(req, body);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const webRes = await analyticsMaterializePost({ request: webReq, env: { DB: WEBSITEDB } as any });
+      if (webRes.status === 200) datasetCache.clear();
       await sendWebResponse(webRes, res);
       return;
     }

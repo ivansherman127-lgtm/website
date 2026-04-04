@@ -68,6 +68,10 @@ module.exports = {
       env: {
         WEBSITE_DB_PATH: process.env.WEBSITE_DB_PATH || path.join(repoRoot, "website.db"),
         B24_WEBHOOK_URL: serverSecrets.B24_WEBHOOK_URL || process.env.B24_WEBHOOK_URL || "",
+        // After each sync cycle that writes new rows, b24_fetch_crm.py calls this to
+        // recompute analytics tables so the dashboard reflects fresh Bitrix data.
+        ANALYTICS_REBUILD_URL: process.env.ANALYTICS_REBUILD_URL || "http://127.0.0.1:3000/api/analytics/rebuild",
+        ANALYTICS_REBUILD_SECRET: serverSecrets.ANALYTICS_REBUILD_SECRET || process.env.ANALYTICS_REBUILD_SECRET || "",
       },
     },
     {
