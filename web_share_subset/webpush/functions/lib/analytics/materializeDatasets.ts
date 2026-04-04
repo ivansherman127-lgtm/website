@@ -299,6 +299,13 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     monthExpr: "yandex_month",
     extraInvalidCond: yandexExtraInvalidCond,
   });
+  // Used in queries that SELECT directly from mart_yandex_leads_raw without a JOIN to
+  // mart_deals_enriched — yandexLeadLogic.unqual contains m."Типы..." which would fail.
+  const yandexLeadLogicSimple = buildLeadLogicSql({
+    funnelExpr: "funnel",
+    stageExpr: "stage",
+    monthExpr: "yandex_month",
+  });
   const managerLeadLogic = buildLeadLogicSql({
     funnelExpr: `m."Воронка"`,
     stageExpr: `m."Стадия сделки"`,
@@ -1330,9 +1337,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        mflags AS (
          SELECT
            COALESCE(yandex_month, '') AS month,
-           ${yandexLeadLogic.qual} AS qual,
-           ${yandexLeadLogic.unqual} AS unqual,
-           ${yandexLeadLogic.refusal} AS refusal,
+           ${yandexLeadLogicSimple.qual} AS qual,
+           ${yandexLeadLogicSimple.unqual} AS unqual,
+           ${yandexLeadLogicSimple.refusal} AS refusal,
            1 AS leads
          FROM mart_yandex_leads_raw
          WHERE COALESCE(yandex_month, '') <> ''
@@ -1381,9 +1388,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE(project_name, '') AS campaign_name,
            COALESCE(campaign_id, '') AS campaign_id,
            COALESCE(yandex_month, '') AS month,
-           ${yandexLeadLogic.qual} AS qual,
-           ${yandexLeadLogic.unqual} AS unqual,
-           ${yandexLeadLogic.refusal} AS refusal,
+           ${yandexLeadLogicSimple.qual} AS qual,
+           ${yandexLeadLogicSimple.unqual} AS unqual,
+           ${yandexLeadLogicSimple.refusal} AS refusal,
            1 AS leads
          FROM mart_yandex_leads_raw
          WHERE COALESCE(yandex_month, '') <> ''
