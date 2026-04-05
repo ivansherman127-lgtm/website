@@ -562,7 +562,7 @@ type RenderOptions = {
 };
 
 const VIEW_META: Record<ViewKey, ViewMeta> = {
-  assoc_dynamic: { tab: "assoc_builder", label: "Конструктор", path: "/api/assoc-revenue", rowsLabel: "Групп", title: "Ассоциативная выручка (конструктор)" },
+  assoc_dynamic: { tab: "assoc_builder", label: "Ассоц. выручка", path: "/api/assoc-revenue", rowsLabel: "Групп", title: "Ассоциативная выручка" },
   media_email: { tab: "email", label: "Имейл по месяцам", path: "data/email_hierarchy_by_send.json", rowsLabel: "Строк", title: "Email медиа" },
   media_yandex: { tab: "yandex", label: "Yandex по кампаниям (без месяцев)", path: "data/global/yandex_projects_revenue_no_month.json", rowsLabel: "Кампаний", title: "Yandex медиа" },
   media_yandex_month: { tab: "yandex", label: "Yandex по месяцам", path: "data/global/yandex_projects_revenue_by_month.json", rowsLabel: "Месяцев", title: "Yandex медиа" },
@@ -2032,7 +2032,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         isAssocEmailHierarchy && num(r["__assoc_email_other_group"]) > 0 && num(r["__assoc_email_has_details"]) > 0
           ? `<button class="assoc-email-expand-btn" data-ctx="${escapeHtml(assocCtxToken)}">${expandedAssocOtherRows.has(`assoc||${assocCtxToken}`) ? "−" : "+"}</button>`
           : "";
-      const assocEventCtx = String(r["__assoc_event_ctx"] ?? r["Мероприятие"] ?? "").trim();
+      const assocEventCtx = String(r["__assoc_event_ctx"] ?? r["Проект"] ?? r["Мероприятие"] ?? "").trim();
       const assocEventBtn =
         isAssocEventHierarchy && num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0
           ? `<button class="assoc-event-expand-btn" data-ctx="${escapeHtml(assocEventCtx)}">${expandedAssocEventRows.has(assocEventCtx) ? "−" : "+"}</button>`
@@ -2242,7 +2242,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           return keys.length > 0 && keys.every((k) => expandedAssocOtherRows.has(k));
         }
         if (isAssocEventHierarchy) {
-          const keys = [...new Set(data.filter((r) => num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0).map((r) => String(r["__assoc_event_ctx"] ?? r["Мероприятие"] ?? "").trim()).filter(Boolean))];
+          const keys = [...new Set(data.filter((r) => num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0).map((r) => String(r["__assoc_event_ctx"] ?? r["Проект"] ?? r["Мероприятие"] ?? "").trim()).filter(Boolean))];
           return keys.length > 0 && keys.every((k) => expandedAssocEventRows.has(k));
         }
         if (isAssocYandexHierarchy) {
@@ -2284,7 +2284,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           const keys = [...new Set(viewRows.filter((r) => num(r["__assoc_email_other_group"]) > 0 && num(r["__assoc_email_has_details"]) > 0).map((r) => `assoc||${String(r["__assoc_email_ctx"] ?? "__root__")}`))];
           keys.forEach((k) => expand ? expandedAssocOtherRows.add(k) : expandedAssocOtherRows.delete(k));
         } else if (isAssocEventHierarchy) {
-          const keys = [...new Set(viewRows.filter((r) => num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0).map((r) => String(r["__assoc_event_ctx"] ?? r["Мероприятие"] ?? "").trim()).filter(Boolean))];
+          const keys = [...new Set(viewRows.filter((r) => num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0).map((r) => String(r["__assoc_event_ctx"] ?? r["Проект"] ?? r["Мероприятие"] ?? "").trim()).filter(Boolean))];
           keys.forEach((k) => expand ? expandedAssocEventRows.add(k) : expandedAssocEventRows.delete(k));
         } else if (isAssocYandexHierarchy) {
           const keys = [...new Set(viewRows.filter((r) => num(r["__assoc_yandex_detail"]) === 0 && num(r["__assoc_yandex_has_details"]) > 0).map((r) => String(r["__assoc_yandex_ctx"] ?? r["Yandex кампания"] ?? "").trim()).filter(Boolean))];
@@ -2339,14 +2339,16 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         <button class="tab-btn ${tab === "qa" ? "active" : ""}" data-tab="qa">Контроль качества</button>
         <button class="tab-btn ${tab === "year" ? "active" : ""}" data-tab="year">Отчет за год</button>
       </div>
-      <div class="tabs-row sub-tabs">
+      ${tabViews.length > 1
+        ? `<div class="tabs-row sub-tabs">
         ${tabViews
           .map(
             (v) =>
               `<button class="tab-btn ${v === view ? "active" : ""}" data-view="${v}">${escapeHtml(VIEW_META[v].label)}</button>`,
           )
           .join("")}
-      </div>`}
+      </div>`
+        : ""}`}
       ${
         view === "assoc_dynamic" && assocEvents.length > 0
           ? `<div class="tabs-row event-tabs">${assocEvents.map((ev) => `<button class="tab-btn${ev === assocEventTab ? " active" : ""}" data-event="${escapeHtml(ev)}">${escapeHtml(ev)}</button>`).join("")}</div>`

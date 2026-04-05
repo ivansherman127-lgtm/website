@@ -7,7 +7,7 @@ import { buildYdHierarchyRows } from "./ydHierarchy";
 import { sqlQuote, sqlMonthFromDateExpr, isValidYandexAdId, buildInvalidTokenCond } from "./sqlHelpers";
 import { buildBitrixContactsUidRows } from "./bitrixContactsUid";
 import { buildLeadLogicSql, buildPotentialCond } from "./leadLogicSql";
-import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS, YANDEX_KNOWN_GROUPS, mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
+import { mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
 import managerFirstlineNames from "../../config/manager_firstline.json";
 import {
   sqlMonthLabel,

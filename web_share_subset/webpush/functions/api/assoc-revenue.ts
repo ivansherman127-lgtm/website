@@ -1,6 +1,5 @@
 import { sqlExtractYandexAdId } from "../lib/analytics/yandexAdId";
 import { sqlQuote, isValidYandexAdId, sqlNormalizeLookupExpr } from "../lib/analytics/sqlHelpers";
-import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS } from "../../src/yandexProjectGroups";
 
 interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
