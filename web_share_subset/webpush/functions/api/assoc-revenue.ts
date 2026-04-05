@@ -718,24 +718,9 @@ export async function onRequestGet(context: {
         source_scoped AS (
           SELECT
             event_group AS parent_event,
-            ${sourceContactExpr} AS contact_id,
-            CASE
-              WHEN COALESCE(is_attacking_january, 0) = 1 THEN 'Attacking January'
-              WHEN COALESCE(NULLIF(event_class, ''), '') <> '' AND COALESCE(event_class, '') <> 'Другое' THEN event_class
-              WHEN LOWER(TRIM(COALESCE("UTM Source", ''))) LIKE 'y%' AND LOWER(TRIM(COALESCE("UTM Source", ''))) <> 'yah' THEN 'Yandex'
-              WHEN LOWER(TRIM(COALESCE("UTM Source", ''))) = 'sendsay' THEN 'Email'
-              ELSE 'Другое'
-            END AS source_label
+            ${sourceContactExpr} AS contact_id
           FROM source_deals
           ${whereSql}
-        ),
-        source_group_stats AS (
-          SELECT
-            parent_event,
-            COUNT(*) AS deals_total,
-            COUNT(DISTINCT CASE WHEN contact_id <> '' THEN contact_id ELSE NULL END) AS contacts_in_pool
-          FROM source_scoped
-          GROUP BY parent_event
         ),
         contact_pool AS (
           SELECT DISTINCT
@@ -755,7 +740,7 @@ export async function onRequestGet(context: {
               WHEN LOWER(TRIM(COALESCE(pd.utm_source, ''))) LIKE 'y%' AND LOWER(TRIM(COALESCE(pd.utm_source, ''))) <> 'yah' THEN 'Yandex'
               WHEN LOWER(TRIM(COALESCE(pd.utm_source, ''))) = 'sendsay' THEN 'Email'
               ELSE 'Другое'
-            END AS paid_event
+            END AS source_label
           FROM (
             SELECT
               REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id,
@@ -772,49 +757,33 @@ export async function onRequestGet(context: {
               AND REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') <> ''
           ) pd
           ${hasContactsUid ? `LEFT JOIN stg_contacts_uid cu ON cu.contact_id = pd.contact_id` : ``}
-        ),
-        paid_by_project AS (
-          SELECT
-            cp.parent_event AS parent_event,
-            pd.paid_event AS paid_event,
-            COUNT(*) AS paid_deals,
-            COUNT(DISTINCT cp.contact_key) AS contacts_with_revenue,
-            COALESCE(SUM(pd.revenue), 0) AS revenue
-          FROM contact_pool cp
-          INNER JOIN paid_deals pd
-            ON pd.contact_key = cp.contact_key
-          GROUP BY cp.parent_event, pd.paid_event
         )
         SELECT
-          p.parent_event AS parent_event,
-          p.paid_event AS paid_event,
-          COALESCE(s.deals_total, 0) AS parent_deals_total,
-          COALESCE(s.contacts_in_pool, 0) AS parent_contacts_in_pool,
-          COALESCE(p.paid_deals, 0) AS paid_deals,
-          COALESCE(p.contacts_with_revenue, 0) AS contacts_with_revenue,
-          COALESCE(p.revenue, 0) AS revenue
-        FROM paid_by_project p
-        LEFT JOIN source_group_stats s
-          ON s.parent_event = p.parent_event
-        ORDER BY p.parent_event, revenue DESC, p.paid_event
+          cp.parent_event AS parent_event,
+          pd.source_label AS source_label,
+          COUNT(*) AS paid_deals,
+          COUNT(DISTINCT cp.contact_key) AS contacts_with_revenue,
+          COALESCE(SUM(pd.revenue), 0) AS revenue
+        FROM contact_pool cp
+        INNER JOIN paid_deals pd ON pd.contact_key = cp.contact_key
+        GROUP BY cp.parent_event, pd.source_label
+        ORDER BY cp.parent_event, revenue DESC, pd.source_label
       `;
 
       const breakdownResult = await context.env.DB.prepare(breakdownSql).bind(...binds).all<Record<string, unknown>>();
       const breakdownByParent = new Map<string, Record<string, unknown>[]>();
       for (const r of breakdownResult.results ?? []) {
         const parentEvent = String(r.parent_event ?? "").trim();
-        const paidEvent = String(r.paid_event ?? "").trim() || "Другое";
+        const sourceLabel = String(r.source_label ?? "").trim() || "Другое";
         if (!parentEvent) continue;
         const paidDeals = Number(r.paid_deals ?? 0);
-        const contactsWithRevenue = Number(r.contacts_with_revenue ?? 0);
         const revenue = Number(r.revenue ?? 0);
         const child: Record<string, unknown> = {
-          [specs[0].label]: paidEvent === parentEvent ? `> Прямо: ${paidEvent}` : `> ${paidEvent}`,
-          // Breakdown rows represent constituent paid projects, so totals follow the paid slice.
+          [specs[0].label]: sourceLabel === parentEvent ? `> Прямо: ${sourceLabel}` : `> ${sourceLabel}`,
           "Сделок_всего": paidDeals,
-          "Контактов_в_пуле": contactsWithRevenue,
+          "Контактов_в_пуле": Number(r.contacts_with_revenue ?? 0),
           "Сделок_с_выручкой": paidDeals,
-          "Контактов_с_выручкой": contactsWithRevenue,
+          "Контактов_с_выручкой": Number(r.contacts_with_revenue ?? 0),
           "Выручка": revenue,
           "Средний_чек": paidDeals > 0 ? revenue / paidDeals : 0,
           "__assoc_event_detail": 1,
