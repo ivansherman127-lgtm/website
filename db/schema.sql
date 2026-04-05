@@ -170,6 +170,7 @@ CREATE TABLE IF NOT EXISTS stg_email_sends (
 -- ============================================================
 
 -- Canonical contact deduplication mapping: N contact_ids → 1 contact_uid.
+-- Also carries first-touch attribution computed at build time.
 CREATE TABLE IF NOT EXISTS stg_contacts_uid (
   contact_uid TEXT NOT NULL,
   contact_id TEXT NOT NULL,
@@ -180,6 +181,9 @@ CREATE TABLE IF NOT EXISTS stg_contacts_uid (
   names_count INTEGER,
   phones_count INTEGER,
   emails_count INTEGER,
+  first_deal_date TEXT,        -- ISO YYYY-MM-DD of earliest deal for this uid
+  first_touch_event TEXT,      -- event_class of that earliest deal
+  all_events TEXT,             -- pipe-separated distinct event_class values
   PRIMARY KEY (contact_uid, contact_id)
 );
 
