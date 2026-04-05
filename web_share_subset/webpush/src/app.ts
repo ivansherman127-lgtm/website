@@ -622,8 +622,9 @@ function writeUrlState(menu: MenuMode, view?: ViewKey): void {
 function viewPath(view: ViewKey, options?: { pnlMode?: PnlMode; dateFrom?: string; dateTo?: string }): string {
   if (view === "assoc_dynamic") {
     const params = new URLSearchParams({ dims: "event" });
-    if (options?.dateFrom) params.set("from", options.dateFrom);
-    if (options?.dateTo) params.set("to", options.dateTo);
+    // API expects YYYY-MM; UI stores full YYYY-MM-DD dates — truncate to first 7 chars
+    if (options?.dateFrom) params.set("from", options.dateFrom.slice(0, 7));
+    if (options?.dateTo) params.set("to", options.dateTo.slice(0, 7));
     if (options?.pnlMode) params.set("pnlmode", options.pnlMode);
     return `/api/assoc-revenue?${params.toString()}`;
   }
