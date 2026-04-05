@@ -8,7 +8,7 @@ import pandas as pd
 
 from bitrix_lead_quality import drop_rows_excluded_funnels
 from bitrix_union_io import load_bitrix_deals_union
-from event_classifier import classify_event_from_row, is_attacking_january, normalize_course_code
+from event_classifier import classify_event_from_row, normalize_course_code
 from revenue_variant3 import variant3_revenue_mask
 from utils import _n, _id, _amt
 
@@ -81,7 +81,6 @@ def main() -> None:
     deals = drop_rows_excluded_funnels(deals)
     deals = _apply_revenue_variant3(deals)
     deals = _event_columns(deals)
-    deals["is_attacking_january"] = deals.apply(lambda r: is_attacking_january(r.to_dict()), axis=1)
 
     # Global outputs
     global_breakdown = _event_breakdown(deals)
@@ -99,7 +98,7 @@ def main() -> None:
     global_types.to_csv(ROOT / "bitrix_global_revenue_contact_types_smart.csv", index=False, encoding="utf-8")
 
     # Cohort outputs
-    cohort_ids = set(deals.loc[deals["is_attacking_january"] & deals["Контакт: ID"].ne(""), "Контакт: ID"])
+    cohort_ids = set(deals.loc[deals["Мероприятие_класс"].eq("Attacking January") & deals["Контакт: ID"].ne(""), "Контакт: ID"])
     cohort = deals[deals["Контакт: ID"].isin(cohort_ids)].copy()
     cohort_breakdown = _event_breakdown(cohort)
     cohort_breakdown.to_csv(ROOT / "bitrix_attacking_january_revenue_events_smart.csv", index=False, encoding="utf-8")

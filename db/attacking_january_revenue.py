@@ -9,6 +9,7 @@ import pandas as pd
 
 from bitrix_lead_quality import drop_rows_excluded_funnels
 from bitrix_union_io import dedup_bitrix_deals_by_highest_amount, load_bitrix_deals_union
+from event_classifier import classify_event_from_row
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONTACTS = PROJECT_ROOT / "sheets" / "bitrix_contact_export.csv"
@@ -17,7 +18,6 @@ DEFAULT_OUT_DEALS = PROJECT_ROOT / "bitrix_attacking_january_all_deals.csv"
 DEFAULT_OUT_SUMMARY = PROJECT_ROOT / "bitrix_attacking_january_revenue_breakdown.csv"
 DEFAULT_REPORT = PROJECT_ROOT / "bitrix_attacking_january_revenue_report.json"
 
-CAMPAIGN_RE = re.compile(r"(атакующ\w*\s+январ\w*|attacking[_ ]?january)", re.IGNORECASE)
 SPLIT_RE = re.compile(r"[;,|]+")
 TARGET_EVENTS = [
     "Тренд репорты",
@@ -81,12 +81,8 @@ def _extract_contacts_phones_emails_from_df(df: pd.DataFrame) -> tuple[str, str]
     return " | ".join(sorted(phones)), " | ".join(sorted(emails))
 
 
-def _contains_campaign_token(row: pd.Series, cols: list[str]) -> bool:
-    for c in cols:
-        val = _norm_str(row.get(c, ""))
-        if val and CAMPAIGN_RE.search(val):
-            return True
-    return False
+def _is_attacking_january(row: pd.Series) -> bool:
+    return classify_event_from_row(row.to_dict()).event == "Attacking January"
 
 
 def _normalize_event_name(raw: str) -> str:
@@ -132,7 +128,7 @@ def run(
     if not preferred_cols:
         preferred_cols = [c for c in deals.columns if deals[c].dtype == object]
 
-    deals["is_attacking_january"] = deals.apply(lambda r: _contains_campaign_token(r, preferred_cols), axis=1)
+    deals["is_attacking_january"] = deals.apply(lambda r: _is_attacking_january(r), axis=1)
     jan_deals = deals[(deals["is_attacking_january"]) & (deals["Контакт: ID"] != "")].copy()
 
     cohort_ids = sorted(jan_deals["Контакт: ID"].dropna().astype(str).unique())

@@ -45,7 +45,9 @@ FIELD_PRIORITY = [
 
 
 # Ordered high-precision rules.
+# 'Attacking January' is first so it takes priority over generic event matching.
 EVENT_RULES = [
+    ("Attacking January", [r"атакующ\w*\s+январ\w*", r"attacking[_ ]?january"]),
     ("Тренд репорты", [r"\bтренд\b", r"\btrend report"]),
     ("Демо Ред", [r"\bдемо ред\b", r"\bdemo red\b", r"\bprof pentest demo\b"]),
     ("Демо Блю", [r"\bдемо блю\b", r"\bdemo blue\b", r"\bprof soc demo\b"]),
@@ -89,15 +91,9 @@ def classify_event_from_row(row: dict, fields: Iterable[str] = FIELD_PRIORITY) -
     )
 
 
-ATTACKING_JANUARY_RE = re.compile(r"(атакующ\w*\s+январ\w*|attacking[_ ]?january)", re.IGNORECASE)
-
-
 def is_attacking_january(row: dict, fields: Iterable[str] = FIELD_PRIORITY) -> bool:
-    for field in fields:
-        txt = normalize_text(row.get(field, ""))
-        if txt and ATTACKING_JANUARY_RE.search(txt):
-            return True
-    return False
+    """Compat shim — use classify_event_from_row(...).event == 'Attacking January' instead."""
+    return classify_event_from_row(row, fields).event == "Attacking January"
 
 
 def normalize_course_code(raw: object) -> str:

@@ -578,10 +578,7 @@ export async function onRequestGet(context: {
           ${yandexCampaignExpr} AS yandex_campaign_group,
           ${hasYandexStats ? `COALESCE(ym.ad_label, '(без маппинга в Yandex raw)')` : `'(без маппинга в Yandex raw)'`} AS yandex_ad_group,
           ${emailCampaignExpr} AS email_release_group,
-          CASE
-            WHEN COALESCE(src.is_attacking_january, 0) = 1 THEN 'Attacking January'
-            ELSE COALESCE(NULLIF(src.event_class, ''), 'Другое')
-          END AS event_group
+          COALESCE(NULLIF(src.event_class, ''), 'Другое') AS event_group
         FROM ${table} src
         ${hasYandexStats ? `LEFT JOIN yandex_map ym
           ON ym.ad_id = ${sourceYandexAdExpr}
@@ -735,8 +732,7 @@ export async function onRequestGet(context: {
             ${hasContactsUid ? `COALESCE(cu.contact_uid, pd.contact_id)` : `pd.contact_id`} AS contact_key,
             pd.revenue,
             CASE
-              WHEN COALESCE(pd.is_attacking_january, 0) = 1 THEN 'Attacking January'
-              WHEN COALESCE(NULLIF(pd.event_class, ''), '') <> '' AND COALESCE(pd.event_class, '') <> 'Другое' THEN pd.event_class
+              WHEN COALESCE(pd.event_class, '') <> '' AND COALESCE(pd.event_class, '') <> 'Другое' THEN pd.event_class
               WHEN LOWER(TRIM(COALESCE(pd.utm_source, ''))) LIKE 'y%' AND LOWER(TRIM(COALESCE(pd.utm_source, ''))) <> 'yah' THEN 'Yandex'
               WHEN LOWER(TRIM(COALESCE(pd.utm_source, ''))) = 'sendsay' THEN 'Email'
               ELSE 'Другое'
@@ -746,7 +742,6 @@ export async function onRequestGet(context: {
               REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id,
               COALESCE(revenue_amount, 0) AS revenue,
               ${payMonthExprPlain} AS pay_month,
-              COALESCE(is_attacking_january, 0) AS is_attacking_january,
               COALESCE(event_class, '') AS event_class,
               COALESCE("UTM Source", '') AS utm_source
             FROM mart_deals_enriched

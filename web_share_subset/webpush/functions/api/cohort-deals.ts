@@ -30,8 +30,7 @@ SELECT
   event_class AS "Мероприятие",
   classification_source,
   classification_pattern,
-  classification_confidence,
-  is_attacking_january
+  classification_confidence
 FROM mart_attacking_january_cohort_deals
 `;
 

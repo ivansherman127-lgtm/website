@@ -211,7 +211,6 @@ CREATE TABLE IF NOT EXISTS mart_deal_enrichments (
   classification_source     TEXT,
   classification_pattern    TEXT,
   classification_confidence TEXT,
-  is_attacking_january      INTEGER,
   lead_quality_types        TEXT,                 -- JSON array of quality-issue labels
   responsible               TEXT
 );
@@ -235,7 +234,7 @@ CREATE INDEX IF NOT EXISTS idx_deal_enrichments_event_class
 -- Schema defined by D1 migrations (0001_initial.sql + ALTER migrations).
 
 -- mart_attacking_january_cohort_deals has been DROPPED (migration 0016).
--- Use: SELECT … FROM mart_deals_enriched WHERE is_attacking_january = 1
+-- Use: SELECT … FROM mart_deals_enriched WHERE event_class = 'Attacking January'
 
 -- ============================================================
 -- Layer 5 — Aggregate fact tables
