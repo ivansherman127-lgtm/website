@@ -86,21 +86,14 @@ async function upsertDataset(db: D1Database, path: string, body: string): Promis
 }
 
 function buildYandexProjectGroupSqlExpr(rawExpr: string): string {
-  const trimmed = `NULLIF(TRIM(COALESCE(${rawExpr}, '')), '')`;
-  if (!YANDEX_PROJECT_GROUP_ALIAS_PAIRS.length) return `COALESCE(${trimmed}, 'UNMAPPED')`;
-  // Use 'UNMAPPED' as the ELSE fallback so only JSON-defined group names ever appear in the output.
-  return `COALESCE(CASE ${trimmed} ${YANDEX_PROJECT_GROUP_ALIAS_PAIRS
-    .map(([alias, group]) => `WHEN ${sqlQuote(alias)} THEN ${sqlQuote(group)}`)
-    .join(" ")} ELSE 'UNMAPPED' END, 'UNMAPPED')`;
+  // Fuzzy grouping: use the raw project name as-is. Python post-processing in
+  // _group_yandex_projects_no_month clusters similar names via SequenceMatcher.
+  return `COALESCE(NULLIF(TRIM(COALESCE(${rawExpr}, '')), ''), 'UNMAPPED')`;
 }
 
-/** Map a raw or already-mapped project name to a known JSON group, falling back to 'UNMAPPED'. */
+/** Map a raw project name through fuzzy identity (no JSON lookup). */
 function toKnownGroup(rawOrMapped: unknown): string {
-  const mapped = mapYandexProjectGroup(rawOrMapped);
-  if (YANDEX_KNOWN_GROUPS.has(mapped)) return mapped;
-  // Already a known group name passed through (SQL pre-mapped) or a raw alias that maps to a group.
-  if (YANDEX_KNOWN_GROUPS.has(String(rawOrMapped ?? "").trim())) return String(rawOrMapped ?? "").trim();
-  return "UNMAPPED";
+  return mapYandexProjectGroup(rawOrMapped);
 }
 
 function groupAssocQaRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
@@ -160,7 +153,7 @@ function buildYandexNoMonthHierarchyRows(
   const out: Record<string, unknown>[] = [];
   for (const row of projectRows) {
     const project = toKnownGroup(String(row.project_name ?? "").trim());
-    if (!project || project === "UNMAPPED") continue;
+    if (!project) continue;
     const details = (byProject.get(project) || []).sort((a, b) => {
       const spendDiff = (Number(b.spend ?? 0) || 0) - (Number(a.spend ?? 0) || 0);
       if (spendDiff !== 0) return spendDiff;

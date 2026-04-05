@@ -119,6 +119,10 @@ function isPercentColumn(col: string): boolean {
 function isCountColumn(col: string): boolean {
   const c = col.trim().toLowerCase();
   return (
+    c === "сделок_всего" ||
+    c === "сделок всего" ||
+    c === "новых с мероприятия" ||
+    c === "новых с проекта" ||
     c === "сделок_с_выручкой" ||
     c === "сделок с выручкой" ||
     c === "контактов_с_выручкой" ||
@@ -524,7 +528,7 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
   `;
 }
 
-type TabKey = "assoc_builder" | "media" | "budget" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa" | "utm";
+type TabKey = "assoc_builder" | "email" | "yandex" | "budget" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa" | "utm";
 type ViewKey =
   | "assoc_dynamic"
   | "media_email"
@@ -559,11 +563,11 @@ type RenderOptions = {
 
 const VIEW_META: Record<ViewKey, ViewMeta> = {
   assoc_dynamic: { tab: "assoc_builder", label: "Конструктор", path: "/api/assoc-revenue", rowsLabel: "Групп", title: "Ассоциативная выручка (конструктор)" },
-  media_email: { tab: "media", label: "Имейл по месяцам", path: "data/email_hierarchy_by_send.json", rowsLabel: "Строк", title: "Рекламные медиумы" },
-  media_yandex: { tab: "media", label: "Yandex по кампаниям (без месяцев)", path: "data/global/yandex_projects_revenue_no_month.json", rowsLabel: "Кампаний", title: "Рекламные медиумы" },
-  media_yandex_month: { tab: "media", label: "Yandex по месяцам", path: "data/global/yandex_projects_revenue_by_month.json", rowsLabel: "Месяцев", title: "Рекламные медиумы" },
+  media_email: { tab: "email", label: "Имейл по месяцам", path: "data/email_hierarchy_by_send.json", rowsLabel: "Строк", title: "Email медиа" },
+  media_yandex: { tab: "yandex", label: "Yandex по кампаниям (без месяцев)", path: "data/global/yandex_projects_revenue_no_month.json", rowsLabel: "Кампаний", title: "Yandex медиа" },
+  media_yandex_month: { tab: "yandex", label: "Yandex по месяцам", path: "data/global/yandex_projects_revenue_by_month.json", rowsLabel: "Месяцев", title: "Yandex медиа" },
 
-  email_ops_summary: { tab: "media", label: "Email: база, рассылки, лиды, выручка", path: "data/email_operational_summary.json", rowsLabel: "Периодов", title: "Рекламные медиумы" },
+  email_ops_summary: { tab: "email", label: "Email: база, рассылки, лиды, выручка", path: "data/email_operational_summary.json", rowsLabel: "Периодов", title: "Email медиа" },
   budget_monthly: { tab: "budget", label: "Выручка / расход / прибыль по месяцам", path: "data/global/budget_monthly.json", rowsLabel: "Периодов", title: "Бюджет" },
   months_total: { tab: "months", label: "Bitrix по месяцам", path: "data/bitrix_month_total_full.json", rowsLabel: "Месяцев", title: "Отчеты по месяцам" },
   managers_sales_course: { tab: "managers", label: "Продажи по коду курса", path: "data/manager_sales_by_course.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
@@ -675,7 +679,7 @@ async function openMenu(menu: MenuMode, dealsIndex: DealsIndex, currentView?: Vi
     await openTableView("utm_constructor", dealsIndex);
     return;
   }
-  await openTableView(currentView && currentView !== "utm_constructor" ? currentView : "year_total", dealsIndex);
+  await openTableView(currentView && currentView !== "utm_constructor" ? currentView : "months_total", dealsIndex);
 }
 
 function managerFormulaNote(_view: ViewKey): string {
@@ -1186,7 +1190,12 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
     });
   }
   if (view === "assoc_dynamic") {
-    return regroupAssocEmailRows(clean);
+    const grouped = regroupAssocEmailRows(clean);
+    return grouped.map((r) => {
+      const totalDeals = num(r["Сделок_всего"]);
+      const dealsRev = num(r["Сделок_с_выручкой"]);
+      return { ...r, "Конверсия_сделок": totalDeals > 0 ? dealsRev / totalDeals : 0 };
+    });
   }
   if (view === "media_yandex") {
     const hasHierarchyRows = clean.some((r) => String(r["Level"] ?? "").trim() === "Project" || num(r["__yandex_project_detail"]) > 0);
@@ -1416,7 +1425,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   if (view === "assoc_dynamic") {
     // Pre-populate so the column always appears in allCols even if the fetch fails
     for (const r of viewRows) {
-      if (num(r["__assoc_event_detail"]) === 0 && String(r["Мероприятие"] ?? "").trim()) {
+      if (num(r["__assoc_event_detail"]) === 0 && String(r["Проект"] ?? r["Мероприятие"] ?? "").trim()) {
         r["Новых с мероприятия"] = 0;
       }
     }
@@ -1430,7 +1439,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       }
       for (const r of viewRows) {
         if (num(r["__assoc_event_detail"]) === 0) {
-          const ev = String(r["Мероприятие"] ?? "").trim();
+          const ev = String(r["Проект"] ?? r["Мероприятие"] ?? "").trim();
           if (ev) r["Новых с мероприятия"] = ecMap.get(ev) ?? 0;
         }
       }
@@ -1463,7 +1472,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     const uniqueEvents = [...new Set(
       viewRows
         .filter((r) => num(r["__assoc_event_detail"]) === 0)
-        .map((r) => String(r["Мероприятие"] ?? "").trim())
+        .map((r) => String(r["Проект"] ?? r["Мероприятие"] ?? "").trim())
         .filter((ev) => ev !== "" && ev !== "Другое"),
     )];
     assocEvents.push(...uniqueEvents);
@@ -1533,6 +1542,13 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const draw = (): void => {
     cols = allCols.filter((c) => !isFlIdsColumn(c) && !isHiddenUiColumn(c));
     if (isBudgetHierarchy) cols = cols.filter((c) => c !== "month" && c !== "Level" && c !== "Расход, ₽" && c !== "Прибыль");
+    if (view === "assoc_dynamic") {
+      const ASSOC_METRIC_ORDER = ["Сделок_всего", "Сделок_с_выручкой", "Конверсия_сделок", "Выручка", "Средний_чек", "Контактов_в_пуле", "Новых с мероприятия"];
+      cols = cols.filter((c) => c !== "Контактов_с_выручкой");
+      const dimCols = cols.filter((c) => !ASSOC_METRIC_ORDER.includes(c));
+      const metCols = ASSOC_METRIC_ORDER.filter((c) => cols.includes(c));
+      cols = [...dimCols, ...metCols];
+    }
     if (sortCol && !cols.includes(sortCol)) sortCol = cols[0] || "";
 
     let data = [...viewRows];
@@ -1800,7 +1816,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       data = data.filter((r) =>
         num(r["__assoc_event_detail"]) > 0
           ? String(r["__assoc_event_ctx"] ?? "").trim() === assocEventTab
-          : String(r["Мероприятие"] ?? "").trim() === assocEventTab,
+          : String(r["Проект"] ?? r["Мероприятие"] ?? "").trim() === assocEventTab,
       );
     }
     // Иерархии строят порядок строк сами; глобальная сортировка ломает вложенные таблицы.
@@ -2048,7 +2064,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
 
     const table = app.querySelector(".table-scroll table");
     if (!table) return;
+    const scrollBox = app.querySelector<HTMLElement>(".table-scroll");
+    const savedScrollTop = scrollBox?.scrollTop ?? 0;
+    const savedScrollLeft = scrollBox?.scrollLeft ?? 0;
     table.innerHTML = `<thead><tr>${th}</tr></thead><tbody>${body}</tbody>`;
+    if (scrollBox) { scrollBox.scrollTop = savedScrollTop; scrollBox.scrollLeft = savedScrollLeft; }
     app.querySelectorAll<HTMLButtonElement>(".pnl-btn").forEach((btn) => {
       btn.classList.toggle("active", btn.getAttribute("data-mode") === pnlMode);
     });
@@ -2305,19 +2325,19 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     </aside>
     <main class="main-content">
     <header><h1>${escapeHtml(meta.title)}</h1><p class="sub">${escapeHtml(resolvedPath)} · ${viewRows.length} строк</p></header>
-    ${isUtmConstructor ? "" : `<div class="kpi-grid"><div class="kpi"><div class="label">${escapeHtml(meta.rowsLabel)}</div><div class="value">${viewRows.length}</div></div><div class="kpi"><div class="label">Сделок с выручкой</div><div class="value">${deals.toLocaleString("ru-RU")}</div></div><div class="kpi"><div class="label">Выручка</div><div class="value">${formatRub(totalRevenue)}</div></div></div>`}
     ${managerFormulaNote(view)}
     <div class="toolbar">
       ${isUtmConstructor ? "" : `<div class="tabs-row top-tabs">
-        <button class="tab-btn ${tab === "year" ? "active" : ""}" data-tab="year">Отчет за год</button>
-        <button class="tab-btn ${tab === "assoc_builder" ? "active" : ""}" data-tab="assoc_builder">Ассоц. выручка</button>
-        <button class="tab-btn ${tab === "media" ? "active" : ""}" data-tab="media">Рекламные медиумы</button>
-        <button class="tab-btn ${tab === "budget" ? "active" : ""}" data-tab="budget">Бюджет</button>
         <button class="tab-btn ${tab === "months" ? "active" : ""}" data-tab="months">По месяцам</button>
+        <button class="tab-btn ${tab === "assoc_builder" ? "active" : ""}" data-tab="assoc_builder">Ассоц. выручка</button>
+        <button class="tab-btn ${tab === "email" ? "active" : ""}" data-tab="email">Email</button>
+        <button class="tab-btn ${tab === "yandex" ? "active" : ""}" data-tab="yandex">Yandex</button>
+        <button class="tab-btn ${tab === "budget" ? "active" : ""}" data-tab="budget">Бюджет</button>
         <button class="tab-btn ${tab === "managers" ? "active" : ""}" data-tab="managers">По менеджерам</button>
         <button class="tab-btn ${tab === "funnels" ? "active" : ""}" data-tab="funnels">По воронкам</button>
         <button class="tab-btn ${tab === "contacts" ? "active" : ""}" data-tab="contacts">Уникальные контакты</button>
         <button class="tab-btn ${tab === "qa" ? "active" : ""}" data-tab="qa">Контроль качества</button>
+        <button class="tab-btn ${tab === "year" ? "active" : ""}" data-tab="year">Отчет за год</button>
       </div>
       <div class="tabs-row sub-tabs">
         ${tabViews
@@ -3265,7 +3285,9 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
           if (!week) return;
           if (expandedWeeks.has(week)) expandedWeeks.delete(week);
           else expandedWeeks.add(week);
+          const savedY = window.scrollY;
           drawDashboard();
+          requestAnimationFrame(() => window.scrollTo(0, savedY));
         };
       });
 
@@ -3275,7 +3297,9 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
           const weeks = [...new Set(bitrixWeekFunnel.map((r) => String(r["Неделя"] ?? "").trim()).filter(Boolean))];
           const allOpen = weeks.length > 0 && weeks.every((w) => expandedWeeks.has(w));
           weeks.forEach((w) => allOpen ? expandedWeeks.delete(w) : expandedWeeks.add(w));
+          const savedY = window.scrollY;
           drawDashboard();
+          requestAnimationFrame(() => window.scrollTo(0, savedY));
         };
       }
     }
@@ -3288,7 +3312,9 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
           if (!week) return;
           if (expandedYandexWeeks.has(week)) expandedYandexWeeks.delete(week);
           else expandedYandexWeeks.add(week);
+          const savedY = window.scrollY;
           drawDashboard();
+          requestAnimationFrame(() => window.scrollTo(0, savedY));
         };
       });
 
@@ -3298,7 +3324,9 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
           const weeks = [...new Set(yandexWeekFiltered.map((r) => String(r["Неделя"] ?? "").trim()).filter(Boolean))];
           const allOpen = weeks.length > 0 && weeks.every((w) => expandedYandexWeeks.has(w));
           weeks.forEach((w) => allOpen ? expandedYandexWeeks.delete(w) : expandedYandexWeeks.add(w));
+          const savedY = window.scrollY;
           drawDashboard();
+          requestAnimationFrame(() => window.scrollTo(0, savedY));
         };
       }
     }

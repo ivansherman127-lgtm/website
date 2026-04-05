@@ -52,7 +52,9 @@ export const YANDEX_KNOWN_GROUPS = new Set<string>(
 export function mapYandexProjectGroup(projectName: unknown): string {
   const project = String(projectName ?? "").trim();
   if (!project) return "UNMAPPED";
-  return aliasToGroup.get(project) || aliasNormalizedToGroup.get(normalizeAliasKey(project)) || project;
+  // Return the project name as-is (fuzzy grouping is handled by Python post-processing).
+  // JSON alias lookups have been removed in favour of normalized identity mapping.
+  return project;
 }
 
 export function buildExplicitYandexProjectLabelMap(projectNames: Iterable<string>): Map<string, string> {
