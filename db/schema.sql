@@ -1,5 +1,14 @@
--- Core source tables (subset of columns used in matching/reporting).
--- Column names match CSV/notebook expectations where possible.
+-- ============================================================
+-- Schema layers:
+--   Layer 1  Raw source          raw_bitrix_deals  (all CSV columns, script-updated)
+--   Layer 2  Staging reference   stg_* tables      (Yandex, email, contacts)
+--   Layer 3  Deal enrichments    mart_deal_enrichments  (calculated cols, keyed to raw)
+--   Layer 4  Flat query mart     mart_deals_enriched    (pre-computed JOIN for API)
+--   Layer 5  Aggregate facts     mart_event_contacts, mart_yandex_revenue_projects
+-- ============================================================
+
+-- Legacy source tables kept for backward compatibility with older scripts.
+-- New analytics code reads from raw_bitrix_deals / mart_deal_enrichments.
 
 -- Firstline (Bitrix24) deals: ID as string PK, UTM + funnel columns.
 CREATE TABLE IF NOT EXISTS deals (
@@ -70,8 +79,13 @@ CREATE TABLE IF NOT EXISTS sheets_sync_log (
   row_count INTEGER
 );
 
--- Raw Bitrix deals as a relational table (columns come from export headers).
--- Maintained by db/upsert_raw_bitrix_from_union.py via pandas.to_sql(..., if_exists='replace').
+-- ============================================================
+-- Layer 1 — Raw source
+-- ============================================================
+
+-- Raw Bitrix deals: ALL columns from the union CSV export, written by
+-- db/upsert_raw_bitrix_from_union.py via pandas.to_sql(..., if_exists='replace').
+-- Never add calculated columns here.
 CREATE TABLE IF NOT EXISTS raw_bitrix_deals (
   "ID" TEXT PRIMARY KEY,
   source_batch TEXT NOT NULL,
@@ -81,7 +95,7 @@ CREATE TABLE IF NOT EXISTS raw_bitrix_deals (
 CREATE INDEX IF NOT EXISTS idx_raw_bitrix_deals_ingested_at
   ON raw_bitrix_deals (ingested_at);
 
--- Optional lineage per batch import.
+-- Batch import lineage.
 CREATE TABLE IF NOT EXISTS raw_source_batches (
   source_batch TEXT PRIMARY KEY,
   source_type TEXT NOT NULL,
@@ -90,9 +104,11 @@ CREATE TABLE IF NOT EXISTS raw_source_batches (
   created_at TEXT NOT NULL
 );
 
--- Canonical unique-contact mapping generated from bitrix_contacts_uid.csv.
--- One row per (contact_uid, contact_id) so analytics can map Bitrix Contact IDs
--- to stable deduplicated person UIDs.
+-- ============================================================
+-- Layer 2 — Staging / reference tables
+-- ============================================================
+
+-- Canonical contact deduplication mapping: N contact_ids → 1 contact_uid.
 CREATE TABLE IF NOT EXISTS stg_contacts_uid (
   contact_uid TEXT NOT NULL,
   contact_id TEXT NOT NULL,
@@ -111,3 +127,71 @@ CREATE INDEX IF NOT EXISTS idx_stg_contacts_uid_contact_id
 
 CREATE INDEX IF NOT EXISTS idx_stg_contacts_uid_contact_uid
   ON stg_contacts_uid (contact_uid);
+
+-- ============================================================
+-- Layer 3 — Deal enrichments (calculated columns only)
+-- ============================================================
+
+-- One row per deal. Contains only values derived by scripts from raw_bitrix_deals.
+-- Written by: event_classifier.py, bitrix_lead_quality.py, revenue_variant3.py.
+-- mart_deals_enriched (Layer 4) is built as:
+--   SELECT r.*, e.*
+--   FROM raw_bitrix_deals r
+--   LEFT JOIN mart_deal_enrichments e ON e.deal_id = r."ID"
+CREATE TABLE IF NOT EXISTS mart_deal_enrichments (
+  deal_id                   TEXT    PRIMARY KEY,  -- FK → raw_bitrix_deals."ID"
+  month                     TEXT,                 -- YYYY-MM from "Дата создания"
+  pay_month                 TEXT,                 -- YYYY-MM from "Дата оплаты"
+  revenue_amount            REAL,
+  is_revenue_variant3       INTEGER,              -- 1 = paid deal in variant-3 logic
+  funnel_group              TEXT,
+  event_class               TEXT,                 -- webinar/demo/event/course/Другое
+  course_code_norm          TEXT,
+  classification_source     TEXT,
+  classification_pattern    TEXT,
+  classification_confidence TEXT,
+  is_attacking_january      INTEGER,
+  lead_quality_types        TEXT,                 -- JSON array of quality-issue labels
+  responsible               TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_deal_enrichments_month
+  ON mart_deal_enrichments (month);
+
+CREATE INDEX IF NOT EXISTS idx_deal_enrichments_is_revenue
+  ON mart_deal_enrichments (is_revenue_variant3);
+
+CREATE INDEX IF NOT EXISTS idx_deal_enrichments_event_class
+  ON mart_deal_enrichments (event_class);
+
+-- ============================================================
+-- Layer 4 — Flat query mart (pre-computed for API performance)
+-- ============================================================
+
+-- mart_deals_enriched is the main table queried by the API (assoc-revenue.ts etc.).
+-- It is regenerated from raw_bitrix_deals JOIN mart_deal_enrichments before each
+-- D1 push; do not edit it directly.
+-- Schema defined by D1 migrations (0001_initial.sql + ALTER migrations).
+
+-- mart_attacking_january_cohort_deals has been DROPPED (migration 0016).
+-- Use: SELECT … FROM mart_deals_enriched WHERE is_attacking_january = 1
+
+-- ============================================================
+-- Layer 5 — Aggregate fact tables
+-- ============================================================
+
+-- Per-(event_class, month) contact counts.
+-- 'all' in the month column = all-time aggregate.
+-- Fixes "Новых с мероприятия = 0" by providing a table keyed on event_class.
+CREATE TABLE IF NOT EXISTS mart_event_contacts (
+  event_class    TEXT    NOT NULL,
+  month          TEXT    NOT NULL,  -- 'YYYY-MM' or 'all'
+  contacts_total INTEGER NOT NULL DEFAULT 0,
+  contacts_new   INTEGER NOT NULL DEFAULT 0,
+
+  PRIMARY KEY (event_class, month)
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_contacts_month
+  ON mart_event_contacts (month);
+
