@@ -1,7 +1,10 @@
 -- ============================================================
 -- Schema layers:
---   Layer 1  Raw source          raw_bitrix_deals  (all CSV columns, script-updated)
---   Layer 2  Staging reference   stg_* tables      (Yandex, email, contacts)
+--   Layer 1  Raw source          raw_bitrix_deals  (Bitrix CSV, script-updated)
+--                                stg_yandex_stats  (Yandex Ads, CSV/API import)
+--                                stg_email_sends   (Sendsay API import)
+--                                raw_source_batches (import lineage)
+--   Layer 2  Staging reference   stg_contacts_uid  (contact deduplication mapping)
 --   Layer 3  Deal enrichments    mart_deal_enrichments  (calculated cols, keyed to raw)
 --   Layer 4  Flat query mart     mart_deals_enriched    (pre-computed JOIN for API)
 --   Layer 5  Aggregate facts     mart_event_contacts, mart_yandex_revenue_projects
@@ -102,6 +105,64 @@ CREATE TABLE IF NOT EXISTS raw_source_batches (
   source_ref TEXT,
   row_count INTEGER,
   created_at TEXT NOT NULL
+);
+
+-- Yandex Ads stats: one row per ad per month, written by upsert_yandex_from_csv.py.
+-- Schema includes all columns from the Yandex CSV export.  "День" added in migration 0007.
+-- Never add calculated columns here.
+CREATE TABLE IF NOT EXISTS stg_yandex_stats (
+  "Месяц" TEXT,
+  "День" TEXT,
+  "№ Кампании" REAL,
+  "Название кампании" TEXT,
+  "№ Группы" REAL,
+  "Название группы" TEXT,
+  "№ Объявления" REAL,
+  "Статус объявления" TEXT,
+  "Тип объявления" TEXT,
+  "Заголовок" TEXT,
+  "Текст" TEXT,
+  "Ссылка" TEXT,
+  "Путь до изображения" TEXT,
+  "Название файла изображения" TEXT,
+  "Идентификатор видео" TEXT,
+  "Путь до превью видео" TEXT,
+  "Место клика" TEXT,
+  "Формат" TEXT,
+  "Источник текста" TEXT,
+  "Расход, ₽" REAL,
+  "Клики" INTEGER,
+  "Конверсии" INTEGER,
+  "CR, %" TEXT,
+  "CPA, ₽" TEXT,
+  month TEXT
+);
+
+-- Sendsay email campaigns: one row per send, written by fetch_sendsay_emails.py.
+-- Matches the legacy CSV export column schema.  Never add calculated columns here.
+CREATE TABLE IF NOT EXISTS stg_email_sends (
+  "Дата отправки" TEXT,
+  "Название выпуска" TEXT,
+  "Получатели" TEXT,
+  "Тема" TEXT,
+  "Отправлено" INTEGER,
+  "Доставлено" INTEGER,
+  "Ошибок" INTEGER,
+  "Открытий" INTEGER,
+  "Уник. открытий" INTEGER,
+  "Кликов" INTEGER,
+  "Уник. кликов" INTEGER,
+  "CTOR, %" REAL,
+  "Отписок" INTEGER,
+  "UTOR, %" REAL,
+  "ID" TEXT,
+  "Номер задания" TEXT,
+  utm_campaign TEXT,
+  utm_content TEXT,
+  utm_medium TEXT,
+  utm_source TEXT,
+  utm_term TEXT,
+  month TEXT
 );
 
 -- ============================================================
