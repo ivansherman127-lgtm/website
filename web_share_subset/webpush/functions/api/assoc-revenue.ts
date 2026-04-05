@@ -831,6 +831,25 @@ export async function onRequestGet(context: {
         if (details.length > 0) row["__assoc_event_has_details"] = 1;
         return [row, ...details];
       });
+
+      // Sanity check: child Сделок_с_выручкой and Выручка must sum to parent values.
+      for (const row of rows) {
+        if (Number(row["__assoc_event_detail"] ?? 0) > 0) continue;
+        const parentEvent = String(row[specs[0].label] ?? "").trim();
+        const children = breakdownByParent.get(parentEvent);
+        if (!children?.length) continue;
+        const parentDeals = Number(row["Сделок_с_выручкой"] ?? 0);
+        const parentRevenue = Number(row["Выручка"] ?? 0);
+        const childDeals = children.reduce((s, c) => s + Number(c["Сделок_с_выручкой"] ?? 0), 0);
+        const childRevenue = children.reduce((s, c) => s + Number(c["Выручка"] ?? 0), 0);
+        if (Math.abs(parentDeals - childDeals) > 0.5 || Math.abs(parentRevenue - childRevenue) > 1) {
+          console.warn(
+            `[assoc-revenue] SANITY MISMATCH event="${parentEvent}": ` +
+            `deals parent=${parentDeals} child_sum=${childDeals}; ` +
+            `revenue parent=${parentRevenue} child_sum=${childRevenue}`
+          );
+        }
+      }
     }
 
     if (dims.length === 1 && dims[0] === "yandex_campaign") {
