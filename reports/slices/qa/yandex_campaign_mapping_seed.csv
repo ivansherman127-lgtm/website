@@ -1,5 +1,5 @@
 project_name,campaign_id,month,yandex_rows,map_to_utm_campaign,map_to_project,map_confidence,comment
-vea-professiya-pentester_RSYA-270226_1_rm221125_City_ml,707634725.0,2026-03,75,,ПБХ,0.9467,top_candidate_from_deal_name
+vea-professiya-pentester_RSYA-270226_1_rm221125_City_ml,707634725.0,2026-03,73,,ПБХ,0.9726,top_candidate_from_deal_name
 vea-professiya-pentester_RSYA-270226_1_rm221125-RF,707634735.0,2026-03,71,,ПБХ,0.9859,top_candidate_from_deal_name
 vea-professiya-pentester_RSYA-270226_1_rm221125-RF-SR-PAY-CONV-200,707811673.0,2026-03,68,,ПБХ,1.0,single_candidate
 vea-professiya-pentester_RSYA-270226_1_rm221125-RF-PAY-CONV-200,707811553.0,2026-03,63,,ПБХ,0.9841,top_candidate_from_deal_name

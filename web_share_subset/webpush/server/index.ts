@@ -520,6 +520,29 @@ server.listen(PORT, () => {
   console.log(`  DB:   ${DB_PATH}`);
   console.log(`  Dist: ${DIST_DIR}`);
   console.log(`  cwd:  ${process.cwd()}`);
+
+  // Pre-warm the assoc-revenue cache after startup so the first user request
+  // is served from cache instead of running the heavy SQL query cold.
+  if (WEBSITEDB) {
+    const warmupDims = ["event", "yandex_campaign", "email_campaign"];
+    for (const dims of warmupDims) {
+      const warmReq = new Request(`http://localhost:${PORT}/api/assoc-revenue?dims=${dims}`, {
+        headers: { cookie: `analytics_auth=${analyticsCookieToken()}` },
+      });
+      assocRevenueGet({ request: warmReq, env: { DB: WEBSITEDB } as never })
+        .then((r) => {
+          if (r.status === 200) {
+            return r.text().then((body) => {
+              datasetCache.set(`/api/assoc-revenue?dims=${dims}`, body);
+              console.log(`[warmup] assoc-revenue?dims=${dims} cached (${body.length} bytes)`);
+            });
+          }
+        })
+        .catch((e: unknown) => {
+          console.warn(`[warmup] assoc-revenue?dims=${dims} failed:`, e);
+        });
+    }
+  }
 });
 
 function shutdown() {

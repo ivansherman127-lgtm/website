@@ -1,199 +1,129 @@
 [
   {
-    "contact_id": 9585,
-    "deals_total": 14,
-    "paid_deals": 6,
-    "revenue": 419580.0,
-    "avg_check": 69930.0
+    "contact_id": 120597,
+    "deals_total": 5,
+    "paid_deals": 2,
+    "revenue": 319963.2,
+    "avg_check": 159981.6
   },
   {
-    "contact_id": 120337,
-    "deals_total": 25,
-    "paid_deals": 11,
-    "revenue": 346190.4,
-    "avg_check": 31471.85454545455
-  },
-  {
-    "contact_id": 1017,
-    "deals_total": 11,
-    "paid_deals": 6,
-    "revenue": 290472.0,
-    "avg_check": 48412.0
+    "contact_id": 114609,
+    "deals_total": 15,
+    "paid_deals": 4,
+    "revenue": 204440.0,
+    "avg_check": 51110.0
   },
   {
     "contact_id": 124857,
-    "deals_total": 13,
-    "paid_deals": 4,
-    "revenue": 284677.0,
-    "avg_check": 71169.25
-  },
-  {
-    "contact_id": 120553,
-    "deals_total": 5,
-    "paid_deals": 3,
-    "revenue": 275400.0,
-    "avg_check": 91800.0
-  },
-  {
-    "contact_id": 6197,
-    "deals_total": 6,
-    "paid_deals": 3,
-    "revenue": 262080.0,
-    "avg_check": 87360.0
-  },
-  {
-    "contact_id": 4701,
-    "deals_total": 19,
-    "paid_deals": 5,
-    "revenue": 240954.0,
-    "avg_check": 48190.8
-  },
-  {
-    "contact_id": 24237,
-    "deals_total": 18,
-    "paid_deals": 3,
-    "revenue": 235872.0,
-    "avg_check": 78624.0
-  },
-  {
-    "contact_id": 56861,
-    "deals_total": 21,
-    "paid_deals": 9,
-    "revenue": 225862.8,
-    "avg_check": 25095.866666666665
-  },
-  {
-    "contact_id": 55569,
-    "deals_total": 20,
-    "paid_deals": 7,
-    "revenue": 219105.5,
-    "avg_check": 31300.785714285717
-  },
-  {
-    "contact_id": 126005,
-    "deals_total": 29,
-    "paid_deals": 7,
-    "revenue": 210346.0,
-    "avg_check": 30049.42857142857
-  },
-  {
-    "contact_id": 116471,
-    "deals_total": 6,
-    "paid_deals": 3,
-    "revenue": 201965.0,
-    "avg_check": 67321.66666666667
-  },
-  {
-    "contact_id": 65187,
-    "deals_total": 16,
-    "paid_deals": 3,
-    "revenue": 195300.0,
-    "avg_check": 65100.0
-  },
-  {
-    "contact_id": 16497,
     "deals_total": 10,
     "paid_deals": 2,
-    "revenue": 177568.0,
-    "avg_check": 88784.0
-  },
-  {
-    "contact_id": 123097,
-    "deals_total": 1,
-    "paid_deals": 1,
-    "revenue": 153900.0,
-    "avg_check": 153900.0
+    "revenue": 179845.0,
+    "avg_check": 89922.5
   },
   {
     "contact_id": 122035,
-    "deals_total": 4,
+    "deals_total": 2,
     "paid_deals": 1,
     "revenue": 153900.0,
     "avg_check": 153900.0
   },
   {
+    "contact_id": 54153,
+    "deals_total": 38,
+    "paid_deals": 6,
+    "revenue": 149420.0,
+    "avg_check": 24903.33333333333
+  },
+  {
     "contact_id": 120943,
-    "deals_total": 20,
-    "paid_deals": 4,
-    "revenue": 153630.0,
-    "avg_check": 38407.5
+    "deals_total": 12,
+    "paid_deals": 3,
+    "revenue": 145350.0,
+    "avg_check": 48450.0
   },
   {
     "contact_id": 76115,
-    "deals_total": 4,
+    "deals_total": 3,
     "paid_deals": 1,
     "revenue": 142680.0,
     "avg_check": 142680.0
   },
   {
+    "contact_id": 9585,
+    "deals_total": 12,
+    "paid_deals": 2,
+    "revenue": 139860.0,
+    "avg_check": 69930.0
+  },
+  {
     "contact_id": 93233,
-    "deals_total": 7,
+    "deals_total": 5,
     "paid_deals": 1,
     "revenue": 138000.0,
     "avg_check": 138000.0
   },
   {
     "contact_id": 13135,
-    "deals_total": 11,
+    "deals_total": 8,
     "paid_deals": 1,
     "revenue": 138000.0,
     "avg_check": 138000.0
   },
   {
     "contact_id": 8217,
-    "deals_total": 11,
+    "deals_total": 10,
     "paid_deals": 1,
     "revenue": 136072.0,
     "avg_check": 136072.0
   },
   {
+    "contact_id": 116471,
+    "deals_total": 4,
+    "paid_deals": 2,
+    "revenue": 135365.0,
+    "avg_check": 67682.5
+  },
+  {
     "contact_id": 115255,
-    "deals_total": 6,
+    "deals_total": 5,
     "paid_deals": 1,
     "revenue": 132480.0,
     "avg_check": 132480.0
   },
   {
+    "contact_id": 120337,
+    "deals_total": 21,
+    "paid_deals": 4,
+    "revenue": 132447.6,
+    "avg_check": 33111.9
+  },
+  {
     "contact_id": 5803,
-    "deals_total": 6,
+    "deals_total": 5,
     "paid_deals": 1,
     "revenue": 127429.2,
     "avg_check": 127429.2
   },
   {
     "contact_id": 122703,
-    "deals_total": 2,
+    "deals_total": 1,
     "paid_deals": 1,
     "revenue": 127429.0,
     "avg_check": 127429.0
   },
   {
     "contact_id": 120391,
-    "deals_total": 5,
+    "deals_total": 4,
     "paid_deals": 1,
     "revenue": 124200.0,
     "avg_check": 124200.0
   },
   {
     "contact_id": 118133,
-    "deals_total": 3,
+    "deals_total": 2,
     "paid_deals": 1,
     "revenue": 124200.0,
     "avg_check": 124200.0
-  },
-  {
-    "contact_id": 25237,
-    "deals_total": 18,
-    "paid_deals": 4,
-    "revenue": 123480.0,
-    "avg_check": 30870.0
-  },
-  {
-    "contact_id": 75537,
-    "deals_total": 8,
-    "paid_deals": 4,
-    "revenue": 123012.0,
-    "avg_check": 30753.0
   },
   {
     "contact_id": 74163,
@@ -203,340 +133,494 @@
     "avg_check": 122467.2
   },
   {
-    "contact_id": 64555,
-    "deals_total": 11,
-    "paid_deals": 2,
-    "revenue": 120760.3,
-    "avg_check": 60380.15
+    "contact_id": 52799,
+    "deals_total": 17,
+    "paid_deals": 3,
+    "revenue": 122000.0,
+    "avg_check": 40666.66666666666
   },
   {
     "contact_id": 121117,
-    "deals_total": 6,
+    "deals_total": 4,
     "paid_deals": 1,
     "revenue": 118900.0,
     "avg_check": 118900.0
   },
   {
-    "contact_id": 59309,
-    "deals_total": 9,
-    "paid_deals": 4,
-    "revenue": 101088.0,
-    "avg_check": 25272.0
-  },
-  {
-    "contact_id": 122001,
-    "deals_total": 8,
-    "paid_deals": 3,
-    "revenue": 101088.0,
-    "avg_check": 33696.0
-  },
-  {
     "contact_id": 28175,
-    "deals_total": 9,
+    "deals_total": 7,
     "paid_deals": 1,
     "revenue": 98449.2,
     "avg_check": 98449.2
   },
   {
-    "contact_id": 49233,
-    "deals_total": 5,
+    "contact_id": 111997,
+    "deals_total": 8,
+    "paid_deals": 1,
+    "revenue": 98196.0,
+    "avg_check": 98196.0
+  },
+  {
+    "contact_id": 1017,
+    "deals_total": 9,
+    "paid_deals": 2,
+    "revenue": 96824.0,
+    "avg_check": 48412.0
+  },
+  {
+    "contact_id": 65187,
+    "deals_total": 13,
+    "paid_deals": 2,
+    "revenue": 94180.0,
+    "avg_check": 47090.0
+  },
+  {
+    "contact_id": 4701,
+    "deals_total": 16,
+    "paid_deals": 2,
+    "revenue": 93177.0,
+    "avg_check": 46588.5
+  },
+  {
+    "contact_id": 120553,
+    "deals_total": 4,
+    "paid_deals": 1,
+    "revenue": 91800.0,
+    "avg_check": 91800.0
+  },
+  {
+    "contact_id": 43531,
+    "deals_total": 6,
+    "paid_deals": 1,
+    "revenue": 90720.0,
+    "avg_check": 90720.0
+  },
+  {
+    "contact_id": 126005,
+    "deals_total": 26,
     "paid_deals": 3,
-    "revenue": 97200.0,
-    "avg_check": 32400.0
+    "revenue": 90022.0,
+    "avg_check": 30007.33333333333
+  },
+  {
+    "contact_id": 16497,
+    "deals_total": 8,
+    "paid_deals": 1,
+    "revenue": 88784.0,
+    "avg_check": 88784.0
+  },
+  {
+    "contact_id": 6197,
+    "deals_total": 5,
+    "paid_deals": 1,
+    "revenue": 87360.0,
+    "avg_check": 87360.0
+  },
+  {
+    "contact_id": 83011,
+    "deals_total": 3,
+    "paid_deals": 1,
+    "revenue": 85000.0,
+    "avg_check": 85000.0
   },
   {
     "contact_id": 77563,
-    "deals_total": 8,
+    "deals_total": 7,
     "paid_deals": 1,
     "revenue": 83900.0,
     "avg_check": 83900.0
   },
   {
     "contact_id": 117403,
-    "deals_total": 5,
+    "deals_total": 4,
     "paid_deals": 1,
     "revenue": 83900.0,
     "avg_check": 83900.0
   },
   {
-    "contact_id": 93,
-    "deals_total": 11,
+    "contact_id": 55569,
+    "deals_total": 17,
     "paid_deals": 3,
-    "revenue": 77760.0,
-    "avg_check": 25920.0
+    "revenue": 81257.5,
+    "avg_check": 27085.83333333333
   },
   {
-    "contact_id": 55829,
-    "deals_total": 7,
-    "paid_deals": 3,
-    "revenue": 77760.0,
-    "avg_check": 25920.0
-  },
-  {
-    "contact_id": 121887,
-    "deals_total": 7,
-    "paid_deals": 3,
-    "revenue": 77760.0,
-    "avg_check": 25920.0
-  },
-  {
-    "contact_id": 120969,
-    "deals_total": 8,
-    "paid_deals": 3,
-    "revenue": 77760.0,
-    "avg_check": 25920.0
+    "contact_id": 24237,
+    "deals_total": 17,
+    "paid_deals": 1,
+    "revenue": 78624.0,
+    "avg_check": 78624.0
   },
   {
     "contact_id": 85485,
-    "deals_total": 22,
+    "deals_total": 20,
     "paid_deals": 1,
     "revenue": 76960.0,
     "avg_check": 76960.0
   },
   {
-    "contact_id": 54959,
-    "deals_total": 11,
-    "paid_deals": 3,
-    "revenue": 75880.0,
-    "avg_check": 25293.33333333333
-  },
-  {
     "contact_id": 6801,
-    "deals_total": 11,
+    "deals_total": 9,
     "paid_deals": 1,
     "revenue": 75510.0,
     "avg_check": 75510.0
   },
   {
+    "contact_id": 56861,
+    "deals_total": 18,
+    "paid_deals": 3,
+    "revenue": 75287.6,
+    "avg_check": 25095.86666666667
+  },
+  {
     "contact_id": 45657,
-    "deals_total": 20,
+    "deals_total": 19,
     "paid_deals": 1,
     "revenue": 74000.0,
     "avg_check": 74000.0
   },
   {
     "contact_id": 120771,
-    "deals_total": 6,
+    "deals_total": 5,
     "paid_deals": 1,
     "revenue": 74000.0,
     "avg_check": 74000.0
   },
   {
-    "contact_id": 88037,
-    "deals_total": 11,
+    "contact_id": 76459,
+    "deals_total": 13,
     "paid_deals": 3,
-    "revenue": 72900.0,
-    "avg_check": 24300.0
-  },
-  {
-    "contact_id": 103529,
-    "deals_total": 8,
-    "paid_deals": 2,
-    "revenue": 71898.0,
-    "avg_check": 35949.0
-  },
-  {
-    "contact_id": 79591,
-    "deals_total": 5,
-    "paid_deals": 3,
-    "revenue": 70200.0,
-    "avg_check": 23400.0
-  },
-  {
-    "contact_id": 78095,
-    "deals_total": 10,
-    "paid_deals": 4,
-    "revenue": 63535.2,
-    "avg_check": 15883.8
+    "revenue": 69096.0,
+    "avg_check": 23032.0
   },
   {
     "contact_id": 122261,
-    "deals_total": 3,
+    "deals_total": 2,
     "paid_deals": 1,
     "revenue": 62900.0,
     "avg_check": 62900.0
   },
   {
-    "contact_id": 121323,
-    "deals_total": 8,
-    "paid_deals": 4,
-    "revenue": 60300.0,
-    "avg_check": 15075.0
-  },
-  {
-    "contact_id": 81653,
-    "deals_total": 6,
+    "contact_id": 2867,
+    "deals_total": 15,
     "paid_deals": 2,
-    "revenue": 60120.0,
-    "avg_check": 30060.0
+    "revenue": 61440.0,
+    "avg_check": 30720.0
   },
   {
     "contact_id": 122321,
-    "deals_total": 5,
+    "deals_total": 2,
     "paid_deals": 1,
     "revenue": 60010.0,
     "avg_check": 60010.0
   },
   {
+    "contact_id": 75537,
+    "deals_total": 6,
+    "paid_deals": 2,
+    "revenue": 59364.0,
+    "avg_check": 29682.0
+  },
+  {
     "contact_id": 23781,
-    "deals_total": 15,
+    "deals_total": 13,
     "paid_deals": 1,
     "revenue": 59200.0,
     "avg_check": 59200.0
   },
   {
-    "contact_id": 50067,
+    "contact_id": 101765,
     "deals_total": 5,
+    "paid_deals": 1,
+    "revenue": 56300.0,
+    "avg_check": 56300.0
+  },
+  {
+    "contact_id": 50067,
+    "deals_total": 4,
     "paid_deals": 1,
     "revenue": 54535.0,
     "avg_check": 54535.0
   },
   {
-    "contact_id": 59527,
-    "deals_total": 10,
-    "paid_deals": 4,
-    "revenue": 52800.0,
-    "avg_check": 13200.0
-  },
-  {
-    "contact_id": 112123,
-    "deals_total": 10,
+    "contact_id": 6913,
+    "deals_total": 13,
     "paid_deals": 2,
-    "revenue": 50938.0,
-    "avg_check": 25469.0
+    "revenue": 50320.0,
+    "avg_check": 25160.0
   },
   {
-    "contact_id": 76765,
-    "deals_total": 6,
+    "contact_id": 60629,
+    "deals_total": 19,
     "paid_deals": 3,
-    "revenue": 47628.0,
-    "avg_check": 15876.0
-  },
-  {
-    "contact_id": 81185,
-    "deals_total": 6,
-    "paid_deals": 2,
-    "revenue": 44400.6,
-    "avg_check": 22200.3
-  },
-  {
-    "contact_id": 122253,
-    "deals_total": 7,
-    "paid_deals": 3,
-    "revenue": 43200.0,
-    "avg_check": 14400.0
-  },
-  {
-    "contact_id": 64715,
-    "deals_total": 15,
-    "paid_deals": 3,
-    "revenue": 42336.0,
-    "avg_check": 14112.0
-  },
-  {
-    "contact_id": 54153,
-    "deals_total": 46,
-    "paid_deals": 2,
-    "revenue": 41700.0,
-    "avg_check": 20850.0
+    "revenue": 42045.0,
+    "avg_check": 14015.0
   },
   {
     "contact_id": 55099,
-    "deals_total": 12,
+    "deals_total": 11,
     "paid_deals": 1,
     "revenue": 41400.0,
     "avg_check": 41400.0
   },
   {
+    "contact_id": 25237,
+    "deals_total": 15,
+    "paid_deals": 2,
+    "revenue": 41160.0,
+    "avg_check": 20580.0
+  },
+  {
+    "contact_id": 1463,
+    "deals_total": 10,
+    "paid_deals": 1,
+    "revenue": 41160.0,
+    "avg_check": 41160.0
+  },
+  {
+    "contact_id": 61299,
+    "deals_total": 5,
+    "paid_deals": 1,
+    "revenue": 38880.0,
+    "avg_check": 38880.0
+  },
+  {
     "contact_id": 120293,
-    "deals_total": 7,
+    "deals_total": 6,
     "paid_deals": 1,
     "revenue": 38577.0,
     "avg_check": 38577.0
   },
   {
     "contact_id": 122009,
-    "deals_total": 8,
+    "deals_total": 7,
     "paid_deals": 1,
     "revenue": 38475.0,
     "avg_check": 38475.0
   },
   {
-    "contact_id": 6913,
-    "deals_total": 15,
-    "paid_deals": 2,
-    "revenue": 35840.0,
-    "avg_check": 17920.0
+    "contact_id": 103529,
+    "deals_total": 6,
+    "paid_deals": 1,
+    "revenue": 35949.0,
+    "avg_check": 35949.0
+  },
+  {
+    "contact_id": 112123,
+    "deals_total": 8,
+    "paid_deals": 1,
+    "revenue": 35658.0,
+    "avg_check": 35658.0
   },
   {
     "contact_id": 117729,
-    "deals_total": 9,
+    "deals_total": 8,
     "paid_deals": 1,
     "revenue": 35190.0,
     "avg_check": 35190.0
   },
   {
-    "contact_id": 54721,
-    "deals_total": 13,
+    "contact_id": 78989,
+    "deals_total": 5,
     "paid_deals": 1,
     "revenue": 35070.0,
     "avg_check": 35070.0
   },
   {
+    "contact_id": 54721,
+    "deals_total": 12,
+    "paid_deals": 1,
+    "revenue": 35070.0,
+    "avg_check": 35070.0
+  },
+  {
+    "contact_id": 59309,
+    "deals_total": 7,
+    "paid_deals": 2,
+    "revenue": 33696.0,
+    "avg_check": 16848.0
+  },
+  {
+    "contact_id": 24857,
+    "deals_total": 13,
+    "paid_deals": 1,
+    "revenue": 33696.0,
+    "avg_check": 33696.0
+  },
+  {
+    "contact_id": 122001,
+    "deals_total": 7,
+    "paid_deals": 1,
+    "revenue": 33696.0,
+    "avg_check": 33696.0
+  },
+  {
+    "contact_id": 59527,
+    "deals_total": 8,
+    "paid_deals": 2,
+    "revenue": 32800.0,
+    "avg_check": 16400.0
+  },
+  {
+    "contact_id": 49233,
+    "deals_total": 4,
+    "paid_deals": 1,
+    "revenue": 32400.0,
+    "avg_check": 32400.0
+  },
+  {
     "contact_id": 86077,
-    "deals_total": 15,
+    "deals_total": 13,
     "paid_deals": 1,
     "revenue": 32200.0,
     "avg_check": 32200.0
   },
   {
-    "contact_id": 120745,
-    "deals_total": 9,
-    "paid_deals": 5,
-    "revenue": 30338.0,
-    "avg_check": 6067.6
+    "contact_id": 81653,
+    "deals_total": 5,
+    "paid_deals": 1,
+    "revenue": 30060.0,
+    "avg_check": 30060.0
   },
   {
     "contact_id": 123081,
-    "deals_total": 14,
+    "deals_total": 12,
     "paid_deals": 1,
     "revenue": 29634.0,
     "avg_check": 29634.0
   },
   {
+    "contact_id": 19561,
+    "deals_total": 8,
+    "paid_deals": 1,
+    "revenue": 29160.0,
+    "avg_check": 29160.0
+  },
+  {
+    "contact_id": 54959,
+    "deals_total": 10,
+    "paid_deals": 1,
+    "revenue": 29080.0,
+    "avg_check": 29080.0
+  },
+  {
     "contact_id": 120933,
-    "deals_total": 7,
+    "deals_total": 6,
     "paid_deals": 1,
     "revenue": 26172.0,
     "avg_check": 26172.0
   },
   {
+    "contact_id": 93,
+    "deals_total": 10,
+    "paid_deals": 1,
+    "revenue": 25920.0,
+    "avg_check": 25920.0
+  },
+  {
+    "contact_id": 55829,
+    "deals_total": 6,
+    "paid_deals": 1,
+    "revenue": 25920.0,
+    "avg_check": 25920.0
+  },
+  {
+    "contact_id": 121887,
+    "deals_total": 6,
+    "paid_deals": 1,
+    "revenue": 25920.0,
+    "avg_check": 25920.0
+  },
+  {
+    "contact_id": 120969,
+    "deals_total": 7,
+    "paid_deals": 1,
+    "revenue": 25920.0,
+    "avg_check": 25920.0
+  },
+  {
+    "contact_id": 88635,
+    "deals_total": 2,
+    "paid_deals": 1,
+    "revenue": 25272.0,
+    "avg_check": 25272.0
+  },
+  {
     "contact_id": 120149,
-    "deals_total": 9,
+    "deals_total": 8,
     "paid_deals": 1,
     "revenue": 24667.0,
     "avg_check": 24667.0
   },
   {
-    "contact_id": 88355,
+    "contact_id": 104739,
     "deals_total": 7,
+    "paid_deals": 1,
+    "revenue": 24667.0,
+    "avg_check": 24667.0
+  },
+  {
+    "contact_id": 88037,
+    "deals_total": 10,
+    "paid_deals": 1,
+    "revenue": 24300.0,
+    "avg_check": 24300.0
+  },
+  {
+    "contact_id": 88163,
+    "deals_total": 6,
+    "paid_deals": 1,
+    "revenue": 23400.0,
+    "avg_check": 23400.0
+  },
+  {
+    "contact_id": 79591,
+    "deals_total": 4,
+    "paid_deals": 1,
+    "revenue": 23400.0,
+    "avg_check": 23400.0
+  },
+  {
+    "contact_id": 120745,
+    "deals_total": 6,
+    "paid_deals": 3,
+    "revenue": 22946.0,
+    "avg_check": 7648.666666666667
+  },
+  {
+    "contact_id": 81185,
+    "deals_total": 5,
+    "paid_deals": 1,
+    "revenue": 22200.3,
+    "avg_check": 22200.3
+  },
+  {
+    "contact_id": 64555,
+    "deals_total": 9,
+    "paid_deals": 1,
+    "revenue": 22200.3,
+    "avg_check": 22200.3
+  },
+  {
+    "contact_id": 122121,
+    "deals_total": 7,
+    "paid_deals": 1,
+    "revenue": 21208.0,
+    "avg_check": 21208.0
+  },
+  {
+    "contact_id": 78095,
+    "deals_total": 7,
+    "paid_deals": 2,
+    "revenue": 21178.4,
+    "avg_check": 10589.2
+  },
+  {
+    "contact_id": 88355,
+    "deals_total": 6,
     "paid_deals": 1,
     "revenue": 20975.0,
     "avg_check": 20975.0
-  },
-  {
-    "contact_id": 121287,
-    "deals_total": 5,
-    "paid_deals": 1,
-    "revenue": 19500.0,
-    "avg_check": 19500.0
-  },
-  {
-    "contact_id": 60629,
-    "deals_total": 22,
-    "paid_deals": 3,
-    "revenue": 18360.0,
-    "avg_check": 6120.0
   },
   {
     "contact_id": 119367,
@@ -546,31 +630,52 @@
     "avg_check": 17640.0
   },
   {
-    "contact_id": 114609,
-    "deals_total": 20,
+    "contact_id": 12437,
+    "deals_total": 16,
+    "paid_deals": 2,
+    "revenue": 16080.0,
+    "avg_check": 8040.0
+  },
+  {
+    "contact_id": 76765,
+    "deals_total": 5,
     "paid_deals": 1,
-    "revenue": 17640.0,
-    "avg_check": 17640.0
+    "revenue": 15876.0,
+    "avg_check": 15876.0
+  },
+  {
+    "contact_id": 121323,
+    "deals_total": 7,
+    "paid_deals": 1,
+    "revenue": 15876.0,
+    "avg_check": 15876.0
   },
   {
     "contact_id": 66519,
-    "deals_total": 4,
+    "deals_total": 3,
     "paid_deals": 1,
     "revenue": 15390.0,
     "avg_check": 15390.0
   },
   {
-    "contact_id": 59603,
-    "deals_total": 3,
+    "contact_id": 122253,
+    "deals_total": 6,
     "paid_deals": 1,
-    "revenue": 7000.0,
-    "avg_check": 7000.0
+    "revenue": 14400.0,
+    "avg_check": 14400.0
+  },
+  {
+    "contact_id": 64715,
+    "deals_total": 14,
+    "paid_deals": 1,
+    "revenue": 14112.0,
+    "avg_check": 14112.0
   },
   {
     "contact_id": 121505,
-    "deals_total": 6,
-    "paid_deals": 2,
-    "revenue": 4440.0,
+    "deals_total": 5,
+    "paid_deals": 1,
+    "revenue": 2220.0,
     "avg_check": 2220.0
   },
   {
@@ -589,7 +694,7 @@
   },
   {
     "contact_id": 98383,
-    "deals_total": 6,
+    "deals_total": 5,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -610,7 +715,7 @@
   },
   {
     "contact_id": 94481,
-    "deals_total": 10,
+    "deals_total": 5,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -651,13 +756,6 @@
     "avg_check": 0.0
   },
   {
-    "contact_id": 88635,
-    "deals_total": 3,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
     "contact_id": 88511,
     "deals_total": 12,
     "paid_deals": 0,
@@ -674,13 +772,6 @@
   {
     "contact_id": 88173,
     "deals_total": 13,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
-    "contact_id": 88163,
-    "deals_total": 7,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -729,14 +820,14 @@
   },
   {
     "contact_id": 86551,
-    "deals_total": 18,
+    "deals_total": 17,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
   },
   {
     "contact_id": 86517,
-    "deals_total": 5,
+    "deals_total": 4,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -751,13 +842,13 @@
   {
     "contact_id": 86005,
     "deals_total": 8,
-    "paid_deals": 1,
+    "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
   },
   {
     "contact_id": 86001,
-    "deals_total": 7,
+    "deals_total": 6,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -771,7 +862,7 @@
   },
   {
     "contact_id": 85253,
-    "deals_total": 5,
+    "deals_total": 4,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -792,14 +883,7 @@
   },
   {
     "contact_id": 83273,
-    "deals_total": 5,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
-    "contact_id": 83011,
-    "deals_total": 4,
+    "deals_total": 3,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -813,7 +897,7 @@
   },
   {
     "contact_id": 82867,
-    "deals_total": 11,
+    "deals_total": 10,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -848,7 +932,7 @@
   },
   {
     "contact_id": 81843,
-    "deals_total": 13,
+    "deals_total": 12,
     "paid_deals": 1,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -869,7 +953,7 @@
   },
   {
     "contact_id": 79211,
-    "deals_total": 15,
+    "deals_total": 14,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -883,14 +967,7 @@
   },
   {
     "contact_id": 79101,
-    "deals_total": 8,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
-    "contact_id": 78989,
-    "deals_total": 6,
+    "deals_total": 7,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -912,13 +989,6 @@
   {
     "contact_id": 76823,
     "deals_total": 5,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
-    "contact_id": 76459,
-    "deals_total": 16,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1036,15 +1106,15 @@
     "avg_check": 0.0
   },
   {
-    "contact_id": 61299,
-    "deals_total": 6,
+    "contact_id": 6123,
+    "deals_total": 4,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
   },
   {
-    "contact_id": 6123,
-    "deals_total": 4,
+    "contact_id": 59603,
+    "deals_total": 3,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1072,7 +1142,7 @@
   },
   {
     "contact_id": 55897,
-    "deals_total": 10,
+    "deals_total": 9,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1120,13 +1190,6 @@
     "avg_check": 0.0
   },
   {
-    "contact_id": 52799,
-    "deals_total": 21,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
     "contact_id": 5273,
     "deals_total": 11,
     "paid_deals": 0,
@@ -1135,7 +1198,7 @@
   },
   {
     "contact_id": 51973,
-    "deals_total": 6,
+    "deals_total": 5,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1157,13 +1220,6 @@
   {
     "contact_id": 43785,
     "deals_total": 9,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
-    "contact_id": 43531,
-    "deals_total": 7,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1246,13 +1302,6 @@
     "avg_check": 0.0
   },
   {
-    "contact_id": 2867,
-    "deals_total": 18,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
     "contact_id": 27231,
     "deals_total": 4,
     "paid_deals": 0,
@@ -1269,13 +1318,6 @@
   {
     "contact_id": 25565,
     "deals_total": 4,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
-    "contact_id": 24857,
-    "deals_total": 14,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1302,13 +1344,6 @@
     "avg_check": 0.0
   },
   {
-    "contact_id": 19561,
-    "deals_total": 9,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
     "contact_id": 19233,
     "deals_total": 9,
     "paid_deals": 0,
@@ -1330,13 +1365,6 @@
     "avg_check": 0.0
   },
   {
-    "contact_id": 1463,
-    "deals_total": 11,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
     "contact_id": 13509,
     "deals_total": 4,
     "paid_deals": 0,
@@ -1352,8 +1380,8 @@
   },
   {
     "contact_id": 130639,
-    "deals_total": 9,
-    "paid_deals": 0,
+    "deals_total": 8,
+    "paid_deals": 1,
     "revenue": 0.0,
     "avg_check": 0.0
   },
@@ -1380,7 +1408,7 @@
   },
   {
     "contact_id": 127599,
-    "deals_total": 5,
+    "deals_total": 4,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1443,14 +1471,14 @@
   },
   {
     "contact_id": 126627,
-    "deals_total": 6,
+    "deals_total": 5,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
   },
   {
     "contact_id": 126601,
-    "deals_total": 15,
+    "deals_total": 12,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1471,7 +1499,7 @@
   },
   {
     "contact_id": 126063,
-    "deals_total": 8,
+    "deals_total": 7,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1492,7 +1520,7 @@
   },
   {
     "contact_id": 125861,
-    "deals_total": 4,
+    "deals_total": 3,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1527,7 +1555,7 @@
   },
   {
     "contact_id": 125363,
-    "deals_total": 7,
+    "deals_total": 6,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1541,21 +1569,21 @@
   },
   {
     "contact_id": 125141,
-    "deals_total": 6,
+    "deals_total": 5,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
   },
   {
     "contact_id": 124885,
-    "deals_total": 7,
+    "deals_total": 6,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
   },
   {
     "contact_id": 124875,
-    "deals_total": 21,
+    "deals_total": 16,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1569,14 +1597,7 @@
   },
   {
     "contact_id": 124399,
-    "deals_total": 6,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
-    "contact_id": 12437,
-    "deals_total": 18,
+    "deals_total": 5,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1597,7 +1618,7 @@
   },
   {
     "contact_id": 124033,
-    "deals_total": 14,
+    "deals_total": 11,
     "paid_deals": 1,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1625,7 +1646,7 @@
   },
   {
     "contact_id": 123457,
-    "deals_total": 8,
+    "deals_total": 6,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1688,7 +1709,7 @@
   },
   {
     "contact_id": 123139,
-    "deals_total": 3,
+    "deals_total": 2,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -1710,6 +1731,13 @@
   {
     "contact_id": 123131,
     "deals_total": 2,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 123097,
+    "deals_total": 1,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -2039,7 +2067,7 @@
   {
     "contact_id": 122843,
     "deals_total": 1,
-    "paid_deals": 1,
+    "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
   },
@@ -2108,7 +2136,7 @@
   },
   {
     "contact_id": 122815,
-    "deals_total": 3,
+    "deals_total": 2,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -2290,7 +2318,7 @@
   },
   {
     "contact_id": 122735,
-    "deals_total": 3,
+    "deals_total": 2,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -2486,7 +2514,7 @@
   },
   {
     "contact_id": 122643,
-    "deals_total": 3,
+    "deals_total": 2,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -2612,7 +2640,7 @@
   },
   {
     "contact_id": 122591,
-    "deals_total": 3,
+    "deals_total": 2,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -2892,7 +2920,7 @@
   },
   {
     "contact_id": 122501,
-    "deals_total": 6,
+    "deals_total": 5,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -2976,7 +3004,7 @@
   },
   {
     "contact_id": 122455,
-    "deals_total": 4,
+    "deals_total": 3,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -3116,7 +3144,7 @@
   },
   {
     "contact_id": 122389,
-    "deals_total": 8,
+    "deals_total": 5,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -3193,7 +3221,7 @@
   },
   {
     "contact_id": 122341,
-    "deals_total": 4,
+    "deals_total": 3,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -3710,15 +3738,8 @@
     "avg_check": 0.0
   },
   {
-    "contact_id": 122121,
-    "deals_total": 8,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
     "contact_id": 122117,
-    "deals_total": 5,
+    "deals_total": 4,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -3823,7 +3844,7 @@
   },
   {
     "contact_id": 122077,
-    "deals_total": 5,
+    "deals_total": 4,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -3942,7 +3963,7 @@
   },
   {
     "contact_id": 122025,
-    "deals_total": 4,
+    "deals_total": 3,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -4838,7 +4859,7 @@
   },
   {
     "contact_id": 121651,
-    "deals_total": 4,
+    "deals_total": 2,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -4992,7 +5013,7 @@
   },
   {
     "contact_id": 121573,
-    "deals_total": 4,
+    "deals_total": 2,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -5041,7 +5062,7 @@
   },
   {
     "contact_id": 121519,
-    "deals_total": 7,
+    "deals_total": 6,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -5307,7 +5328,7 @@
   },
   {
     "contact_id": 121399,
-    "deals_total": 6,
+    "deals_total": 5,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -5504,6 +5525,13 @@
   {
     "contact_id": 121293,
     "deals_total": 4,
+    "paid_deals": 0,
+    "revenue": 0.0,
+    "avg_check": 0.0
+  },
+  {
+    "contact_id": 121287,
+    "deals_total": 5,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -5720,8 +5748,8 @@
   },
   {
     "contact_id": 121151,
-    "deals_total": 7,
-    "paid_deals": 0,
+    "deals_total": 5,
+    "paid_deals": 1,
     "revenue": 0.0,
     "avg_check": 0.0
   },
@@ -5797,7 +5825,7 @@
   },
   {
     "contact_id": 121107,
-    "deals_total": 10,
+    "deals_total": 8,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -6231,7 +6259,7 @@
   },
   {
     "contact_id": 120835,
-    "deals_total": 11,
+    "deals_total": 10,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -6594,13 +6622,6 @@
     "avg_check": 0.0
   },
   {
-    "contact_id": 120597,
-    "deals_total": 8,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
     "contact_id": 120595,
     "deals_total": 1,
     "paid_deals": 0,
@@ -6693,7 +6714,7 @@
   },
   {
     "contact_id": 120529,
-    "deals_total": 5,
+    "deals_total": 4,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -6854,7 +6875,7 @@
   },
   {
     "contact_id": 120299,
-    "deals_total": 2,
+    "deals_total": 1,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -6910,7 +6931,7 @@
   },
   {
     "contact_id": 120201,
-    "deals_total": 7,
+    "deals_total": 6,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -6924,28 +6945,28 @@
   },
   {
     "contact_id": 119847,
-    "deals_total": 3,
+    "deals_total": 2,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
   },
   {
     "contact_id": 119843,
-    "deals_total": 3,
+    "deals_total": 2,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
   },
   {
     "contact_id": 119735,
-    "deals_total": 7,
+    "deals_total": 4,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
   },
   {
     "contact_id": 119483,
-    "deals_total": 10,
+    "deals_total": 7,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -6973,7 +6994,7 @@
   },
   {
     "contact_id": 118913,
-    "deals_total": 9,
+    "deals_total": 8,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -7008,7 +7029,7 @@
   },
   {
     "contact_id": 118461,
-    "deals_total": 5,
+    "deals_total": 4,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -7106,7 +7127,7 @@
   },
   {
     "contact_id": 115141,
-    "deals_total": 13,
+    "deals_total": 12,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -7141,28 +7162,21 @@
   },
   {
     "contact_id": 113705,
-    "deals_total": 7,
+    "deals_total": 5,
     "paid_deals": 1,
     "revenue": 0.0,
     "avg_check": 0.0
   },
   {
     "contact_id": 113403,
-    "deals_total": 3,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
-    "contact_id": 111997,
-    "deals_total": 9,
+    "deals_total": 2,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
   },
   {
     "contact_id": 111951,
-    "deals_total": 6,
+    "deals_total": 5,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -7183,14 +7197,7 @@
   },
   {
     "contact_id": 109067,
-    "deals_total": 73,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
-    "contact_id": 104739,
-    "deals_total": 8,
+    "deals_total": 60,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -7211,7 +7218,7 @@
   },
   {
     "contact_id": 103767,
-    "deals_total": 11,
+    "deals_total": 10,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0
@@ -7239,21 +7246,14 @@
   },
   {
     "contact_id": 102655,
-    "deals_total": 14,
+    "deals_total": 13,
     "paid_deals": 1,
     "revenue": 0.0,
     "avg_check": 0.0
   },
   {
     "contact_id": 102275,
-    "deals_total": 6,
-    "paid_deals": 0,
-    "revenue": 0.0,
-    "avg_check": 0.0
-  },
-  {
-    "contact_id": 101765,
-    "deals_total": 6,
+    "deals_total": 5,
     "paid_deals": 0,
     "revenue": 0.0,
     "avg_check": 0.0

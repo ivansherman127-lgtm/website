@@ -4,9 +4,10 @@
 import { groupYandexProjectsNoMonth } from "./yandexProjectsNoMonth";
 import { sqlExtractYandexAdId } from "./yandexAdId";
 import { buildYdHierarchyRows } from "./ydHierarchy";
+import { sqlQuote, sqlMonthFromDateExpr, isValidYandexAdId, buildInvalidTokenCond } from "./sqlHelpers";
 import { buildBitrixContactsUidRows } from "./bitrixContactsUid";
 import { buildLeadLogicSql, buildPotentialCond } from "./leadLogicSql";
-import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS, YANDEX_KNOWN_GROUPS, mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
+import { mapYandexProjectGroup } from "../../../src/yandexProjectGroups";
 import managerFirstlineNames from "../../config/manager_firstline.json";
 import {
   sqlMonthLabel,
@@ -26,14 +27,6 @@ async function tableExists(db: D1Database, tableName: string): Promise<boolean> 
     .bind(tableName)
     .first<{ name: string }>();
   return !!row?.name;
-}
-
-function sqlMonthFromDateExpr(expr: string): string {
-  return `CASE
-    WHEN COALESCE(${expr}, '') LIKE '____-__%' THEN SUBSTR(${expr}, 1, 7)
-    WHEN COALESCE(${expr}, '') LIKE '__.__.____%' THEN SUBSTR(${expr}, 7, 4) || '-' || SUBSTR(${expr}, 4, 2)
-    ELSE ''
-  END`;
 }
 
 async function columnExists(db: D1Database, tableName: string, columnName: string): Promise<boolean> {
@@ -92,30 +85,15 @@ async function upsertDataset(db: D1Database, path: string, body: string): Promis
     .catch(() => {});
 }
 
-function sqlQuote(value: string): string {
-  return `'${String(value ?? "").replace(/'/g, "''")}'`;
-}
-
 function buildYandexProjectGroupSqlExpr(rawExpr: string): string {
-  const trimmed = `NULLIF(TRIM(COALESCE(${rawExpr}, '')), '')`;
-  if (!YANDEX_PROJECT_GROUP_ALIAS_PAIRS.length) return `COALESCE(${trimmed}, 'UNMAPPED')`;
-  // Use 'UNMAPPED' as the ELSE fallback so only JSON-defined group names ever appear in the output.
-  return `COALESCE(CASE ${trimmed} ${YANDEX_PROJECT_GROUP_ALIAS_PAIRS
-    .map(([alias, group]) => `WHEN ${sqlQuote(alias)} THEN ${sqlQuote(group)}`)
-    .join(" ")} ELSE 'UNMAPPED' END, 'UNMAPPED')`;
+  // Fuzzy grouping: use the raw project name as-is. Python post-processing in
+  // _group_yandex_projects_no_month clusters similar names via SequenceMatcher.
+  return `COALESCE(NULLIF(TRIM(COALESCE(${rawExpr}, '')), ''), 'UNMAPPED')`;
 }
 
-/** Map a raw or already-mapped project name to a known JSON group, falling back to 'UNMAPPED'. */
+/** Map a raw project name through fuzzy identity (no JSON lookup). */
 function toKnownGroup(rawOrMapped: unknown): string {
-  const mapped = mapYandexProjectGroup(rawOrMapped);
-  if (YANDEX_KNOWN_GROUPS.has(mapped)) return mapped;
-  // Already a known group name passed through (SQL pre-mapped) or a raw alias that maps to a group.
-  if (YANDEX_KNOWN_GROUPS.has(String(rawOrMapped ?? "").trim())) return String(rawOrMapped ?? "").trim();
-  return "UNMAPPED";
-}
-
-function isValidYandexAdId(value: unknown): boolean {
-  return /^17\d{9}$/.test(String(value ?? "").trim());
+  return mapYandexProjectGroup(rawOrMapped);
 }
 
 function groupAssocQaRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
@@ -175,7 +153,7 @@ function buildYandexNoMonthHierarchyRows(
   const out: Record<string, unknown>[] = [];
   for (const row of projectRows) {
     const project = toKnownGroup(String(row.project_name ?? "").trim());
-    if (!project || project === "UNMAPPED") continue;
+    if (!project) continue;
     const details = (byProject.get(project) || []).sort((a, b) => {
       const spendDiff = (Number(b.spend ?? 0) || 0) - (Number(a.spend ?? 0) || 0);
       if (spendDiff !== 0) return spendDiff;
@@ -250,33 +228,7 @@ const BITRIX_INVALID_TOKENS = [
   "партнеры, не нужно связываться",
 ];
 
-/**
- * Builds an OR-joined SQL condition checking the two invalid-type columns.
- * @param tableAlias - Table alias prefix: "" (no prefix), "m.", or "p."
- * @param pattern    - "instr" (default) uses instr(); "like" uses LIKE with % wildcards.
- */
-function buildInvalidTokenCond(
-  tokens: string[],
-  tableAlias: "" | "m." | "p.",
-  pattern: "instr" | "like" = "instr",
-): string {
-  const col1 = `${tableAlias}"Типы некачественного лида"`;
-  const col2 = `${tableAlias}"Типы некачественных лидов"`;
-  return tokens
-    .flatMap((tok) => {
-      if (pattern === "like") {
-        return [
-          `lower(COALESCE(${col1}, '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-          `lower(COALESCE(${col2}, '')) LIKE ${sqlQuote("%" + tok + "%")}`,
-        ];
-      }
-      return [
-        `instr(lower(COALESCE(${col1}, '')), ${sqlQuote(tok)}) > 0`,
-        `instr(lower(COALESCE(${col2}, '')), ${sqlQuote(tok)}) > 0`,
-      ];
-    })
-    .join(" OR ");
-}
+// buildInvalidTokenCond is imported from sqlHelpers.ts
 
 export async function materializeSliceDatasets(db: D1Database): Promise<{ paths: string[] }> {
   const paths: string[] = [];
@@ -339,6 +291,13 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     stageExpr: "stage",
     monthExpr: "yandex_month",
     extraInvalidCond: yandexExtraInvalidCond,
+  });
+  // Used in queries that SELECT directly from mart_yandex_leads_raw without a JOIN to
+  // mart_deals_enriched — yandexLeadLogic.unqual contains m."Типы..." which would fail.
+  const yandexLeadLogicSimple = buildLeadLogicSql({
+    funnelExpr: "funnel",
+    stageExpr: "stage",
+    monthExpr: "yandex_month",
   });
   const managerLeadLogic = buildLeadLogicSql({
     funnelExpr: `m."Воронка"`,
@@ -688,9 +647,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        latest_yandex AS (
          SELECT
            CASE
-             WHEN (SELECT latest_spend_dt FROM latest_spend) IS NULL THEN (SELECT latest_created_dt FROM latest)
-             WHEN (SELECT latest_created_dt FROM latest) IS NULL THEN (SELECT latest_spend_dt FROM latest_spend)
-             WHEN date((SELECT latest_spend_dt FROM latest_spend)) >= date((SELECT latest_created_dt FROM latest)) THEN (SELECT latest_spend_dt FROM latest_spend)
+             WHEN (SELECT latest_spend_dt FROM latest_spend) IS NOT NULL THEN (SELECT latest_spend_dt FROM latest_spend)
              ELSE (SELECT latest_created_dt FROM latest)
            END AS latest_yandex_dt
        ),
@@ -1371,9 +1328,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        mflags AS (
          SELECT
            COALESCE(yandex_month, '') AS month,
-           ${yandexLeadLogic.qual} AS qual,
-           ${yandexLeadLogic.unqual} AS unqual,
-           ${yandexLeadLogic.refusal} AS refusal,
+           ${yandexLeadLogicSimple.qual} AS qual,
+           ${yandexLeadLogicSimple.unqual} AS unqual,
+           ${yandexLeadLogicSimple.refusal} AS refusal,
            1 AS leads
          FROM mart_yandex_leads_raw
          WHERE COALESCE(yandex_month, '') <> ''
@@ -1422,9 +1379,9 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            COALESCE(project_name, '') AS campaign_name,
            COALESCE(campaign_id, '') AS campaign_id,
            COALESCE(yandex_month, '') AS month,
-           ${yandexLeadLogic.qual} AS qual,
-           ${yandexLeadLogic.unqual} AS unqual,
-           ${yandexLeadLogic.refusal} AS refusal,
+           ${yandexLeadLogicSimple.qual} AS qual,
+           ${yandexLeadLogicSimple.unqual} AS unqual,
+           ${yandexLeadLogicSimple.refusal} AS refusal,
            1 AS leads
          FROM mart_yandex_leads_raw
          WHERE COALESCE(yandex_month, '') <> ''
@@ -1513,19 +1470,17 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
               (SELECT COALESCE(SUM(revenue),0) FROM mart_yandex_leads_dedup) AS revenue_dedup`,
     ).all<RR>(),
     db.prepare(
-      `SELECT r.project_name,
-              r.yandex_month AS month,
-              r.leads_raw,
-              d.leads_dedup,
-              r.paid_deals_raw,
-              d.paid_deals_dedup,
-              r.revenue_raw,
-              d.revenue_dedup,
-              r.spend
-       FROM mart_yandex_revenue_projects_raw r
-       LEFT JOIN mart_yandex_revenue_projects_dedup d
-         ON r.project_name = d.project_name AND r.yandex_month = d.yandex_month
-       ORDER BY r.revenue_raw DESC`,
+      `SELECT project_name,
+              yandex_month AS month,
+              leads_raw,
+              leads_dedup,
+              paid_deals_raw,
+              paid_deals_dedup,
+              revenue_raw,
+              revenue_dedup,
+              spend
+       FROM mart_yandex_revenue_projects
+       ORDER BY revenue_raw DESC`,
     ).all<RR>(),
     db.prepare(
       `WITH matched AS (
@@ -1533,7 +1488,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
                 SUM(leads_raw) AS leads_raw,
                 SUM(paid_deals_raw) AS paid_deals_raw,
                 SUM(revenue_raw) AS revenue_raw
-         FROM mart_yandex_revenue_projects_raw
+         FROM mart_yandex_revenue_projects
          GROUP BY yandex_month
        ),
        ystats AS (
@@ -1567,7 +1522,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
               SUM(paid_deals_raw) AS paid_deals_raw,
               SUM(revenue_raw) AS revenue_raw,
               SUM(spend) AS spend
-       FROM mart_yandex_revenue_projects_raw
+       FROM mart_yandex_revenue_projects
        GROUP BY project_name
        ORDER BY revenue_raw DESC`,
     ).all<RR>(),

@@ -1,5 +1,5 @@
 import { sqlExtractYandexAdId } from "../lib/analytics/yandexAdId";
-import { YANDEX_PROJECT_GROUP_ALIAS_PAIRS } from "../../src/yandexProjectGroups";
+import { sqlQuote, isValidYandexAdId, sqlNormalizeLookupExpr } from "../lib/analytics/sqlHelpers";
 
 interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
@@ -51,7 +51,7 @@ const DIMENSIONS: Record<DimKey, DimSpec> = {
   },
   event: {
     key: "event",
-    label: "Мероприятие",
+    label: "Проект",
     expr: "event_group",
   },
   course_code: {
@@ -126,60 +126,10 @@ function safeJsonParseArray(raw: string): unknown[] | null {
   }
 }
 
-function sqlQuote(value: string): string {
-  return `'${String(value).replace(/'/g, "''")}'`;
-}
-
 function buildYandexProjectGroupSqlExpr(rawExpr: string): string {
+  // Fuzzy grouping: use the raw campaign name as-is. JSON alias mapping removed.
   const trimmed = `NULLIF(TRIM(COALESCE(${rawExpr}, '')), '')`;
-  if (!YANDEX_PROJECT_GROUP_ALIAS_PAIRS.length) return `COALESCE(${trimmed}, '(без маппинга в Yandex raw)')`;
-
-  const normalizedPairs = [...new Map(
-    YANDEX_PROJECT_GROUP_ALIAS_PAIRS
-      .map(([alias, group]) => [normalizeLookupKey(alias), group] as const)
-      .filter(([key]) => key.length > 0),
-  ).entries()];
-  const normExpr = sqlNormalizeLookupExpr(trimmed);
-
-  return `COALESCE(
-    CASE ${trimmed} ${YANDEX_PROJECT_GROUP_ALIAS_PAIRS
-      .map(([alias, group]) => `WHEN ${sqlQuote(alias)} THEN ${sqlQuote(group)}`)
-      .join(" ")}
-      ELSE CASE ${normExpr} ${normalizedPairs
-        .map(([key, group]) => `WHEN ${sqlQuote(key)} THEN ${sqlQuote(group)}`)
-        .join(" ")} ELSE ${trimmed} END
-    END,
-    '(без маппинга в Yandex raw)'
-  )`;
-}
-
-function isValidYandexAdId(value: unknown): boolean {
-  return /^17\d{9}$/.test(String(value ?? "").trim());
-}
-
-function sqlNormalizeLookupExpr(expr: string): string {
-  const replacements: Array<[string, string]> = [
-    ["ё", "е"],
-    ["-", ""],
-    ["_", ""],
-    [" ", ""],
-    [".", ""],
-    ["/", ""],
-    [":", ""],
-    [",", ""],
-    ["'", ""],
-    ['"', ""],
-    ["«", ""],
-    ["»", ""],
-    ["(", ""],
-    [")", ""],
-  ];
-
-  let out = `LOWER(TRIM(COALESCE(${expr}, '')))`;
-  for (const [from, to] of replacements) {
-    out = `REPLACE(${out}, ${sqlQuote(from)}, ${sqlQuote(to)})`;
-  }
-  return out;
+  return `COALESCE(${trimmed}, '(пусто)')`;
 }
 
 function normalizeLookupKey(value: unknown): string {
@@ -365,7 +315,7 @@ async function computeSourceWatermark(db: D1Database, cohort: Cohort): Promise<s
     "mart_deals_enriched",
     "stg_email_sends",
     "stg_yandex_stats",
-    "mart_yandex_revenue_projects_raw",
+    "mart_yandex_revenue_projects",
     cohort === "attacking_january" ? "mart_attacking_january_cohort_deals" : "mart_deals_enriched",
   ];
   const uniq = [...new Set(watchedTables)];

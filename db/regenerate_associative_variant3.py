@@ -17,6 +17,7 @@ from bitrix_lead_quality import (
     in_work_series,
 )
 from revenue_variant3 import variant3_revenue_mask
+from utils import _n, _id, _amt
 
 ROOT = Path(__file__).resolve().parent.parent
 BASE = ROOT / "bitrix_attacking_january_associative_base_smart.csv"
@@ -44,26 +45,6 @@ WEB_CODE_MONTH_JSON = WEB_DATA_DIR / "attacking_january_associative_revenue_by_c
 WEB_FUNNEL_MONTH_CODE_JSON = WEB_DATA_DIR / "attacking_january_associative_funnel_month_code_full.json"
 WEB_MONTH_TOTAL_JSON = WEB_DATA_DIR / "attacking_january_associative_month_total_full.json"
 WEB_DEALS_JSON = WEB_DATA_DIR / "attacking_january_associative_deals_base.json"
-
-
-def _n(v: object) -> str:
-    if v is None or pd.isna(v):
-        return ""
-    s = str(v).strip()
-    return "" if s.lower() in {"", "nan", "none", "null"} else s
-
-
-def _id(v: object) -> str:
-    s = _n(v)
-    return s.split(".", 1)[0] if re.fullmatch(r"\d+\.0+", s) else s
-
-
-def _amt(v: object) -> float:
-    s = _n(v).replace(" ", "").replace("\xa0", "").replace(",", ".")
-    try:
-        return float(s) if s else 0.0
-    except ValueError:
-        return 0.0
 
 
 def _safe_group(df: pd.DataFrame, by: list[str]) -> pd.core.groupby.DataFrameGroupBy:

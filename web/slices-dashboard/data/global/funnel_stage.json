@@ -2,97 +2,118 @@
   {
     "funnel": "Другое",
     "stage": "Сделка заключена",
-    "deals": 1757,
-    "paid_deals": 769,
-    "revenue": 34987040.64
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Сделка закрыта",
-    "deals": 1567,
-    "paid_deals": 469,
-    "revenue": 14265725.58
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Некачественный лид",
-    "deals": 7574,
-    "paid_deals": 401,
-    "revenue": 12343443.98
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Сделка не заключена",
-    "deals": 9424,
-    "paid_deals": 66,
-    "revenue": 2235207.55
+    "deals": 58,
+    "paid_deals": 58,
+    "revenue": 88516796.0
   },
   {
     "funnel": "B2C",
     "stage": "Сделка заключена",
-    "deals": 5,
-    "paid_deals": 5,
-    "revenue": 514501.24
+    "deals": 1615,
+    "paid_deals": 1615,
+    "revenue": 73943091.0
   },
   {
-    "funnel": "Другое",
-    "stage": "Рассрочка",
-    "deals": 10,
-    "paid_deals": 10,
-    "revenue": 460875.3
+    "funnel": "B2B",
+    "stage": "Сделка заключена",
+    "deals": 89,
+    "paid_deals": 89,
+    "revenue": 11946400.0
   },
   {
-    "funnel": "Другое",
-    "stage": "Сделка провалена",
-    "deals": 31,
-    "paid_deals": 7,
-    "revenue": 183723.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Успешно возвращен в воронку",
-    "deals": 894,
-    "paid_deals": 1,
-    "revenue": 58558.5
+    "funnel": "B2B",
+    "stage": "Постоплата",
+    "deals": 3,
+    "paid_deals": 3,
+    "revenue": 768360.0
   },
   {
     "funnel": "B2C",
     "stage": "Рассрочка",
+    "deals": 10,
+    "paid_deals": 10,
+    "revenue": 482868.3
+  },
+  {
+    "funnel": "Другое",
+    "stage": "Постоплата",
     "deals": 1,
     "paid_deals": 1,
-    "revenue": 39633.0
+    "revenue": 76680.0
   },
   {
     "funnel": "Другое",
-    "stage": "Сделка успешна",
-    "deals": 19,
-    "paid_deals": 3,
-    "revenue": 21000.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Передача в ОП",
-    "deals": 5,
+    "stage": "Рассрочка",
+    "deals": 1,
     "paid_deals": 1,
-    "revenue": 12960.0
+    "revenue": 17640.0
+  },
+  {
+    "funnel": "B2B",
+    "stage": "Вебинары",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "B2B",
+    "stage": "Выбор 03",
+    "deals": 7,
+    "paid_deals": 0,
+    "revenue": 0.0
   },
   {
     "funnel": "B2B",
     "stage": "Потенциал 01",
-    "deals": 5,
+    "deals": 67,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "B2B",
+    "stage": "Сделка не заключена",
+    "deals": 243,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "B2B",
+    "stage": "Согласование КП",
+    "deals": 16,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "B2B",
     "stage": "Согласование договора",
-    "deals": 5,
+    "deals": 15,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "B2B",
+    "stage": "Счет выставлен",
+    "deals": 9,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "B2C",
+    "stage": "Вебинары",
+    "deals": 35,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "B2C",
     "stage": "Взято в работу",
+    "deals": 17,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "B2C",
+    "stage": "Возобновить В2С",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -100,70 +121,98 @@
   {
     "funnel": "B2C",
     "stage": "Выбор 03",
+    "deals": 10,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "B2C",
+    "stage": "Готов к покупке",
     "deals": 4,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "B2C",
+    "stage": "Лидмагниты",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "B2C",
+    "stage": "Нет ответа",
+    "deals": 25,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "B2C",
     "stage": "Новая заявка",
-    "deals": 4,
+    "deals": 12,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "B2C",
+    "stage": "Перезвонить",
+    "deals": 6,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "B2C",
+    "stage": "Перезвонить позже",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "B2C",
     "stage": "Потенциал 01",
-    "deals": 49,
+    "deals": 907,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "B2C",
     "stage": "Сделка не заключена",
-    "deals": 3,
+    "deals": 9082,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Горячая воронка",
     "stage": "Взято в работу",
-    "deals": 1,
+    "deals": 3,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Горячая воронка",
+    "stage": "Качественная сделка",
+    "deals": 5,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Горячая воронка",
     "stage": "Некачественная сделка",
-    "deals": 41,
+    "deals": 263,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Горячая воронка",
     "stage": "Нет ответа",
-    "deals": 17,
+    "deals": 34,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Горячая воронка",
     "stage": "Перезвонить позже",
-    "deals": 5,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "\"Заморожен\" (Оказание услуг отложено)",
-    "deals": 15,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Blue team Stepik",
-    "deals": 8866,
+    "deals": 10,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -176,20 +225,6 @@
   },
   {
     "funnel": "Другое",
-    "stage": "Бесплатники",
-    "deals": 71,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "В проработке, нет ответа",
-    "deals": 69,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
     "stage": "В работе",
     "deals": 3,
     "paid_deals": 0,
@@ -197,36 +232,15 @@
   },
   {
     "funnel": "Другое",
-    "stage": "В2В отказ",
-    "deals": 15,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "В2С отказ",
-    "deals": 991,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
     "stage": "Вебинары",
-    "deals": 505,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Другое",
     "stage": "Взято в работу",
-    "deals": 829,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Возобновить В2С",
-    "deals": 39,
+    "deals": 811,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -239,43 +253,15 @@
   },
   {
     "funnel": "Другое",
-    "stage": "Входящие лиды (нет ответа)",
-    "deals": 2006,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
     "stage": "Выбор 03",
-    "deals": 14,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Готов к покупке",
-    "deals": 4,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Демо-курс",
-    "deals": 522,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Демо-курсы",
-    "deals": 21,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Другое",
     "stage": "Запущено оказание услуг",
-    "deals": 366,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -288,50 +274,8 @@
   },
   {
     "funnel": "Другое",
-    "stage": "Зимбабве",
-    "deals": 4151,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Зимбабве вебинар",
-    "deals": 758,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
     "stage": "КП на согласовании",
     "deals": 11,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Качественная сделка",
-    "deals": 5,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Качественный лид",
-    "deals": 25,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Колл-центр",
-    "deals": 470,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Лидмагниты",
-    "deals": 4,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -344,13 +288,6 @@
   },
   {
     "funnel": "Другое",
-    "stage": "Некачественная сделка",
-    "deals": 222,
-    "paid_deals": 1,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
     "stage": "Неквалифицированная заявка",
     "deals": 86,
     "paid_deals": 0,
@@ -358,22 +295,8 @@
   },
   {
     "funnel": "Другое",
-    "stage": "Нет ответа",
-    "deals": 286,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
     "stage": "Новая",
-    "deals": 33,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Новая заявка",
-    "deals": 8,
+    "deals": 21,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -386,20 +309,6 @@
   },
   {
     "funnel": "Другое",
-    "stage": "Ожидает старта",
-    "deals": 147,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Ожидает старта (асинхрон)",
-    "deals": 6,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
     "stage": "Отложенные заявки",
     "deals": 11,
     "paid_deals": 0,
@@ -407,21 +316,14 @@
   },
   {
     "funnel": "Другое",
-    "stage": "ПБХ",
-    "deals": 23304,
+    "stage": "Передача в ОП",
+    "deals": 5,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Другое",
     "stage": "Перезвонить",
-    "deals": 39,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Перезвонить позже",
     "deals": 6,
     "paid_deals": 0,
     "revenue": 0.0
@@ -435,29 +337,8 @@
   },
   {
     "funnel": "Другое",
-    "stage": "Получившие демо-доступ",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Постоплата",
-    "deals": 4,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
     "stage": "Потенциал 01",
-    "deals": 941,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Профессия: Реверс-инженер",
-    "deals": 18,
+    "deals": 15,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -470,36 +351,43 @@
   },
   {
     "funnel": "Другое",
+    "stage": "Сделка не заключена",
+    "deals": 102,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Другое",
+    "stage": "Сделка провалена",
+    "deals": 6,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Другое",
+    "stage": "Сделка успешна",
+    "deals": 12,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Другое",
     "stage": "Согласование КП",
-    "deals": 20,
+    "deals": 4,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Другое",
     "stage": "Согласование договора",
-    "deals": 15,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Старая база",
-    "deals": 1379,
+    "deals": 5,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Другое",
     "stage": "Счет выставлен",
-    "deals": 10,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "funnel": "Другое",
-    "stage": "Тесты\\квизы",
-    "deals": 180,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -511,44 +399,156 @@
     "revenue": 0.0
   },
   {
+    "funnel": "Карьерная консультация",
+    "stage": "Новая",
+    "deals": 12,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Карьерная консультация",
+    "stage": "Сделка провалена",
+    "deals": 5,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Карьерная консультация",
+    "stage": "Сделка успешна",
+    "deals": 7,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Реактивация",
+    "stage": "Blue team Stepik",
+    "deals": 8866,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Реактивация",
+    "stage": "В проработке, нет ответа",
+    "deals": 69,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Реактивация",
+    "stage": "В2В отказ",
+    "deals": 15,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Реактивация",
+    "stage": "В2С отказ",
+    "deals": 991,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
     "funnel": "Реактивация",
     "stage": "Вебинары",
-    "deals": 13,
+    "deals": 252,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Реактивация",
+    "stage": "Возобновить В2С",
+    "deals": 38,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Реактивация",
     "stage": "Входящие лиды (нет ответа)",
-    "deals": 6,
+    "deals": 2012,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Реактивация",
+    "stage": "Колл-центр",
+    "deals": 470,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Реактивация",
+    "stage": "Лидмагниты",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Реактивация",
     "stage": "Некачественный лид",
-    "deals": 12,
+    "deals": 4959,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Реактивация",
+    "stage": "Нет ответа",
+    "deals": 59,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Реактивация",
+    "stage": "ПБХ",
+    "deals": 23304,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Реактивация",
+    "stage": "Перезвонить",
+    "deals": 8,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Реактивация",
+    "stage": "Потенциал 01",
+    "deals": 6,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Реактивация",
+    "stage": "Старая база",
+    "deals": 1379,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Реактивация",
     "stage": "Тесты\\квизы",
-    "deals": 8,
+    "deals": 188,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Реактивация",
+    "stage": "Успешно возвращен в воронку",
+    "deals": 894,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Холодная воронка",
     "stage": "Бесплатники",
-    "deals": 123,
+    "deals": 194,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Холодная воронка",
     "stage": "Вебинары",
-    "deals": 124,
+    "deals": 353,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -562,35 +562,42 @@
   {
     "funnel": "Холодная воронка",
     "stage": "Качественный лид",
-    "deals": 1,
+    "deals": 26,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Холодная воронка",
     "stage": "Лидмагниты",
-    "deals": 6,
+    "deals": 8,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Холодная воронка",
     "stage": "Некачественный лид",
-    "deals": 148,
+    "deals": 2775,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Холодная воронка",
     "stage": "Нет ответа",
-    "deals": 93,
+    "deals": 278,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "funnel": "Холодная воронка",
     "stage": "Перезвонить",
-    "deals": 4,
+    "deals": 23,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "funnel": "Холодная воронка",
+    "stage": "Получившие демо-доступ",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   }

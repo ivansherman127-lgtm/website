@@ -9,6 +9,7 @@ import pandas as pd
 from bitrix_lead_quality import apply_notebook_lead_flags, coalesce_columns, drop_rows_excluded_funnels, in_work_series
 from bitrix_union_io import DEFAULT_BITRIX_UPD, DEFAULT_FL_RAW, load_bitrix_deals_union
 from revenue_variant3 import variant3_revenue_mask
+from utils import _n, _amt
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "reports" / "slices" / "qa"
@@ -38,23 +39,6 @@ RU_MONTHS = {
     11: "Ноябрь",
     12: "Декабрь",
 }
-
-
-def _n(v: object) -> str:
-    if v is None or pd.isna(v):
-        return ""
-    s = str(v).strip()
-    return "" if s.lower() in {"", "nan", "none", "null"} else s
-
-
-def _amt(v: object) -> float:
-    s = _n(v).replace(" ", "").replace("\xa0", "").replace(",", ".")
-    if not s:
-        return 0.0
-    try:
-        return float(s)
-    except ValueError:
-        return 0.0
 
 
 def _norm_person(v: object) -> str:

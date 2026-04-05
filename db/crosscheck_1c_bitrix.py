@@ -12,34 +12,13 @@ from typing import Optional
 
 import pandas as pd
 
+from utils import _n, _id, _amt
 
 ROOT = Path(__file__).resolve().parent.parent
 ONEC_PATH = ROOT / "sheets" / "1c.csv"
 BITRIX_PATH = ROOT / "sheets" / "bitrix_19.03.26"
 OUT_DIR = ROOT / "reports" / "slices" / "qa"
 CAMPAIGN_RE = re.compile(r"(атакующ\w*\s+январ\w*|attacking[_ ]?january)", re.IGNORECASE)
-
-
-def _n(v: object) -> str:
-    if v is None or pd.isna(v):
-        return ""
-    s = str(v).strip()
-    return "" if s.lower() in {"", "nan", "none", "null"} else s
-
-
-def _id(v: object) -> str:
-    s = _n(v)
-    return s.split(".", 1)[0] if re.fullmatch(r"\d+\.0+", s) else s
-
-
-def _amt(v: object) -> float:
-    s = _n(v).replace(" ", "").replace("\xa0", "").replace(",", ".")
-    if s == "":
-        return 0.0
-    try:
-        return float(s)
-    except ValueError:
-        return 0.0
 
 
 def _date(v: object) -> Optional[pd.Timestamp]:

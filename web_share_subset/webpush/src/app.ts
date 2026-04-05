@@ -72,6 +72,24 @@ function num(v: unknown): number {
   return 0;
 }
 
+function sumField(rows: Record<string, unknown>[], field: string): number {
+  return rows.reduce((a, x) => a + num(x[field]), 0);
+}
+
+function makeSimpleToggle(
+  selector: string,
+  attrName: string,
+  expandSet: Set<string>,
+  redraw: () => void,
+): void {
+  app.querySelectorAll<HTMLButtonElement>(selector).forEach((b) => (b.onclick = () => {
+    const k = b.getAttribute(attrName) || "";
+    if (!k) return;
+    if (expandSet.has(k)) expandSet.delete(k); else expandSet.add(k);
+    redraw();
+  }));
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -101,6 +119,10 @@ function isPercentColumn(col: string): boolean {
 function isCountColumn(col: string): boolean {
   const c = col.trim().toLowerCase();
   return (
+    c === "сделок_всего" ||
+    c === "сделок всего" ||
+    c === "новых с мероприятия" ||
+    c === "новых с проекта" ||
     c === "сделок_с_выручкой" ||
     c === "сделок с выручкой" ||
     c === "контактов_с_выручкой" ||
@@ -287,11 +309,18 @@ function filterRowsByDateRange(
   to: string,
 ): Record<string, unknown>[] {
   if (!dateCol || (!from && !to)) return rows;
+  // Normalize bounds to YYYY-MM-DD for comparison. from/to may be YYYY-MM or YYYY-MM-DD.
+  const normFrom = from.length === 7 ? from + "-01" : from;
+  const normTo = to.length === 7 ? to + "-31" : to;
   return rows.filter((r) => {
-    const v = String(r[dateCol] ?? "").slice(0, 7);
-    if (!v || v.length < 7) return true;
-    if (from && v < from) return false;
-    if (to && v > to) return false;
+    // Row values are stored as YYYY-MM (month granularity); compare against month portion
+    const raw = String(r[dateCol] ?? "");
+    if (!raw) return true;
+    // Prefer full date if available, else use YYYY-MM padded to end of month
+    const rowDate = raw.length >= 10 ? raw.slice(0, 10) : raw.length === 7 ? raw + "-15" : raw;
+    if (!rowDate || rowDate.length < 7) return true;
+    if (normFrom && rowDate < normFrom) return false;
+    if (normTo && rowDate > normTo) return false;
     return true;
   });
 }
@@ -361,15 +390,15 @@ function renderWeeklyBitrixExpandableTable(rows: Record<string, unknown>[], expa
     const totals: Record<string, unknown> = {
       "Неделя": week,
       "Воронка": "Всего",
-      "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
-      "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
-      "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
-      "Неизвестно": items.reduce((a, x) => a + num(x["Неизвестно"]), 0),
-      "Отказы": items.reduce((a, x) => a + num(x["Отказы"]), 0),
-      "В работе": items.reduce((a, x) => a + num(x["В работе"]), 0),
-      "Сделок_с_выручкой": items.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
-      "Выручка_сделки_недели": items.reduce((a, x) => a + num(x["Выручка_сделки_недели"]), 0),
-      "Выручка_получена_на_неделе": items.reduce((a, x) => a + num(x["Выручка_получена_на_неделе"]), 0),
+      "Лиды": sumField(items, "Лиды"),
+      "Квал": sumField(items, "Квал"),
+      "Неквал": sumField(items, "Неквал"),
+      "Неизвестно": sumField(items, "Неизвестно"),
+      "Отказы": sumField(items, "Отказы"),
+      "В работе": sumField(items, "В работе"),
+      "Сделок_с_выручкой": sumField(items, "Сделок_с_выручкой"),
+      "Выручка_сделки_недели": sumField(items, "Выручка_сделки_недели"),
+      "Выручка_получена_на_неделе": sumField(items, "Выручка_получена_на_неделе"),
     };
     const leads = num(totals["Лиды"]);
     const qual = num(totals["Квал"]);
@@ -453,15 +482,15 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
       "Неделя": week,
       "Кампания": "Всего",
       "ID кампании": "-",
-      "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
-      "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
-      "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
-      "Неизвестно": items.reduce((a, x) => a + num(x["Неизвестно"]), 0),
-      "Отказы": items.reduce((a, x) => a + num(x["Отказы"]), 0),
-      "Сделок_с_выручкой": items.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
-      "Ассоц_выручка": items.reduce((a, x) => a + num(x["Ассоц_выручка"]), 0),
-      "Расход, ₽": items.reduce((a, x) => a + num(x["Расход, ₽"]), 0),
-      "Прибыль": items.reduce((a, x) => a + num(x["Прибыль"]), 0),
+      "Лиды": sumField(items, "Лиды"),
+      "Квал": sumField(items, "Квал"),
+      "Неквал": sumField(items, "Неквал"),
+      "Неизвестно": sumField(items, "Неизвестно"),
+      "Отказы": sumField(items, "Отказы"),
+      "Сделок_с_выручкой": sumField(items, "Сделок_с_выручкой"),
+      "Ассоц_выручка": sumField(items, "Ассоц_выручка"),
+      "Расход, ₽": sumField(items, "Расход, ₽"),
+      "Прибыль": sumField(items, "Прибыль"),
     };
     const leads = num(totals["Лиды"]);
     const qual = num(totals["Квал"]);
@@ -499,7 +528,7 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
   `;
 }
 
-type TabKey = "assoc_builder" | "media" | "budget" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa" | "utm";
+type TabKey = "assoc_builder" | "email" | "yandex" | "budget" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa" | "utm";
 type ViewKey =
   | "assoc_dynamic"
   | "media_email"
@@ -533,12 +562,12 @@ type RenderOptions = {
 };
 
 const VIEW_META: Record<ViewKey, ViewMeta> = {
-  assoc_dynamic: { tab: "assoc_builder", label: "Конструктор", path: "/api/assoc-revenue", rowsLabel: "Групп", title: "Ассоциативная выручка (конструктор)" },
-  media_email: { tab: "media", label: "Имейл по месяцам", path: "data/email_hierarchy_by_send.json", rowsLabel: "Строк", title: "Рекламные медиумы" },
-  media_yandex: { tab: "media", label: "Yandex по кампаниям (без месяцев)", path: "data/global/yandex_projects_revenue_no_month.json", rowsLabel: "Кампаний", title: "Рекламные медиумы" },
-  media_yandex_month: { tab: "media", label: "Yandex по месяцам", path: "data/global/yandex_projects_revenue_by_month.json", rowsLabel: "Месяцев", title: "Рекламные медиумы" },
+  assoc_dynamic: { tab: "assoc_builder", label: "Ассоц. выручка", path: "/api/assoc-revenue", rowsLabel: "Групп", title: "Ассоциативная выручка" },
+  media_email: { tab: "email", label: "Имейл по месяцам", path: "data/email_hierarchy_by_send.json", rowsLabel: "Строк", title: "Email медиа" },
+  media_yandex: { tab: "yandex", label: "Yandex по кампаниям (без месяцев)", path: "data/global/yandex_projects_revenue_no_month.json", rowsLabel: "Кампаний", title: "Yandex медиа" },
+  media_yandex_month: { tab: "yandex", label: "Yandex по месяцам", path: "data/global/yandex_projects_revenue_by_month.json", rowsLabel: "Месяцев", title: "Yandex медиа" },
 
-  email_ops_summary: { tab: "media", label: "Email: база, рассылки, лиды, выручка", path: "data/email_operational_summary.json", rowsLabel: "Периодов", title: "Рекламные медиумы" },
+  email_ops_summary: { tab: "email", label: "Email: база, рассылки, лиды, выручка", path: "data/email_operational_summary.json", rowsLabel: "Периодов", title: "Email медиа" },
   budget_monthly: { tab: "budget", label: "Выручка / расход / прибыль по месяцам", path: "data/global/budget_monthly.json", rowsLabel: "Периодов", title: "Бюджет" },
   months_total: { tab: "months", label: "Bitrix по месяцам", path: "data/bitrix_month_total_full.json", rowsLabel: "Месяцев", title: "Отчеты по месяцам" },
   managers_sales_course: { tab: "managers", label: "Продажи по коду курса", path: "data/manager_sales_by_course.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
@@ -650,7 +679,7 @@ async function openMenu(menu: MenuMode, dealsIndex: DealsIndex, currentView?: Vi
     await openTableView("utm_constructor", dealsIndex);
     return;
   }
-  await openTableView(currentView && currentView !== "utm_constructor" ? currentView : "year_total", dealsIndex);
+  await openTableView(currentView && currentView !== "utm_constructor" ? currentView : "months_total", dealsIndex);
 }
 
 function managerFormulaNote(_view: ViewKey): string {
@@ -1117,14 +1146,14 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
     }
     const out: Record<string, unknown>[] = [];
     for (const [year, rowsInYear] of groups.entries()) {
-      const leads = rowsInYear.reduce((a, x) => a + num(x["Лиды"]), 0);
-      const qual = rowsInYear.reduce((a, x) => a + num(x["Квал"]), 0);
-      const unqual = rowsInYear.reduce((a, x) => a + num(x["Неквал"]), 0);
-      const unknown = rowsInYear.reduce((a, x) => a + num(x["Неизвестно"]), 0);
-      const refusal = rowsInYear.reduce((a, x) => a + num(x["Отказы"]), 0);
-      const inWork = rowsInYear.reduce((a, x) => a + num(x["В работе"]), 0);
-      const deals = rowsInYear.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0);
-      const revenue = rowsInYear.reduce((a, x) => a + num(x["Выручка"]), 0);
+      const leads = sumField(rowsInYear, "Лиды");
+      const qual = sumField(rowsInYear, "Квал");
+      const unqual = sumField(rowsInYear, "Неквал");
+      const unknown = sumField(rowsInYear, "Неизвестно");
+      const refusal = sumField(rowsInYear, "Отказы");
+      const inWork = sumField(rowsInYear, "В работе");
+      const deals = sumField(rowsInYear, "Сделок_с_выручкой");
+      const revenue = sumField(rowsInYear, "Выручка");
       const avgCheck = deals > 0 ? revenue / deals : 0;
 
       const acc: Record<string, unknown> = {
@@ -1161,7 +1190,12 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
     });
   }
   if (view === "assoc_dynamic") {
-    return regroupAssocEmailRows(clean);
+    const grouped = regroupAssocEmailRows(clean);
+    return grouped.map((r) => {
+      const totalDeals = num(r["Сделок_всего"]);
+      const dealsRev = num(r["Сделок_с_выручкой"]);
+      return { ...r, "Конверсия_сделок": totalDeals > 0 ? dealsRev / totalDeals : 0 };
+    });
   }
   if (view === "media_yandex") {
     const hasHierarchyRows = clean.some((r) => String(r["Level"] ?? "").trim() === "Project" || num(r["__yandex_project_detail"]) > 0);
@@ -1332,9 +1366,12 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const _now = new Date();
   const _toY = _now.getFullYear();
   const _toM = String(_now.getMonth() + 1).padStart(2, "0");
-  const _fromD = new Date(_now); _fromD.setMonth(_fromD.getMonth() - 11);
-  let dateFrom = options.initialDateFrom ?? `${_fromD.getFullYear()}-${String(_fromD.getMonth() + 1).padStart(2, "0")}`;
-  let dateTo = options.initialDateTo ?? `${_toY}-${_toM}`;
+  const _toD = String(_now.getDate()).padStart(2, "0");
+  const _fromD = new Date(_now); _fromD.setMonth(_fromD.getMonth() - 11); _fromD.setDate(1);
+  const _fromY = _fromD.getFullYear();
+  const _fromM = String(_fromD.getMonth() + 1).padStart(2, "0");
+  let dateFrom = options.initialDateFrom ?? `${_fromY}-${_fromM}-01`;
+  let dateTo = options.initialDateTo ?? `${_toY}-${_toM}-${_toD}`;
   let pnlMode: PnlMode = options.initialPnlMode ?? "cohort";
 
   writeUrlState(isUtmConstructor ? "utm" : "reports", view);
@@ -1388,7 +1425,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   if (view === "assoc_dynamic") {
     // Pre-populate so the column always appears in allCols even if the fetch fails
     for (const r of viewRows) {
-      if (num(r["__assoc_event_detail"]) === 0 && String(r["Мероприятие"] ?? "").trim()) {
+      if (num(r["__assoc_event_detail"]) === 0 && String(r["Проект"] ?? r["Мероприятие"] ?? "").trim()) {
         r["Новых с мероприятия"] = 0;
       }
     }
@@ -1402,7 +1439,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       }
       for (const r of viewRows) {
         if (num(r["__assoc_event_detail"]) === 0) {
-          const ev = String(r["Мероприятие"] ?? "").trim();
+          const ev = String(r["Проект"] ?? r["Мероприятие"] ?? "").trim();
           if (ev) r["Новых с мероприятия"] = ecMap.get(ev) ?? 0;
         }
       }
@@ -1435,7 +1472,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     const uniqueEvents = [...new Set(
       viewRows
         .filter((r) => num(r["__assoc_event_detail"]) === 0)
-        .map((r) => String(r["Мероприятие"] ?? "").trim())
+        .map((r) => String(r["Проект"] ?? r["Мероприятие"] ?? "").trim())
         .filter((ev) => ev !== "" && ev !== "Другое"),
     )];
     assocEvents.push(...uniqueEvents);
@@ -1505,6 +1542,13 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const draw = (): void => {
     cols = allCols.filter((c) => !isFlIdsColumn(c) && !isHiddenUiColumn(c));
     if (isBudgetHierarchy) cols = cols.filter((c) => c !== "month" && c !== "Level" && c !== "Расход, ₽" && c !== "Прибыль");
+    if (view === "assoc_dynamic") {
+      const ASSOC_METRIC_ORDER = ["Сделок_всего", "Сделок_с_выручкой", "Конверсия_сделок", "Выручка", "Средний_чек", "Контактов_в_пуле", "Новых с мероприятия"];
+      cols = cols.filter((c) => c !== "Контактов_с_выручкой");
+      const dimCols = cols.filter((c) => !ASSOC_METRIC_ORDER.includes(c));
+      const metCols = ASSOC_METRIC_ORDER.filter((c) => cols.includes(c));
+      cols = [...dimCols, ...metCols];
+    }
     if (sortCol && !cols.includes(sortCol)) sortCol = cols[0] || "";
 
     let data = [...viewRows];
@@ -1650,7 +1694,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           "Код курса": "-",
           "fl_IDs": managerItems.map((x) => String(x["fl_IDs"] ?? "").trim()).filter(Boolean).join(",").slice(0, 50000),
         };
-        for (const k of metricKeys) managerRow[k] = managerItems.reduce((a, x) => a + num(x[k]), 0);
+        for (const k of metricKeys) managerRow[k] = sumField(managerItems, k);
         managerRow["Конверсия в Квал"] = num(managerRow["Лиды"]) > 0 ? num(managerRow["Квал"]) / num(managerRow["Лиды"]) : 0;
         managerRow["Конверсия в Неквал"] = num(managerRow["Лиды"]) > 0 ? num(managerRow["Неквал"]) / num(managerRow["Лиды"]) : 0;
         managerRow["Конверсия в Отказ"] = num(managerRow["Лиды"]) > 0 ? num(managerRow["Отказы"]) / num(managerRow["Лиды"]) : 0;
@@ -1668,7 +1712,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
             "Код курса": code,
             "fl_IDs": items.map((x) => String(x["fl_IDs"] ?? "").trim()).filter(Boolean).join(",").slice(0, 50000),
           };
-          for (const k of metricKeys) codeRow[k] = items.reduce((a, x) => a + num(x[k]), 0);
+          for (const k of metricKeys) codeRow[k] = sumField(items, k);
           codeRow["Конверсия в Квал"] = num(codeRow["Лиды"]) > 0 ? num(codeRow["Квал"]) / num(codeRow["Лиды"]) : 0;
           codeRow["Конверсия в Неквал"] = num(codeRow["Лиды"]) > 0 ? num(codeRow["Неквал"]) / num(codeRow["Лиды"]) : 0;
           codeRow["Конверсия в Отказ"] = num(codeRow["Лиды"]) > 0 ? num(codeRow["Отказы"]) / num(codeRow["Лиды"]) : 0;
@@ -1702,15 +1746,15 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           "Код_курса_норм": "-",
           "__node": "funnel",
           "__funnel": funnel,
-          "Лиды": items.reduce((a, x) => a + num(x["Лиды"]), 0),
-          "Квал": items.reduce((a, x) => a + num(x["Квал"]), 0),
-          "Неквал": items.reduce((a, x) => a + num(x["Неквал"]), 0),
-          "Неизвестно": items.reduce((a, x) => a + num(x["Неизвестно"]), 0),
-          "Отказы": items.reduce((a, x) => a + num(x["Отказы"]), 0),
-          "В работе": items.reduce((a, x) => a + num(x["В работе"]), 0),
-          "Невалидные_лиды": items.reduce((a, x) => a + num(x["Невалидные_лиды"]), 0),
-          "Сделок_с_выручкой": items.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
-          "Выручка": items.reduce((a, x) => a + num(x["Выручка"]), 0),
+          "Лиды": sumField(items, "Лиды"),
+          "Квал": sumField(items, "Квал"),
+          "Неквал": sumField(items, "Неквал"),
+          "Неизвестно": sumField(items, "Неизвестно"),
+          "Отказы": sumField(items, "Отказы"),
+          "В работе": sumField(items, "В работе"),
+          "Невалидные_лиды": sumField(items, "Невалидные_лиды"),
+          "Сделок_с_выручкой": sumField(items, "Сделок_с_выручкой"),
+          "Выручка": sumField(items, "Выручка"),
         });
         rebuilt.push(fRow);
         const byMonth = new Map<string, Record<string, unknown>[]>();
@@ -1728,15 +1772,15 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
             "__node": "month",
             "__funnel": funnel,
             "__month": month,
-            "Лиды": mItems.reduce((a, x) => a + num(x["Лиды"]), 0),
-            "Квал": mItems.reduce((a, x) => a + num(x["Квал"]), 0),
-            "Неквал": mItems.reduce((a, x) => a + num(x["Неквал"]), 0),
-            "Неизвестно": mItems.reduce((a, x) => a + num(x["Неизвестно"]), 0),
-            "Отказы": mItems.reduce((a, x) => a + num(x["Отказы"]), 0),
-            "В работе": mItems.reduce((a, x) => a + num(x["В работе"]), 0),
-            "Невалидные_лиды": mItems.reduce((a, x) => a + num(x["Невалидные_лиды"]), 0),
-            "Сделок_с_выручкой": mItems.reduce((a, x) => a + num(x["Сделок_с_выручкой"]), 0),
-            "Выручка": mItems.reduce((a, x) => a + num(x["Выручка"]), 0),
+            "Лиды": sumField(mItems, "Лиды"),
+            "Квал": sumField(mItems, "Квал"),
+            "Неквал": sumField(mItems, "Неквал"),
+            "Неизвестно": sumField(mItems, "Неизвестно"),
+            "Отказы": sumField(mItems, "Отказы"),
+            "В работе": sumField(mItems, "В работе"),
+            "Невалидные_лиды": sumField(mItems, "Невалидные_лиды"),
+            "Сделок_с_выручкой": sumField(mItems, "Сделок_с_выручкой"),
+            "Выручка": sumField(mItems, "Выручка"),
           });
           rebuilt.push(mRow);
           rebuilt.push(...mItems);
@@ -1772,7 +1816,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       data = data.filter((r) =>
         num(r["__assoc_event_detail"]) > 0
           ? String(r["__assoc_event_ctx"] ?? "").trim() === assocEventTab
-          : String(r["Мероприятие"] ?? "").trim() === assocEventTab,
+          : String(r["Проект"] ?? r["Мероприятие"] ?? "").trim() === assocEventTab,
       );
     }
     // Иерархии строят порядок строк сами; глобальная сортировка ломает вложенные таблицы.
@@ -1988,7 +2032,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         isAssocEmailHierarchy && num(r["__assoc_email_other_group"]) > 0 && num(r["__assoc_email_has_details"]) > 0
           ? `<button class="assoc-email-expand-btn" data-ctx="${escapeHtml(assocCtxToken)}">${expandedAssocOtherRows.has(`assoc||${assocCtxToken}`) ? "−" : "+"}</button>`
           : "";
-      const assocEventCtx = String(r["__assoc_event_ctx"] ?? r["Мероприятие"] ?? "").trim();
+      const assocEventCtx = String(r["__assoc_event_ctx"] ?? r["Проект"] ?? r["Мероприятие"] ?? "").trim();
       const assocEventBtn =
         isAssocEventHierarchy && num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0
           ? `<button class="assoc-event-expand-btn" data-ctx="${escapeHtml(assocEventCtx)}">${expandedAssocEventRows.has(assocEventCtx) ? "−" : "+"}</button>`
@@ -2020,7 +2064,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
 
     const table = app.querySelector(".table-scroll table");
     if (!table) return;
+    const scrollBox = app.querySelector<HTMLElement>(".table-scroll");
+    const savedScrollTop = scrollBox?.scrollTop ?? 0;
+    const savedScrollLeft = scrollBox?.scrollLeft ?? 0;
     table.innerHTML = `<thead><tr>${th}</tr></thead><tbody>${body}</tbody>`;
+    if (scrollBox) { scrollBox.scrollTop = savedScrollTop; scrollBox.scrollLeft = savedScrollLeft; }
     app.querySelectorAll<HTMLButtonElement>(".pnl-btn").forEach((btn) => {
       btn.classList.toggle("active", btn.getAttribute("data-mode") === pnlMode);
     });
@@ -2105,12 +2153,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         input.select();
       };
     });
-    app.querySelectorAll<HTMLButtonElement>(".email-expand-btn").forEach((b) => (b.onclick = () => {
-      const k = b.getAttribute("data-month") || "";
-      if (!k) return;
-      if (expandedEmailMonths.has(k)) expandedEmailMonths.delete(k); else expandedEmailMonths.add(k);
-      draw();
-    }));
+    makeSimpleToggle(".email-expand-btn", "data-month", expandedEmailMonths, draw);
     app.querySelectorAll<HTMLButtonElement>(".email-other-expand-btn").forEach((b) => (b.onclick = () => {
       const m = b.getAttribute("data-month") || "";
       if (!m) return;
@@ -2160,18 +2203,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       if (expandedAssocOtherRows.has(k)) expandedAssocOtherRows.delete(k); else expandedAssocOtherRows.add(k);
       draw();
     }));
-    app.querySelectorAll<HTMLButtonElement>(".assoc-event-expand-btn").forEach((b) => (b.onclick = () => {
-      const ctx = b.getAttribute("data-ctx") || "";
-      if (!ctx) return;
-      if (expandedAssocEventRows.has(ctx)) expandedAssocEventRows.delete(ctx); else expandedAssocEventRows.add(ctx);
-      draw();
-    }));
-    app.querySelectorAll<HTMLButtonElement>(".assoc-yandex-expand-btn").forEach((b) => (b.onclick = () => {
-      const ctx = b.getAttribute("data-ctx") || "";
-      if (!ctx) return;
-      if (expandedAssocYandexRows.has(ctx)) expandedAssocYandexRows.delete(ctx); else expandedAssocYandexRows.add(ctx);
-      draw();
-    }));
+    makeSimpleToggle(".assoc-event-expand-btn", "data-ctx", expandedAssocEventRows, draw);
+    makeSimpleToggle(".assoc-yandex-expand-btn", "data-ctx", expandedAssocYandexRows, draw);
     app.querySelectorAll<HTMLButtonElement>(".yd-project-expand-btn").forEach((b) => (b.onclick = () => {
       const ctx = b.getAttribute("data-ctx") || "";
       if (!ctx) return;
@@ -2179,12 +2212,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       if (expandedYandexProjectRows.has(key)) expandedYandexProjectRows.delete(key); else expandedYandexProjectRows.add(key);
       draw();
     }));
-    app.querySelectorAll<HTMLButtonElement>(".budget-expand-btn").forEach((b) => (b.onclick = () => {
-      const pm = b.getAttribute("data-paymonth") || "";
-      if (!pm) return;
-      if (expandedBudget.has(pm)) expandedBudget.delete(pm); else expandedBudget.add(pm);
-      draw();
-    }));
+    makeSimpleToggle(".budget-expand-btn", "data-paymonth", expandedBudget, draw);
 
     const expandAllBtn = app.querySelector<HTMLButtonElement>(".expand-all-toggle-btn");
     if (expandAllBtn && showCtrl) {
@@ -2214,7 +2242,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           return keys.length > 0 && keys.every((k) => expandedAssocOtherRows.has(k));
         }
         if (isAssocEventHierarchy) {
-          const keys = [...new Set(data.filter((r) => num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0).map((r) => String(r["__assoc_event_ctx"] ?? r["Мероприятие"] ?? "").trim()).filter(Boolean))];
+          const keys = [...new Set(data.filter((r) => num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0).map((r) => String(r["__assoc_event_ctx"] ?? r["Проект"] ?? r["Мероприятие"] ?? "").trim()).filter(Boolean))];
           return keys.length > 0 && keys.every((k) => expandedAssocEventRows.has(k));
         }
         if (isAssocYandexHierarchy) {
@@ -2256,7 +2284,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           const keys = [...new Set(viewRows.filter((r) => num(r["__assoc_email_other_group"]) > 0 && num(r["__assoc_email_has_details"]) > 0).map((r) => `assoc||${String(r["__assoc_email_ctx"] ?? "__root__")}`))];
           keys.forEach((k) => expand ? expandedAssocOtherRows.add(k) : expandedAssocOtherRows.delete(k));
         } else if (isAssocEventHierarchy) {
-          const keys = [...new Set(viewRows.filter((r) => num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0).map((r) => String(r["__assoc_event_ctx"] ?? r["Мероприятие"] ?? "").trim()).filter(Boolean))];
+          const keys = [...new Set(viewRows.filter((r) => num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0).map((r) => String(r["__assoc_event_ctx"] ?? r["Проект"] ?? r["Мероприятие"] ?? "").trim()).filter(Boolean))];
           keys.forEach((k) => expand ? expandedAssocEventRows.add(k) : expandedAssocEventRows.delete(k));
         } else if (isAssocYandexHierarchy) {
           const keys = [...new Set(viewRows.filter((r) => num(r["__assoc_yandex_detail"]) === 0 && num(r["__assoc_yandex_has_details"]) > 0).map((r) => String(r["__assoc_yandex_ctx"] ?? r["Yandex кампания"] ?? "").trim()).filter(Boolean))];
@@ -2297,28 +2325,30 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     </aside>
     <main class="main-content">
     <header><h1>${escapeHtml(meta.title)}</h1><p class="sub">${escapeHtml(resolvedPath)} · ${viewRows.length} строк</p></header>
-    ${isUtmConstructor ? "" : `<div class="kpi-grid"><div class="kpi"><div class="label">${escapeHtml(meta.rowsLabel)}</div><div class="value">${viewRows.length}</div></div><div class="kpi"><div class="label">Сделок с выручкой</div><div class="value">${deals.toLocaleString("ru-RU")}</div></div><div class="kpi"><div class="label">Выручка</div><div class="value">${formatRub(totalRevenue)}</div></div></div>`}
     ${managerFormulaNote(view)}
     <div class="toolbar">
       ${isUtmConstructor ? "" : `<div class="tabs-row top-tabs">
-        <button class="tab-btn ${tab === "year" ? "active" : ""}" data-tab="year">Отчет за год</button>
-        <button class="tab-btn ${tab === "assoc_builder" ? "active" : ""}" data-tab="assoc_builder">Ассоц. выручка</button>
-        <button class="tab-btn ${tab === "media" ? "active" : ""}" data-tab="media">Рекламные медиумы</button>
-        <button class="tab-btn ${tab === "budget" ? "active" : ""}" data-tab="budget">Бюджет</button>
         <button class="tab-btn ${tab === "months" ? "active" : ""}" data-tab="months">По месяцам</button>
+        <button class="tab-btn ${tab === "assoc_builder" ? "active" : ""}" data-tab="assoc_builder">Ассоц. выручка</button>
+        <button class="tab-btn ${tab === "email" ? "active" : ""}" data-tab="email">Email</button>
+        <button class="tab-btn ${tab === "yandex" ? "active" : ""}" data-tab="yandex">Yandex</button>
+        <button class="tab-btn ${tab === "budget" ? "active" : ""}" data-tab="budget">Бюджет</button>
         <button class="tab-btn ${tab === "managers" ? "active" : ""}" data-tab="managers">По менеджерам</button>
         <button class="tab-btn ${tab === "funnels" ? "active" : ""}" data-tab="funnels">По воронкам</button>
         <button class="tab-btn ${tab === "contacts" ? "active" : ""}" data-tab="contacts">Уникальные контакты</button>
         <button class="tab-btn ${tab === "qa" ? "active" : ""}" data-tab="qa">Контроль качества</button>
+        <button class="tab-btn ${tab === "year" ? "active" : ""}" data-tab="year">Отчет за год</button>
       </div>
-      <div class="tabs-row sub-tabs">
+      ${tabViews.length > 1
+        ? `<div class="tabs-row sub-tabs">
         ${tabViews
           .map(
             (v) =>
               `<button class="tab-btn ${v === view ? "active" : ""}" data-view="${v}">${escapeHtml(VIEW_META[v].label)}</button>`,
           )
           .join("")}
-      </div>`}
+      </div>`
+        : ""}`}
       ${
         view === "assoc_dynamic" && assocEvents.length > 0
           ? `<div class="tabs-row event-tabs">${assocEvents.map((ev) => `<button class="tab-btn${ev === assocEventTab ? " active" : ""}" data-event="${escapeHtml(ev)}">${escapeHtml(ev)}</button>`).join("")}</div>`
@@ -2338,8 +2368,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       ${
         hasDateWindowControl
           ? `<span class="date-range-controls">
-              <label>С: <input type="month" class="date-from-input" value="${dateFrom}" /></label>
-              <label>По: <input type="month" class="date-to-input" value="${dateTo}" /></label>
+              <label>С: <input type="date" class="date-from-input" value="${dateFrom}" /></label>
+              <label>По: <input type="date" class="date-to-input" value="${dateTo}" /></label>
               ${
                 hasPnlToggle
                   ? `<span class="pnl-toggle">
@@ -3257,7 +3287,9 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
           if (!week) return;
           if (expandedWeeks.has(week)) expandedWeeks.delete(week);
           else expandedWeeks.add(week);
+          const savedY = window.scrollY;
           drawDashboard();
+          requestAnimationFrame(() => window.scrollTo(0, savedY));
         };
       });
 
@@ -3267,7 +3299,9 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
           const weeks = [...new Set(bitrixWeekFunnel.map((r) => String(r["Неделя"] ?? "").trim()).filter(Boolean))];
           const allOpen = weeks.length > 0 && weeks.every((w) => expandedWeeks.has(w));
           weeks.forEach((w) => allOpen ? expandedWeeks.delete(w) : expandedWeeks.add(w));
+          const savedY = window.scrollY;
           drawDashboard();
+          requestAnimationFrame(() => window.scrollTo(0, savedY));
         };
       }
     }
@@ -3280,7 +3314,9 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
           if (!week) return;
           if (expandedYandexWeeks.has(week)) expandedYandexWeeks.delete(week);
           else expandedYandexWeeks.add(week);
+          const savedY = window.scrollY;
           drawDashboard();
+          requestAnimationFrame(() => window.scrollTo(0, savedY));
         };
       });
 
@@ -3290,7 +3326,9 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
           const weeks = [...new Set(yandexWeekFiltered.map((r) => String(r["Неделя"] ?? "").trim()).filter(Boolean))];
           const allOpen = weeks.length > 0 && weeks.every((w) => expandedYandexWeeks.has(w));
           weeks.forEach((w) => allOpen ? expandedYandexWeeks.delete(w) : expandedYandexWeeks.add(w));
+          const savedY = window.scrollY;
           drawDashboard();
+          requestAnimationFrame(() => window.scrollTo(0, savedY));
         };
       }
     }

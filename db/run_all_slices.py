@@ -19,6 +19,7 @@ from bitrix_union_io import dedup_bitrix_deals_by_highest_amount, load_bitrix_de
 from conn import get_engine, ensure_schema
 from event_classifier import classify_event_from_row, is_attacking_january, normalize_course_code
 from revenue_variant3 import variant3_revenue_mask
+from utils import _n, _id, _amt, _month
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -33,18 +34,6 @@ YANDEX_CSV = ROOT / "yandex.csv"
 SENDSAY_CSV = ROOT / "sheets" / "mass_email_good.csv"
 RAW_BITRIX_TABLE = "raw_bitrix_deals"
 RAW_BATCH_TABLE = "raw_source_batches"
-
-
-def _n(v: object) -> str:
-    if v is None or pd.isna(v):
-        return ""
-    s = str(v).strip()
-    return "" if s.lower() in {"", "nan", "none", "null"} else s
-
-
-def _id(v: object) -> str:
-    s = _n(v)
-    return s.split(".", 1)[0] if re.fullmatch(r"\d+\.0+", s) else s
 
 
 def _table_exists(conn, table: str) -> bool:
@@ -137,19 +126,6 @@ def load_bitrix_deals_db_first(engine) -> tuple[pd.DataFrame, str]:
     )
     print(f"Backfilled {RAW_BITRIX_TABLE}: {rows} rows from CSV union", flush=True)
     return union, "csv_union_auto_backfill"
-
-
-def _amt(v: object) -> float:
-    s = _n(v).replace(" ", "").replace("\xa0", "").replace(",", ".")
-    try:
-        return float(s) if s else 0.0
-    except ValueError:
-        return 0.0
-
-
-def _month(v: object) -> str:
-    dt = pd.to_datetime(v, dayfirst=True, errors="coerce")
-    return dt.strftime("%Y-%m") if pd.notna(dt) else ""
 
 
 def _normalize_yandex_month(v: object) -> str:

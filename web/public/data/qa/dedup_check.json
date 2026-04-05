@@ -1,7 +1,7 @@
 [
   {
-    "rows_in_mart": 68726,
-    "distinct_ids": 68726,
+    "rows_in_mart": 61136,
+    "distinct_ids": 61136,
     "duplicate_rows": 0
   }
 ]

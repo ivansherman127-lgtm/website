@@ -77,8 +77,7 @@ export async function rebuildYandexMarts(db: D1Database): Promise<{
 }> {
   await db.prepare("DELETE FROM mart_yandex_leads_raw").run();
   await db.prepare("DELETE FROM mart_yandex_leads_dedup").run();
-  await db.prepare("DELETE FROM mart_yandex_revenue_projects_raw").run();
-  await db.prepare("DELETE FROM mart_yandex_revenue_projects_dedup").run();
+  await db.prepare("DELETE FROM mart_yandex_revenue_projects").run();
 
   const martRes = await db
     .prepare(
@@ -297,15 +296,31 @@ export async function rebuildYandexMarts(db: D1Database): Promise<{
       spendByProj.set(pk, (spendByProj.get(pk) ?? 0) + v.yandex_spend);
     }
 
+    // Build dedup-per-project map so we can merge in a single INSERT pass below.
+    const dedupProj = new Map<string, { leads: Set<string>; paid_deals_dedup: number; revenue_dedup: number }>();
+    for (const d of dedupList) {
+      const pk = `${d.project_name}\u0000${d.yandex_month}`;
+      let g = dedupProj.get(pk);
+      if (!g) {
+        g = { leads: new Set(), paid_deals_dedup: 0, revenue_dedup: 0 };
+        dedupProj.set(pk, g);
+      }
+      g.leads.add(d.lead_key);
+      g.paid_deals_dedup += d.paid_deals;
+      g.revenue_dedup += d.revenue;
+    }
+
     const insProj = db.prepare(
-      `INSERT INTO mart_yandex_revenue_projects_raw (
-        project_name, yandex_month, leads_raw, deals_raw, paid_deals_raw, revenue_raw, spend
-      ) VALUES (?,?,?,?,?,?,?)`,
+      `INSERT INTO mart_yandex_revenue_projects (
+        project_name, yandex_month, leads_raw, deals_raw, paid_deals_raw, revenue_raw, spend,
+        leads_dedup, paid_deals_dedup, revenue_dedup
+      ) VALUES (?,?,?,?,?,?,?,?,?,?)`,
     );
     const stmts: D1PreparedStatement[] = [];
     for (const [pk, pm] of projMetrics) {
       const [project_name, yandex_month] = pk.split("\u0000");
       const spend = spendByProj.get(pk) ?? 0;
+      const dup = dedupProj.get(pk);
       stmts.push(
         insProj.bind(
           project_name,
@@ -315,44 +330,15 @@ export async function rebuildYandexMarts(db: D1Database): Promise<{
           pm.paid_deals_raw,
           pm.revenue_raw,
           spend,
+          dup?.leads.size ?? null,
+          dup?.paid_deals_dedup ?? null,
+          dup?.revenue_dedup ?? null,
         ),
       );
     }
     for (const batch of chunks(stmts, 80)) {
       await db.batch(batch);
     }
-  }
-
-  const dedupProj = new Map<string, { leads: Set<string>; paid_deals_dedup: number; revenue_dedup: number }>();
-  for (const d of dedupList) {
-    const pk = `${d.project_name}\u0000${d.yandex_month}`;
-    let g = dedupProj.get(pk);
-    if (!g) {
-      g = { leads: new Set(), paid_deals_dedup: 0, revenue_dedup: 0 };
-      dedupProj.set(pk, g);
-    }
-    g.leads.add(d.lead_key);
-    g.paid_deals_dedup += d.paid_deals;
-    g.revenue_dedup += d.revenue;
-  }
-  const insProjD = db.prepare(
-    `INSERT INTO mart_yandex_revenue_projects_dedup (
-      project_name, yandex_month, leads_dedup, paid_deals_dedup, revenue_dedup
-    ) VALUES (?,?,?,?,?)`,
-  );
-  for (const batch of chunks([...dedupProj.entries()], 80)) {
-    await db.batch(
-      batch.map(([pk, g]) => {
-        const [project_name, yandex_month] = pk.split("\u0000");
-        return insProjD.bind(
-          project_name,
-          yandex_month,
-          g.leads.size,
-          g.paid_deals_dedup,
-          g.revenue_dedup,
-        );
-      }),
-    );
   }
 
   return { raw_rows: rawDeduped.length, dedup_rows: dedupList.length };

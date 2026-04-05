@@ -830,7 +830,7 @@ def main() -> None:
     p.add_argument(
         "--wrangler-config",
         type=Path,
-        default=ROOT / "web" / "wrangler.toml",
+        default=ROOT / "wrangler.toml",
         help="wrangler.toml with [[d1_databases]]",
     )
     p.add_argument(

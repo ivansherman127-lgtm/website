@@ -14,26 +14,7 @@ import pandas as pd
 
 from bitrix_lead_quality import drop_rows_excluded_funnels
 from revenue_variant3 import variant3_revenue_mask
-
-
-def _n(v: object) -> str:
-    if v is None or pd.isna(v):
-        return ""
-    s = str(v).strip()
-    return "" if s.lower() in {"", "nan", "none", "null"} else s
-
-
-def _id(v: object) -> str:
-    s = _n(v)
-    return s.split(".", 1)[0] if re.fullmatch(r"\d+\.0+", s) else s
-
-
-def _amt(v: object) -> float:
-    s = _n(v).replace(" ", "").replace("\xa0", "").replace(",", ".")
-    try:
-        return float(s) if s else 0.0
-    except ValueError:
-        return 0.0
+from utils import _n, _id, _amt
 
 
 def _exclude_spec_funnels(df: pd.DataFrame) -> pd.DataFrame:

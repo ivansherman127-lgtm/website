@@ -10,24 +10,11 @@ from sqlalchemy import text
 from bitrix_lead_quality import drop_rows_excluded_funnels
 from bitrix_union_io import dedup_bitrix_deals_by_highest_amount, load_bitrix_deals_union
 from conn import ensure_schema, get_engine
+from utils import _n, _id
 
 RAW_TABLE = "raw_bitrix_deals"
 BATCH_TABLE = "raw_source_batches"
 SOURCE_REF = "bitrix_19.03.26.csv + bitrix_60_days_03.04.2026.csv"
-
-
-def _n(v: object) -> str:
-    if v is None or pd.isna(v):
-        return ""
-    s = str(v).strip()
-    return "" if s.lower() in {"", "nan", "none", "null"} else s
-
-
-def _id(v: object) -> str:
-    s = _n(v)
-    if s.endswith(".0") and s.replace(".0", "").isdigit():
-        return s.split(".", 1)[0]
-    return s
 
 
 def _load_union() -> pd.DataFrame:
