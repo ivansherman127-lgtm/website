@@ -331,7 +331,7 @@ function makeCacheKey(params: {
   toMonth: string | null;
 }): string {
   const { dims, cohort, pnlMode, fromMonth, toMonth } = params;
-  return `v11|dims=${dims.join(",")}|cohort=${cohort}|pnlmode=${pnlMode}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
+  return `v12|dims=${dims.join(",")}|cohort=${cohort}|pnlmode=${pnlMode}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
 }
 
 export async function onRequestGet(context: {
@@ -783,16 +783,14 @@ export async function onRequestGet(context: {
         const constituentEvent = String(r.constituent_event ?? "").trim() || "Другое";
         if (!parentEvent) continue;
         const dealsTotal = Number(r.deals_total ?? 0);
-        const contactsInPool = Number(r.contacts_in_pool ?? 0);
         const paidDeals = Number(r.paid_deals ?? dealsTotal);
-        const contactsWithRevenue = Number(r.contacts_with_revenue ?? contactsInPool);
         const revenue = Number(r.revenue ?? 0);
         const child: Record<string, unknown> = {
           [specs[0].label]: constituentEvent === parentEvent ? `> Прямо: ${constituentEvent}` : `> ${constituentEvent}`,
-          "Сделок_всего": dealsTotal,
-          "Контактов_в_пуле": contactsInPool,
+          // Сделок_всего and Контактов_в_пуле are intentionally omitted: the breakdown SQL only
+          // joins revenue deals, so these values would equal Сделок_с_выручкой and misleadingly
+          // not sum to the parent's full-pool totals. Leave them empty (renders as blank cell).
           "Сделок_с_выручкой": paidDeals,
-          "Контактов_с_выручкой": contactsWithRevenue,
           "Выручка": revenue,
           "Средний_чек": paidDeals > 0 ? revenue / paidDeals : 0,
           "__assoc_event_detail": 1,
