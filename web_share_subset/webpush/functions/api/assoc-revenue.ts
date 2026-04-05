@@ -331,7 +331,7 @@ function makeCacheKey(params: {
   toMonth: string | null;
 }): string {
   const { dims, cohort, pnlMode, fromMonth, toMonth } = params;
-  return `v10|dims=${dims.join(",")}|cohort=${cohort}|pnlmode=${pnlMode}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
+  return `v11|dims=${dims.join(",")}|cohort=${cohort}|pnlmode=${pnlMode}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
 }
 
 export async function onRequestGet(context: {
@@ -730,7 +730,7 @@ export async function onRequestGet(context: {
           ${hasContactsUid ? `LEFT JOIN stg_contacts_uid cu ON cu.contact_id = sc.contact_id` : ``}
           WHERE sc.contact_id <> ''
         ),
-        paid_deals AS (
+        event_paid_deals AS (
           SELECT
             ${hasContactsUid ? `COALESCE(cu.contact_uid, pd.contact_id)` : `pd.contact_id`} AS contact_key,
             pd.revenue,
@@ -761,13 +761,13 @@ export async function onRequestGet(context: {
         constituent_totals AS (
           SELECT
             cp.parent_event AS parent_event,
-            pd.constituent_event AS constituent_event,
+            epd.constituent_event AS constituent_event,
             COUNT(*) AS deals_total,
             COUNT(DISTINCT cp.contact_key) AS contacts_in_pool,
-            COALESCE(SUM(pd.revenue), 0) AS revenue
+            COALESCE(SUM(epd.revenue), 0) AS revenue
           FROM contact_pool cp
-          INNER JOIN paid_deals pd ON pd.contact_key = cp.contact_key
-          GROUP BY cp.parent_event, pd.constituent_event
+          INNER JOIN event_paid_deals epd ON epd.contact_key = cp.contact_key
+          GROUP BY cp.parent_event, epd.constituent_event
         )
         SELECT
           parent_event,
