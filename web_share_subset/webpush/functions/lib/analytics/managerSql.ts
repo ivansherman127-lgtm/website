@@ -107,7 +107,7 @@ export function buildManagerBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs)
   }
   return `WITH base AS (
          SELECT
-           'Unassigned' AS manager,
+           COALESCE(NULLIF(trim(m."Ответственный"), ''), 'Не указан') AS manager,
            m.month,
            ${monthLabel} AS month_label,
            COALESCE(NULLIF(trim(m.course_code_norm), ''), '—') AS course_code,
@@ -115,12 +115,12 @@ export function buildManagerBaseSql(hasRawP01: boolean, exprs: ManagerBaseExprs)
            COALESCE(m."ID", '') AS deal_id,
            COALESCE(m.revenue_amount, 0) AS revenue_amount,
            1 AS is_lead,
-           0 AS is_qual,
-           0 AS is_unqual,
-           0 AS is_refusal,
-           0 AS is_invalid,
-           0 AS is_in_work,
-           0 AS is_potential,
+           ${exprs.qual} AS is_qual,
+           ${exprs.unqual} AS is_unqual,
+           ${exprs.refusal} AS is_refusal,
+           ${exprs.invalidExpr} AS is_invalid,
+           ${exprs.inWork} AS is_in_work,
+           ${exprs.potential} AS is_potential,
            CASE WHEN COALESCE(m.is_revenue_variant3, 0) = 1 THEN 1 ELSE 0 END AS is_revenue
          FROM mart_deals_enriched m
        )`;
@@ -389,7 +389,7 @@ export function buildManagerPnlBaseSql(hasRawP01: boolean, exprs: ManagerBaseExp
   }
   return `WITH source AS (
          SELECT
-           'Unassigned' AS manager,
+           COALESCE(NULLIF(trim(m."Ответственный"), ''), 'Не указан') AS manager,
            COALESCE(m.month, '') AS create_month,
            COALESCE(m.month, '') AS modify_month,
            ${PAY_MONTH_OF_M} AS pay_month,

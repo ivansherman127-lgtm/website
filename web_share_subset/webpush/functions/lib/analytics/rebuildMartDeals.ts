@@ -17,6 +17,7 @@ function chunks<T>(arr: T[], size: number): T[][] {
 
 function buildMartRow(s: StgDealAnalytics) {
   const cls = classifyEventFromRow(rowForClassifier(s));
+  const responsible = (s.responsible ?? "").trim();
   let courseRaw = (s.code_site || "").trim();
   if (!courseRaw) courseRaw = (s.code_course || "").trim();
   if (!courseRaw) courseRaw = extractCourseCodeFromText(s.deal_name);
@@ -62,6 +63,7 @@ function buildMartRow(s: StgDealAnalytics) {
     classification_confidence: cls.confidence,
     is_attacking_january: aj,
     invalid_type_lead: s.invalid_type_lead ?? "",
+    responsible,
   };
 }
 
@@ -83,8 +85,8 @@ export async function rebuildMartDealsFromStaging(db: D1Database): Promise<{ row
       "UTM Source", "UTM Medium", "UTM Campaign", "UTM Content",
       "Название сделки", "Код_курса_сайт", "Код курса",
       course_code_norm, event_class, classification_source, classification_pattern, classification_confidence,
-      is_attacking_january, "Типы некачественного лида"
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,  
+      is_attacking_january, "Типы некачественного лида", "Ответственный"
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,  
   );
 
   for (const batch of chunks(rows, 80)) {
@@ -119,6 +121,7 @@ export async function rebuildMartDealsFromStaging(db: D1Database): Promise<{ row
           r.classification_confidence,
           r.is_attacking_january,
           r.invalid_type_lead,
+          r.responsible,
         ),
       );
     }

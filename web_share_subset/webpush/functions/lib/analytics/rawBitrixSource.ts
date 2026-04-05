@@ -84,6 +84,7 @@ function normalizeRawRow(row: Record<string, unknown>, keySet: RawBitrixKeySet):
     source_inquiry: textCell(row["Источник обращения"]),
     invalid_type_lead:
       textCell(row["Типы некачественного лида"]) || textCell(row["Типы некачественных лидов"]),
+    responsible: textCell(row["Ответственный"]),
   };
 }
 
