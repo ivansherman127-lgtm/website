@@ -102,7 +102,12 @@ function parsePnlMode(raw: string | null): PnlMode {
 
 function isIsoMonth(raw: string | null): boolean {
   if (!raw) return false;
-  return /^\d{4}-\d{2}$/.test(raw);
+  return /^\d{4}-\d{2}(-\d{2})?$/.test(raw);
+}
+
+/** Normalise a YYYY-MM or YYYY-MM-DD string to YYYY-MM. */
+function toIsoMonth(raw: string): string {
+  return raw.slice(0, 7);
 }
 
 type CacheRow = {
@@ -350,15 +355,17 @@ export async function onRequestGet(context: {
 
   const cohort = parseCohort(url.searchParams.get("cohort"));
   const pnlMode = parsePnlMode(url.searchParams.get("pnlmode"));
-  const fromMonth = url.searchParams.get("from");
-  const toMonth = url.searchParams.get("to");
+  const fromMonthRaw = url.searchParams.get("from");
+  const toMonthRaw = url.searchParams.get("to");
   const forceRecalc = /^(1|true|yes)$/i.test((url.searchParams.get("recalc") || "").trim());
-  if (fromMonth && !isIsoMonth(fromMonth)) {
+  if (fromMonthRaw && !isIsoMonth(fromMonthRaw)) {
     return json(400, { ok: false, error: "invalid_from", message: "from must be YYYY-MM" });
   }
-  if (toMonth && !isIsoMonth(toMonth)) {
+  if (toMonthRaw && !isIsoMonth(toMonthRaw)) {
     return json(400, { ok: false, error: "invalid_to", message: "to must be YYYY-MM" });
   }
+  const fromMonth = fromMonthRaw ? toIsoMonth(fromMonthRaw) : null;
+  const toMonth = toMonthRaw ? toIsoMonth(toMonthRaw) : null;
 
   const table = cohort === "attacking_january" ? "mart_attacking_january_cohort_deals" : "mart_deals_enriched";
   const specs = dims.map((d) => DIMENSIONS[d]);
