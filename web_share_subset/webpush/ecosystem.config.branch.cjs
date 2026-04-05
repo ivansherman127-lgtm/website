@@ -33,7 +33,7 @@ module.exports = {
       kill_timeout: 5000,
       env: {
         NODE_ENV: "production",
-        PORT: "3001",
+        PORT: "3010",
         UTM_DB_PATH: process.env.UTM_DB_PATH || path.join(__dirname, "..", "..", "utm.db"),
         DIST_DIR: process.env.DIST_DIR || path.join(__dirname, "dist-utm"),
         UTM_PASSWORD: serverSecrets.UTM_PASSWORD || process.env.UTM_PASSWORD || "",
