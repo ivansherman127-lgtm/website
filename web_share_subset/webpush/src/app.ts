@@ -305,11 +305,18 @@ function filterRowsByDateRange(
   to: string,
 ): Record<string, unknown>[] {
   if (!dateCol || (!from && !to)) return rows;
+  // Normalize bounds to YYYY-MM-DD for comparison. from/to may be YYYY-MM or YYYY-MM-DD.
+  const normFrom = from.length === 7 ? from + "-01" : from;
+  const normTo = to.length === 7 ? to + "-31" : to;
   return rows.filter((r) => {
-    const v = String(r[dateCol] ?? "").slice(0, 7);
-    if (!v || v.length < 7) return true;
-    if (from && v < from) return false;
-    if (to && v > to) return false;
+    // Row values are stored as YYYY-MM (month granularity); compare against month portion
+    const raw = String(r[dateCol] ?? "");
+    if (!raw) return true;
+    // Prefer full date if available, else use YYYY-MM padded to end of month
+    const rowDate = raw.length >= 10 ? raw.slice(0, 10) : raw.length === 7 ? raw + "-15" : raw;
+    if (!rowDate || rowDate.length < 7) return true;
+    if (normFrom && rowDate < normFrom) return false;
+    if (normTo && rowDate > normTo) return false;
     return true;
   });
 }
@@ -1350,9 +1357,12 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const _now = new Date();
   const _toY = _now.getFullYear();
   const _toM = String(_now.getMonth() + 1).padStart(2, "0");
-  const _fromD = new Date(_now); _fromD.setMonth(_fromD.getMonth() - 11);
-  let dateFrom = options.initialDateFrom ?? `${_fromD.getFullYear()}-${String(_fromD.getMonth() + 1).padStart(2, "0")}`;
-  let dateTo = options.initialDateTo ?? `${_toY}-${_toM}`;
+  const _toD = String(_now.getDate()).padStart(2, "0");
+  const _fromD = new Date(_now); _fromD.setMonth(_fromD.getMonth() - 11); _fromD.setDate(1);
+  const _fromY = _fromD.getFullYear();
+  const _fromM = String(_fromD.getMonth() + 1).padStart(2, "0");
+  let dateFrom = options.initialDateFrom ?? `${_fromY}-${_fromM}-01`;
+  let dateTo = options.initialDateTo ?? `${_toY}-${_toM}-${_toD}`;
   let pnlMode: PnlMode = options.initialPnlMode ?? "cohort";
 
   writeUrlState(isUtmConstructor ? "utm" : "reports", view);
@@ -2336,8 +2346,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       ${
         hasDateWindowControl
           ? `<span class="date-range-controls">
-              <label>С: <input type="month" class="date-from-input" value="${dateFrom}" /></label>
-              <label>По: <input type="month" class="date-to-input" value="${dateTo}" /></label>
+              <label>С: <input type="date" class="date-from-input" value="${dateFrom}" /></label>
+              <label>По: <input type="date" class="date-to-input" value="${dateTo}" /></label>
               ${
                 hasPnlToggle
                   ? `<span class="pnl-toggle">
