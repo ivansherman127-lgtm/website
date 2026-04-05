@@ -336,7 +336,7 @@ function makeCacheKey(params: {
   toMonth: string | null;
 }): string {
   const { dims, cohort, pnlMode, fromMonth, toMonth } = params;
-  return `v12|dims=${dims.join(",")}|cohort=${cohort}|pnlmode=${pnlMode}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
+  return `v13|dims=${dims.join(",")}|cohort=${cohort}|pnlmode=${pnlMode}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
 }
 
 export async function onRequestGet(context: {
@@ -396,11 +396,16 @@ export async function onRequestGet(context: {
   const wheres: string[] = [];
   const binds: unknown[] = [];
 
-  if (fromMonth) {
+  // In PNL mode for the event dimension, date filtering belongs exclusively on paid_by_contact
+  // (paidRevenueDateWhereSql). Filtering source_scoped by pay month would exclude events whose
+  // contacts have no payments in the range, causing those event tabs to disappear.
+  const skipSourceDateFilter = pnlMode === "pnl" && dims.length === 1 && dims[0] === "event";
+
+  if (fromMonth && !skipSourceDateFilter) {
     wheres.push("period_month >= ?");
     binds.push(fromMonth);
   }
-  if (toMonth) {
+  if (toMonth && !skipSourceDateFilter) {
     wheres.push("period_month <= ?");
     binds.push(toMonth);
   }
