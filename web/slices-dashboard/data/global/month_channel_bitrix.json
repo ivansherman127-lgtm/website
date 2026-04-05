@@ -4,24 +4,24 @@
     "utm_source": null,
     "utm_medium": null,
     "deals": 13,
-    "paid_deals": 0,
-    "revenue": 0.0
+    "paid_deals": 6,
+    "revenue": 3155000.0
   },
   {
     "month": "2022-12",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 61,
-    "paid_deals": 1,
-    "revenue": 58968.0
+    "deals": 55,
+    "paid_deals": 19,
+    "revenue": 11058118.0
   },
   {
     "month": "2023-01",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 214,
-    "paid_deals": 1,
-    "revenue": 25920.0
+    "deals": 209,
+    "paid_deals": 23,
+    "revenue": 8356480.0
   },
   {
     "month": "2023-01",
@@ -65,19 +65,19 @@
   },
   {
     "month": "2023-02",
-    "utm_source": "social",
-    "utm_medium": "tg",
-    "deals": 87,
-    "paid_deals": 1,
-    "revenue": 78200.0
+    "utm_source": null,
+    "utm_medium": null,
+    "deals": 252,
+    "paid_deals": 30,
+    "revenue": 3215200.0
   },
   {
     "month": "2023-02",
-    "utm_source": null,
-    "utm_medium": null,
-    "deals": 282,
-    "paid_deals": 0,
-    "revenue": 0.0
+    "utm_source": "social",
+    "utm_medium": "tg",
+    "deals": 85,
+    "paid_deals": 3,
+    "revenue": 264200.0
   },
   {
     "month": "2023-02",
@@ -139,9 +139,9 @@
     "month": "2023-03",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 163,
-    "paid_deals": 2,
-    "revenue": 95640.0
+    "deals": 138,
+    "paid_deals": 26,
+    "revenue": 6305120.0
   },
   {
     "month": "2023-03",
@@ -211,17 +211,25 @@
     "month": "2023-04",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 108,
-    "paid_deals": 14,
-    "revenue": 1026400.0
+    "deals": 95,
+    "paid_deals": 18,
+    "revenue": 2269600.0
   },
   {
     "month": "2023-04",
     "utm_source": "undefined",
     "utm_medium": "undefined",
     "deals": 18,
+    "paid_deals": 4,
+    "revenue": 151200.0
+  },
+  {
+    "month": "2023-04",
+    "utm_source": "promo",
+    "utm_medium": "tg",
+    "deals": 4,
     "paid_deals": 2,
-    "revenue": 96120.0
+    "revenue": 121660.0
   },
   {
     "month": "2023-04",
@@ -230,14 +238,6 @@
     "deals": 13,
     "paid_deals": 2,
     "revenue": 60200.0
-  },
-  {
-    "month": "2023-04",
-    "utm_source": "promo",
-    "utm_medium": "tg",
-    "deals": 4,
-    "paid_deals": 1,
-    "revenue": 34300.0
   },
   {
     "month": "2023-04",
@@ -283,25 +283,17 @@
     "month": "2023-05",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 94,
-    "paid_deals": 16,
-    "revenue": 860257.0
+    "deals": 65,
+    "paid_deals": 18,
+    "revenue": 7632560.5
   },
   {
     "month": "2023-05",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 209,
-    "paid_deals": 13,
-    "revenue": 473100.0
-  },
-  {
-    "month": "2023-05",
-    "utm_source": "emailproteccionmail",
-    "utm_medium": "tg",
-    "deals": 9,
-    "paid_deals": 1,
-    "revenue": 66520.0
+    "deals": 201,
+    "paid_deals": 15,
+    "revenue": 562772.0
   },
   {
     "month": "2023-05",
@@ -338,6 +330,14 @@
   {
     "month": "2023-05",
     "utm_source": "emailproteccionmail",
+    "utm_medium": "tg",
+    "deals": 9,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2023-05",
+    "utm_source": "emailproteccionmail",
     "utm_medium": "undefined",
     "deals": 142,
     "paid_deals": 0,
@@ -348,14 +348,6 @@
     "utm_source": "promo",
     "utm_medium": "ph",
     "deals": 120,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2023-05",
-    "utm_source": "promo",
-    "utm_medium": "tg",
-    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -395,41 +387,25 @@
     "month": "2023-06",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 155,
-    "paid_deals": 15,
-    "revenue": 589620.0
+    "deals": 131,
+    "paid_deals": 19,
+    "revenue": 11536892.0
   },
   {
     "month": "2023-06",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 7563,
-    "paid_deals": 13,
-    "revenue": 440986.9
+    "deals": 7548,
+    "paid_deals": 9,
+    "revenue": 362330.9
   },
   {
     "month": "2023-06",
     "utm_source": "social",
     "utm_medium": "tg",
-    "deals": 314,
-    "paid_deals": 4,
-    "revenue": 235200.0
-  },
-  {
-    "month": "2023-06",
-    "utm_source": "email",
-    "utm_medium": "mail",
-    "deals": 22,
+    "deals": 312,
     "paid_deals": 2,
-    "revenue": 60200.0
-  },
-  {
-    "month": "2023-06",
-    "utm_source": "promo",
-    "utm_medium": "tg",
-    "deals": 2,
-    "paid_deals": 1,
-    "revenue": 34300.0
+    "revenue": 117600.0
   },
   {
     "month": "2023-06",
@@ -452,6 +428,14 @@
     "utm_source": "email",
     "utm_medium": "email",
     "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2023-06",
+    "utm_source": "email",
+    "utm_medium": "mail",
+    "deals": 20,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -513,6 +497,14 @@
   },
   {
     "month": "2023-06",
+    "utm_source": "promo",
+    "utm_medium": "tg",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2023-06",
     "utm_source": "social",
     "utm_medium": "email",
     "deals": 5,
@@ -539,17 +531,25 @@
     "month": "2023-07",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 63,
-    "paid_deals": 6,
-    "revenue": 227760.0
+    "deals": 61,
+    "paid_deals": 11,
+    "revenue": 6161640.0
+  },
+  {
+    "month": "2023-07",
+    "utm_source": "email",
+    "utm_medium": "mail",
+    "deals": 90,
+    "paid_deals": 2,
+    "revenue": 246960.0
   },
   {
     "month": "2023-07",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 1437,
-    "paid_deals": 3,
-    "revenue": 146880.0
+    "deals": 1436,
+    "paid_deals": 4,
+    "revenue": 153360.0
   },
   {
     "month": "2023-07",
@@ -564,14 +564,6 @@
     "utm_source": "email",
     "utm_medium": "email",
     "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2023-07",
-    "utm_source": "email",
-    "utm_medium": "mail",
-    "deals": 90,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -641,19 +633,19 @@
   },
   {
     "month": "2023-08",
-    "utm_source": "undefined",
-    "utm_medium": "undefined",
-    "deals": 1209,
-    "paid_deals": 16,
-    "revenue": 907872.0
+    "utm_source": null,
+    "utm_medium": null,
+    "deals": 305,
+    "paid_deals": 19,
+    "revenue": 7534636.0
   },
   {
     "month": "2023-08",
-    "utm_source": null,
-    "utm_medium": null,
-    "deals": 320,
-    "paid_deals": 11,
-    "revenue": 486912.0
+    "utm_source": "undefined",
+    "utm_medium": "undefined",
+    "deals": 1202,
+    "paid_deals": 17,
+    "revenue": 849272.0
   },
   {
     "month": "2023-08",
@@ -666,16 +658,16 @@
   {
     "month": "2023-08",
     "utm_source": "email",
-    "utm_medium": "adicionales",
-    "deals": 4,
-    "paid_deals": 0,
-    "revenue": 0.0
+    "utm_medium": "anonovo",
+    "deals": 6,
+    "paid_deals": 1,
+    "revenue": 38880.0
   },
   {
     "month": "2023-08",
     "utm_source": "email",
-    "utm_medium": "anonovo",
-    "deals": 6,
+    "utm_medium": "adicionales",
+    "deals": 4,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -739,8 +731,8 @@
     "month": "2023-08",
     "utm_source": "social",
     "utm_medium": "email",
-    "deals": 4,
-    "paid_deals": 1,
+    "deals": 3,
+    "paid_deals": 0,
     "revenue": 0.0
   },
   {
@@ -795,65 +787,73 @@
     "month": "2023-09",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 706,
-    "paid_deals": 16,
-    "revenue": 1006976.3
-  },
-  {
-    "month": "2023-09",
-    "utm_source": "social",
-    "utm_medium": "tg_cyber-ed",
-    "deals": 10,
-    "paid_deals": 5,
-    "revenue": 289080.0
+    "deals": 691,
+    "paid_deals": 22,
+    "revenue": 1196426.3
   },
   {
     "month": "2023-09",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 102,
-    "paid_deals": 7,
-    "revenue": 225800.0
+    "deals": 92,
+    "paid_deals": 13,
+    "revenue": 593040.0
+  },
+  {
+    "month": "2023-09",
+    "utm_source": "social",
+    "utm_medium": "tg_cyber-ed",
+    "deals": 8,
+    "paid_deals": 2,
+    "revenue": 129960.0
   },
   {
     "month": "2023-09",
     "utm_source": "email",
     "utm_medium": "start",
-    "deals": 10,
-    "paid_deals": 3,
-    "revenue": 167988.0
+    "deals": 9,
+    "paid_deals": 2,
+    "revenue": 89988.0
   },
   {
     "month": "2023-09",
     "utm_source": "email",
-    "utm_medium": "mail",
-    "deals": 7,
+    "utm_medium": "anons_sep",
+    "deals": 14,
     "paid_deals": 1,
-    "revenue": 75600.0
+    "revenue": 74100.0
   },
   {
     "month": "2023-09",
     "utm_source": "email",
     "utm_medium": "base_all",
-    "deals": 29,
-    "paid_deals": 7,
-    "revenue": 49000.0
+    "deals": 26,
+    "paid_deals": 6,
+    "revenue": 65000.0
   },
   {
     "month": "2023-09",
     "utm_source": "Botto Platform",
     "utm_medium": null,
     "deals": 40,
-    "paid_deals": 2,
-    "revenue": 25720.0
+    "paid_deals": 3,
+    "revenue": 47160.0
+  },
+  {
+    "month": "2023-09",
+    "utm_source": "email",
+    "utm_medium": "mail",
+    "deals": 4,
+    "paid_deals": 1,
+    "revenue": 7000.0
   },
   {
     "month": "2023-09",
     "utm_source": "social",
     "utm_medium": "tg_alumni",
-    "deals": 4,
-    "paid_deals": 3,
-    "revenue": 21000.0
+    "deals": 3,
+    "paid_deals": 1,
+    "revenue": 7000.0
   },
   {
     "month": "2023-09",
@@ -876,14 +876,6 @@
     "utm_source": "email",
     "utm_medium": "anonovo",
     "deals": 3,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2023-09",
-    "utm_source": "email",
-    "utm_medium": "anons_sep",
-    "deals": 15,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -995,41 +987,49 @@
     "month": "2023-10",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 613,
-    "paid_deals": 37,
-    "revenue": 1523864.0
+    "deals": 594,
+    "paid_deals": 29,
+    "revenue": 1317768.0
   },
   {
     "month": "2023-10",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 90,
-    "paid_deals": 7,
-    "revenue": 179120.0
-  },
-  {
-    "month": "2023-10",
-    "utm_source": "email",
-    "utm_medium": "anonovo",
-    "deals": 4,
-    "paid_deals": 2,
-    "revenue": 151200.0
-  },
-  {
-    "month": "2023-10",
-    "utm_source": "email",
-    "utm_medium": "base_all",
-    "deals": 41,
-    "paid_deals": 11,
-    "revenue": 107280.0
+    "deals": 81,
+    "paid_deals": 20,
+    "revenue": 1080754.0
   },
   {
     "month": "2023-10",
     "utm_source": "email",
     "utm_medium": "anons",
-    "deals": 235,
-    "paid_deals": 4,
-    "revenue": 86080.0
+    "deals": 234,
+    "paid_deals": 6,
+    "revenue": 290750.0
+  },
+  {
+    "month": "2023-10",
+    "utm_source": "email",
+    "utm_medium": "second",
+    "deals": 6,
+    "paid_deals": 1,
+    "revenue": 88784.0
+  },
+  {
+    "month": "2023-10",
+    "utm_source": "email",
+    "utm_medium": "anonovo",
+    "deals": 2,
+    "paid_deals": 1,
+    "revenue": 75600.0
+  },
+  {
+    "month": "2023-10",
+    "utm_source": "social",
+    "utm_medium": "tg_cyber-ed",
+    "deals": 64,
+    "paid_deals": 6,
+    "revenue": 54000.0
   },
   {
     "month": "2023-10",
@@ -1041,27 +1041,19 @@
   },
   {
     "month": "2023-10",
+    "utm_source": "email",
+    "utm_medium": "base_all",
+    "deals": 36,
+    "paid_deals": 3,
+    "revenue": 42640.0
+  },
+  {
+    "month": "2023-10",
     "utm_source": "social",
     "utm_medium": "vk_cyber-ed",
-    "deals": 5,
-    "paid_deals": 4,
-    "revenue": 50160.0
-  },
-  {
-    "month": "2023-10",
-    "utm_source": "social",
-    "utm_medium": "tg_cyber-ed",
-    "deals": 66,
-    "paid_deals": 5,
-    "revenue": 46000.0
-  },
-  {
-    "month": "2023-10",
-    "utm_source": "social",
-    "utm_medium": "tg_alumni",
-    "deals": 41,
-    "paid_deals": 6,
-    "revenue": 42000.0
+    "deals": 4,
+    "paid_deals": 2,
+    "revenue": 36160.0
   },
   {
     "month": "2023-10",
@@ -1073,19 +1065,19 @@
   },
   {
     "month": "2023-10",
-    "utm_source": "Botto Platform",
-    "utm_medium": null,
-    "deals": 101,
+    "utm_source": "social",
+    "utm_medium": "tg_alumni",
+    "deals": 39,
     "paid_deals": 2,
     "revenue": 14000.0
   },
   {
     "month": "2023-10",
-    "utm_source": "email",
-    "utm_medium": "start",
-    "deals": 2,
+    "utm_source": "Botto Platform",
+    "utm_medium": null,
+    "deals": 99,
     "paid_deals": 1,
-    "revenue": 11988.0
+    "revenue": 10000.0
   },
   {
     "month": "2023-10",
@@ -1170,8 +1162,8 @@
   {
     "month": "2023-10",
     "utm_source": "email",
-    "utm_medium": "second",
-    "deals": 6,
+    "utm_medium": "start",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -1267,81 +1259,73 @@
     "month": "2023-11",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 171,
-    "paid_deals": 25,
-    "revenue": 1182955.5
+    "deals": 136,
+    "paid_deals": 24,
+    "revenue": 866569.0
   },
   {
     "month": "2023-11",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 389,
-    "paid_deals": 20,
-    "revenue": 594742.0
+    "deals": 371,
+    "paid_deals": 12,
+    "revenue": 512124.0
+  },
+  {
+    "month": "2023-11",
+    "utm_source": "email",
+    "utm_medium": "anons",
+    "deals": 24,
+    "paid_deals": 2,
+    "revenue": 101800.0
   },
   {
     "month": "2023-11",
     "utm_source": "email",
     "utm_medium": "nov_anons",
-    "deals": 17,
-    "paid_deals": 7,
-    "revenue": 185040.0
-  },
-  {
-    "month": "2023-11",
-    "utm_source": "social",
-    "utm_medium": "tg_cyber-ed",
-    "deals": 39,
-    "paid_deals": 6,
-    "revenue": 167120.0
-  },
-  {
-    "month": "2023-11",
-    "utm_source": "social",
-    "utm_medium": "tg_alumni",
-    "deals": 3,
-    "paid_deals": 2,
-    "revenue": 108360.0
-  },
-  {
-    "month": "2023-11",
-    "utm_source": "email",
-    "utm_medium": "special",
-    "deals": 2,
-    "paid_deals": 1,
-    "revenue": 52416.0
-  },
-  {
-    "month": "2023-11",
-    "utm_source": "yandex",
-    "utm_medium": "cpc",
-    "deals": 9,
-    "paid_deals": 2,
-    "revenue": 44928.0
-  },
-  {
-    "month": "2023-11",
-    "utm_source": "email",
-    "utm_medium": "mail",
-    "deals": 3,
-    "paid_deals": 1,
-    "revenue": 32400.0
-  },
-  {
-    "month": "2023-11",
-    "utm_source": "social",
-    "utm_medium": "vk_cyber-ed",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 29160.0
+    "deals": 14,
+    "paid_deals": 3,
+    "revenue": 85860.0
   },
   {
     "month": "2023-11",
     "utm_source": "email",
     "utm_medium": "last_year",
+    "deals": 7,
+    "paid_deals": 2,
+    "revenue": 82572.0
+  },
+  {
+    "month": "2023-11",
+    "utm_source": "social",
+    "utm_medium": "tg_cyber-ed",
+    "deals": 33,
+    "paid_deals": 3,
+    "revenue": 81560.0
+  },
+  {
+    "month": "2023-11",
+    "utm_source": "social",
+    "utm_medium": "tg",
+    "deals": 13,
+    "paid_deals": 2,
+    "revenue": 55376.0
+  },
+  {
+    "month": "2023-11",
+    "utm_source": "social",
+    "utm_medium": "tg_alumni",
+    "deals": 2,
+    "paid_deals": 1,
+    "revenue": 54180.0
+  },
+  {
+    "month": "2023-11",
+    "utm_source": "yandex",
+    "utm_medium": "cpc",
     "deals": 8,
     "paid_deals": 1,
-    "revenue": 22092.0
+    "revenue": 22464.0
   },
   {
     "month": "2023-11",
@@ -1363,7 +1347,7 @@
     "month": "2023-11",
     "utm_source": "email",
     "utm_medium": "base_all",
-    "deals": 6,
+    "deals": 4,
     "paid_deals": 1,
     "revenue": 10000.0
   },
@@ -1380,14 +1364,6 @@
     "utm_source": "NotiSend",
     "utm_medium": "email",
     "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2023-11",
-    "utm_source": "email",
-    "utm_medium": "anons",
-    "deals": 27,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -1434,7 +1410,23 @@
   {
     "month": "2023-11",
     "utm_source": "email",
+    "utm_medium": "mail",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2023-11",
+    "utm_source": "email",
     "utm_medium": "negro_viernes_dos",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2023-11",
+    "utm_source": "email",
+    "utm_medium": "special",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -1452,7 +1444,7 @@
     "utm_source": "social",
     "utm_medium": "email",
     "deals": 2,
-    "paid_deals": 1,
+    "paid_deals": 0,
     "revenue": 0.0
   },
   {
@@ -1460,14 +1452,6 @@
     "utm_source": "social",
     "utm_medium": "partner",
     "deals": 3,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2023-11",
-    "utm_source": "social",
-    "utm_medium": "tg",
-    "deals": 13,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -1521,27 +1505,35 @@
   },
   {
     "month": "2023-12",
-    "utm_source": "undefined",
-    "utm_medium": "undefined",
-    "deals": 47,
-    "paid_deals": 17,
-    "revenue": 542746.56
+    "utm_source": null,
+    "utm_medium": null,
+    "deals": 67,
+    "paid_deals": 12,
+    "revenue": 7431210.0
   },
   {
     "month": "2023-12",
-    "utm_source": null,
-    "utm_medium": null,
-    "deals": 77,
-    "paid_deals": 12,
-    "revenue": 344555.5
+    "utm_source": "undefined",
+    "utm_medium": "undefined",
+    "deals": 32,
+    "paid_deals": 14,
+    "revenue": 479917.28
+  },
+  {
+    "month": "2023-12",
+    "utm_source": "social",
+    "utm_medium": "tg_alumni",
+    "deals": 1,
+    "paid_deals": 1,
+    "revenue": 90000.0
   },
   {
     "month": "2023-12",
     "utm_source": "email",
     "utm_medium": "anons3",
-    "deals": 4,
-    "paid_deals": 4,
-    "revenue": 72100.0
+    "deals": 3,
+    "paid_deals": 3,
+    "revenue": 60220.0
   },
   {
     "month": "2023-12",
@@ -1554,56 +1546,48 @@
   {
     "month": "2023-12",
     "utm_source": "email",
+    "utm_medium": "mail",
+    "deals": 1,
+    "paid_deals": 1,
+    "revenue": 21208.0
+  },
+  {
+    "month": "2023-12",
+    "utm_source": "email",
     "utm_medium": "titulados",
-    "deals": 4,
-    "paid_deals": 2,
-    "revenue": 35100.0
+    "deals": 3,
+    "paid_deals": 1,
+    "revenue": 17550.0
   },
   {
     "month": "2023-12",
     "utm_source": "partner",
     "utm_medium": "standoff",
-    "deals": 2,
-    "paid_deals": 2,
-    "revenue": 28224.0
-  },
-  {
-    "month": "2023-12",
-    "utm_source": "Botto Platform",
-    "utm_medium": null,
     "deals": 1,
     "paid_deals": 1,
-    "revenue": 18720.0
-  },
-  {
-    "month": "2023-12",
-    "utm_source": "email",
-    "utm_medium": "anons",
-    "deals": 3,
-    "paid_deals": 1,
-    "revenue": 17640.0
-  },
-  {
-    "month": "2023-12",
-    "utm_source": "email",
-    "utm_medium": "dec_anons",
-    "deals": 4,
-    "paid_deals": 0,
-    "revenue": 0.0
+    "revenue": 14112.0
   },
   {
     "month": "2023-12",
     "utm_source": "email",
     "utm_medium": "horario2024",
     "deals": 1,
+    "paid_deals": 1,
+    "revenue": 7200.0
+  },
+  {
+    "month": "2023-12",
+    "utm_source": "email",
+    "utm_medium": "anons",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "month": "2023-12",
     "utm_source": "email",
-    "utm_medium": "mail",
-    "deals": 1,
+    "utm_medium": "dec_anons",
+    "deals": 4,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -1620,14 +1604,6 @@
     "utm_source": "refferal",
     "utm_medium": "undefined",
     "deals": 2,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2023-12",
-    "utm_source": "social",
-    "utm_medium": "tg_alumni",
-    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -1651,86 +1627,54 @@
     "month": "2024-01",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 126,
-    "paid_deals": 16,
-    "revenue": 402642.0
+    "deals": 102,
+    "paid_deals": 32,
+    "revenue": 7997849.4
   },
   {
     "month": "2024-01",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 87,
-    "paid_deals": 11,
-    "revenue": 277462.0
-  },
-  {
-    "month": "2024-01",
-    "utm_source": "social",
-    "utm_medium": "tg_cyber-ed",
-    "deals": 13,
-    "paid_deals": 7,
-    "revenue": 130100.0
+    "deals": 78,
+    "paid_deals": 16,
+    "revenue": 555812.0
   },
   {
     "month": "2024-01",
     "utm_source": "email",
     "utm_medium": "yan_anons",
-    "deals": 18,
-    "paid_deals": 5,
-    "revenue": 112016.0
-  },
-  {
-    "month": "2024-01",
-    "utm_source": "email",
-    "utm_medium": "start",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 78000.0
-  },
-  {
-    "month": "2024-01",
-    "utm_source": "email",
-    "utm_medium": "anons",
-    "deals": 3,
-    "paid_deals": 3,
-    "revenue": 75960.0
+    "deals": 14,
+    "paid_deals": 6,
+    "revenue": 171944.0
   },
   {
     "month": "2024-01",
     "utm_source": "email",
     "utm_medium": "yan_anons_sec",
-    "deals": 9,
+    "deals": 8,
+    "paid_deals": 3,
+    "revenue": 65956.0
+  },
+  {
+    "month": "2024-01",
+    "utm_source": "social",
+    "utm_medium": "tg_cyber-ed",
+    "deals": 10,
     "paid_deals": 4,
-    "revenue": 75956.0
+    "revenue": 51400.0
   },
   {
     "month": "2024-01",
     "utm_source": "email",
-    "utm_medium": "anons3",
-    "deals": 2,
-    "paid_deals": 2,
-    "revenue": 50220.0
-  },
-  {
-    "month": "2024-01",
-    "utm_source": "email",
-    "utm_medium": "base_all",
-    "deals": 2,
-    "paid_deals": 2,
-    "revenue": 27640.0
+    "utm_medium": "anons",
+    "deals": 1,
+    "paid_deals": 1,
+    "revenue": 29160.0
   },
   {
     "month": "2024-01",
     "utm_source": "social",
     "utm_medium": "tg_alumni",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 10000.0
-  },
-  {
-    "month": "2024-01",
-    "utm_source": "social",
-    "utm_medium": "vk_cyber-ed",
     "deals": 1,
     "paid_deals": 1,
     "revenue": 10000.0
@@ -1746,8 +1690,24 @@
   {
     "month": "2024-01",
     "utm_source": "email",
+    "utm_medium": "base_all",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-01",
+    "utm_source": "email",
     "utm_medium": "mail",
     "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-01",
+    "utm_source": "email",
+    "utm_medium": "start",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -1768,140 +1728,124 @@
     "revenue": 0.0
   },
   {
+    "month": "2024-01",
+    "utm_source": "social",
+    "utm_medium": "vk_cyber-ed",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
     "month": "2024-02",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 159,
-    "paid_deals": 23,
-    "revenue": 678426.0
+    "deals": 109,
+    "paid_deals": 39,
+    "revenue": 7358564.0
   },
   {
     "month": "2024-02",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 70,
-    "paid_deals": 19,
-    "revenue": 648650.0
-  },
-  {
-    "month": "2024-02",
-    "utm_source": "email",
-    "utm_medium": "feb_anons",
-    "deals": 16,
-    "paid_deals": 8,
-    "revenue": 129780.0
+    "deals": 55,
+    "paid_deals": 16,
+    "revenue": 521790.0
   },
   {
     "month": "2024-02",
     "utm_source": "email",
     "utm_medium": "anons3",
-    "deals": 3,
-    "paid_deals": 3,
-    "revenue": 93916.0
-  },
-  {
-    "month": "2024-02",
-    "utm_source": "email",
-    "utm_medium": "sp_track_i_bilet_offzone",
     "deals": 2,
     "paid_deals": 2,
-    "revenue": 81584.0
-  },
-  {
-    "month": "2024-02",
-    "utm_source": "email",
-    "utm_medium": "mail",
-    "deals": 2,
-    "paid_deals": 1,
-    "revenue": 75600.0
-  },
-  {
-    "month": "2024-02",
-    "utm_source": "social",
-    "utm_medium": "tg",
-    "deals": 3,
-    "paid_deals": 1,
-    "revenue": 63000.0
-  },
-  {
-    "month": "2024-02",
-    "utm_source": "social",
-    "utm_medium": "tg_alumni",
-    "deals": 11,
-    "paid_deals": 6,
-    "revenue": 60000.0
+    "revenue": 83916.0
   },
   {
     "month": "2024-02",
     "utm_source": "social",
     "utm_medium": "tg_cyber-ed",
-    "deals": 7,
-    "paid_deals": 3,
-    "revenue": 42280.0
-  },
-  {
-    "month": "2024-02",
-    "utm_source": "email",
-    "utm_medium": "yan_anons",
-    "deals": 5,
-    "paid_deals": 1,
-    "revenue": 33696.0
-  },
-  {
-    "month": "2024-02",
-    "utm_source": "email",
-    "utm_medium": "feb_anons_promo_second",
-    "deals": 3,
-    "paid_deals": 3,
-    "revenue": 30000.0
-  },
-  {
-    "month": "2024-02",
-    "utm_source": "email",
-    "utm_medium": "feb_anons_tres_promo",
     "deals": 4,
-    "paid_deals": 3,
-    "revenue": 30000.0
+    "paid_deals": 2,
+    "revenue": 83160.0
   },
   {
     "month": "2024-02",
-    "utm_source": "social",
-    "utm_medium": "tg-alumni",
-    "deals": 3,
-    "paid_deals": 3,
-    "revenue": 30000.0
+    "utm_source": "email",
+    "utm_medium": "feb_anons",
+    "deals": 12,
+    "paid_deals": 4,
+    "revenue": 64140.0
   },
   {
     "month": "2024-02",
     "utm_source": "Botto Platform",
     "utm_medium": null,
-    "deals": 15,
-    "paid_deals": 1,
-    "revenue": 15000.0
+    "deals": 14,
+    "paid_deals": 2,
+    "revenue": 50640.0
   },
   {
     "month": "2024-02",
-    "utm_source": "email",
-    "utm_medium": "feb_anons_dos",
-    "deals": 1,
+    "utm_source": "social",
+    "utm_medium": "tg",
+    "deals": 2,
     "paid_deals": 1,
-    "revenue": 15000.0
+    "revenue": 37316.0
   },
   {
     "month": "2024-02",
     "utm_source": "email",
     "utm_medium": "calendar_fm",
     "deals": 4,
-    "paid_deals": 0,
-    "revenue": 0.0
+    "paid_deals": 1,
+    "revenue": 34986.0
   },
   {
     "month": "2024-02",
     "utm_source": "email",
     "utm_medium": "email",
     "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
+    "paid_deals": 1,
+    "revenue": 21208.0
+  },
+  {
+    "month": "2024-02",
+    "utm_source": "email",
+    "utm_medium": "feb_anons_promo",
+    "deals": 2,
+    "paid_deals": 1,
+    "revenue": 20000.0
+  },
+  {
+    "month": "2024-02",
+    "utm_source": "social",
+    "utm_medium": "tg_alumni",
+    "deals": 3,
+    "paid_deals": 2,
+    "revenue": 20000.0
+  },
+  {
+    "month": "2024-02",
+    "utm_source": "email",
+    "utm_medium": "feb_anons_promo_second",
+    "deals": 2,
+    "paid_deals": 1,
+    "revenue": 10000.0
+  },
+  {
+    "month": "2024-02",
+    "utm_source": "email",
+    "utm_medium": "feb_anons_tres_promo",
+    "deals": 3,
+    "paid_deals": 1,
+    "revenue": 10000.0
+  },
+  {
+    "month": "2024-02",
+    "utm_source": "social",
+    "utm_medium": "tg-alumni",
+    "deals": 2,
+    "paid_deals": 1,
+    "revenue": 10000.0
   },
   {
     "month": "2024-02",
@@ -1914,8 +1858,8 @@
   {
     "month": "2024-02",
     "utm_source": "email",
-    "utm_medium": "feb_anons_promo",
-    "deals": 3,
+    "utm_medium": "feb_anons_dos",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -1930,9 +1874,17 @@
   {
     "month": "2024-02",
     "utm_source": "email",
-    "utm_medium": "last_year",
+    "utm_medium": "mail",
     "deals": 1,
     "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-02",
+    "utm_source": "email",
+    "utm_medium": "yan_anons",
+    "deals": 2,
+    "paid_deals": 1,
     "revenue": 0.0
   },
   {
@@ -2003,17 +1955,17 @@
     "month": "2024-03",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 143,
-    "paid_deals": 22,
-    "revenue": 701219.2
+    "deals": 108,
+    "paid_deals": 26,
+    "revenue": 1224271.6
   },
   {
     "month": "2024-03",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 188,
-    "paid_deals": 17,
-    "revenue": 433616.0
+    "deals": 172,
+    "paid_deals": 27,
+    "revenue": 821136.0
   },
   {
     "month": "2024-03",
@@ -2021,79 +1973,71 @@
     "utm_medium": "tutortop",
     "deals": 6,
     "paid_deals": 3,
-    "revenue": 172050.0
+    "revenue": 183834.0
   },
   {
     "month": "2024-03",
     "utm_source": "social",
     "utm_medium": "tg-cyber-ed",
-    "deals": 14,
-    "paid_deals": 7,
-    "revenue": 154346.0
+    "deals": 10,
+    "paid_deals": 6,
+    "revenue": 120008.0
+  },
+  {
+    "month": "2024-03",
+    "utm_source": "email",
+    "utm_medium": "feb_anons_tres",
+    "deals": 1,
+    "paid_deals": 1,
+    "revenue": 68040.0
   },
   {
     "month": "2024-03",
     "utm_source": "email",
     "utm_medium": "mar_anons_uno",
-    "deals": 18,
-    "paid_deals": 5,
-    "revenue": 125461.0
+    "deals": 16,
+    "paid_deals": 3,
+    "revenue": 66330.5
   },
   {
     "month": "2024-03",
-    "utm_source": "email",
-    "utm_medium": "second",
-    "deals": 1,
+    "utm_source": "social",
+    "utm_medium": "tg_ne_hacking_a_ib",
+    "deals": 3,
     "paid_deals": 1,
-    "revenue": 88784.0
+    "revenue": 27440.0
   },
   {
     "month": "2024-03",
     "utm_source": "social",
     "utm_medium": "tg-alumni",
-    "deals": 6,
-    "paid_deals": 6,
-    "revenue": 60000.0
+    "deals": 4,
+    "paid_deals": 2,
+    "revenue": 20000.0
   },
   {
     "month": "2024-03",
     "utm_source": "email",
     "utm_medium": "mar_anons_tres",
-    "deals": 8,
-    "paid_deals": 3,
-    "revenue": 45000.0
+    "deals": 7,
+    "paid_deals": 2,
+    "revenue": 15000.0
   },
   {
     "month": "2024-03",
     "utm_source": "social",
     "utm_medium": "tg_alumni",
-    "deals": 4,
-    "paid_deals": 2,
-    "revenue": 30000.0
-  },
-  {
-    "month": "2024-03",
-    "utm_source": "refferal",
-    "utm_medium": "ciso",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 24192.0
-  },
-  {
-    "month": "2024-03",
-    "utm_source": "Botto Platform",
-    "utm_medium": null,
-    "deals": 1,
+    "deals": 3,
     "paid_deals": 1,
     "revenue": 15000.0
   },
   {
     "month": "2024-03",
     "utm_source": "social",
-    "utm_medium": "tg_cyber-ed",
-    "deals": 4,
+    "utm_medium": "vk_cyber-ed",
+    "deals": 3,
     "paid_deals": 1,
-    "revenue": 15000.0
+    "revenue": 10000.0
   },
   {
     "month": "2024-03",
@@ -2122,14 +2066,6 @@
   {
     "month": "2024-03",
     "utm_source": "email",
-    "utm_medium": "calendar_fm",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-03",
-    "utm_source": "email",
     "utm_medium": "email",
     "deals": 26,
     "paid_deals": 0,
@@ -2147,22 +2083,6 @@
     "month": "2024-03",
     "utm_source": "email",
     "utm_medium": "feb_anons",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-03",
-    "utm_source": "email",
-    "utm_medium": "feb_anons_tres",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-03",
-    "utm_source": "email",
-    "utm_medium": "horario2024",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -2210,7 +2130,7 @@
   {
     "month": "2024-03",
     "utm_source": "social",
-    "utm_medium": "tg_ne_hacking_a_ib",
+    "utm_medium": "tg_cyber-ed",
     "deals": 3,
     "paid_deals": 0,
     "revenue": 0.0
@@ -2220,14 +2140,6 @@
     "utm_source": "social",
     "utm_medium": "vk-cyber-ed",
     "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-03",
-    "utm_source": "social",
-    "utm_medium": "vk_cyber-ed",
-    "deals": 4,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -2251,33 +2163,25 @@
     "month": "2024-04",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 259,
-    "paid_deals": 29,
-    "revenue": 797193.1
+    "deals": 223,
+    "paid_deals": 41,
+    "revenue": 2112120.5
   },
   {
     "month": "2024-04",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 113,
-    "paid_deals": 21,
-    "revenue": 663644.0
-  },
-  {
-    "month": "2024-04",
-    "utm_source": "social",
-    "utm_medium": "tg",
-    "deals": 7,
-    "paid_deals": 2,
-    "revenue": 87070.0
+    "deals": 95,
+    "paid_deals": 17,
+    "revenue": 607740.0
   },
   {
     "month": "2024-04",
     "utm_source": "email",
-    "utm_medium": "mail",
-    "deals": 5,
-    "paid_deals": 2,
-    "revenue": 60200.0
+    "utm_medium": "email",
+    "deals": 67,
+    "paid_deals": 1,
+    "revenue": 59868.0
   },
   {
     "month": "2024-04",
@@ -2289,75 +2193,19 @@
   },
   {
     "month": "2024-04",
+    "utm_source": "social",
+    "utm_medium": "tg",
+    "deals": 7,
+    "paid_deals": 1,
+    "revenue": 32470.0
+  },
+  {
+    "month": "2024-04",
     "utm_source": "emailproteccionmail",
     "utm_medium": "undefined",
-    "deals": 2,
-    "paid_deals": 2,
-    "revenue": 38016.0
-  },
-  {
-    "month": "2024-04",
-    "utm_source": "refferal",
-    "utm_medium": "tutortop",
-    "deals": 2,
-    "paid_deals": 1,
-    "revenue": 35970.0
-  },
-  {
-    "month": "2024-04",
-    "utm_source": "promo",
-    "utm_medium": "tg",
     "deals": 1,
     "paid_deals": 1,
-    "revenue": 34300.0
-  },
-  {
-    "month": "2024-04",
-    "utm_source": "social",
-    "utm_medium": "tg_cyber-ed",
-    "deals": 3,
-    "paid_deals": 3,
-    "revenue": 28000.0
-  },
-  {
-    "month": "2024-04",
-    "utm_source": "social",
-    "utm_medium": "tg-cyber-ed",
-    "deals": 2,
-    "paid_deals": 1,
-    "revenue": 22154.0
-  },
-  {
-    "month": "2024-04",
-    "utm_source": "email",
-    "utm_medium": "yan_anons",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 10000.0
-  },
-  {
-    "month": "2024-04",
-    "utm_source": "email",
-    "utm_medium": "yan_anons_sec",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 10000.0
-  },
-  {
-    "month": "2024-04",
-    "utm_source": "email",
-    "utm_medium": "mar_anons_uno",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 7200.0
-  },
-  {
-    "month": "2024-04",
-    "utm_source": "email",
-    "utm_medium": "anons",
-    "deals": 2,
-    "paid_deals": 0,
-    "revenue": 0.0
+    "revenue": 19008.0
   },
   {
     "month": "2024-04",
@@ -2370,15 +2218,31 @@
   {
     "month": "2024-04",
     "utm_source": "email",
-    "utm_medium": "email",
-    "deals": 67,
+    "utm_medium": "mail",
+    "deals": 3,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "month": "2024-04",
     "utm_source": "email",
-    "utm_medium": "mar_anons_tres",
+    "utm_medium": "yan_anons",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-04",
+    "utm_source": "email",
+    "utm_medium": "yan_anons_sec",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-04",
+    "utm_source": "promo",
+    "utm_medium": "tg",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -2393,9 +2257,25 @@
   },
   {
     "month": "2024-04",
+    "utm_source": "refferal",
+    "utm_medium": "tutortop",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-04",
     "utm_source": "social",
     "utm_medium": "email",
     "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-04",
+    "utm_source": "social",
+    "utm_medium": "tg_cyber-ed",
+    "deals": 3,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -2411,121 +2291,81 @@
     "month": "2024-05",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 1530,
-    "paid_deals": 20,
-    "revenue": 544572.8
+    "deals": 1482,
+    "paid_deals": 19,
+    "revenue": 873442.2
   },
   {
     "month": "2024-05",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 268,
-    "paid_deals": 12,
-    "revenue": 302848.0
+    "deals": 248,
+    "paid_deals": 11,
+    "revenue": 365799.2
+  },
+  {
+    "month": "2024-05",
+    "utm_source": "social",
+    "utm_medium": "email",
+    "deals": 9,
+    "paid_deals": 2,
+    "revenue": 133560.0
+  },
+  {
+    "month": "2024-05",
+    "utm_source": "social",
+    "utm_medium": "tg-cyber-ed",
+    "deals": 8,
+    "paid_deals": 1,
+    "revenue": 88784.0
   },
   {
     "month": "2024-05",
     "utm_source": "yandex",
     "utm_medium": "cpc",
-    "deals": 10,
+    "deals": 8,
     "paid_deals": 3,
-    "revenue": 92016.0
+    "revenue": 77976.0
   },
   {
     "month": "2024-05",
     "utm_source": "email",
     "utm_medium": "mayo_anons_uno",
-    "deals": 4,
+    "deals": 3,
     "paid_deals": 2,
-    "revenue": 78204.0
+    "revenue": 39102.0
   },
   {
     "month": "2024-05",
-    "utm_source": "email",
-    "utm_medium": "anonovo",
+    "utm_source": "tg_posev",
+    "utm_medium": "infosec_globe",
     "deals": 2,
     "paid_deals": 1,
-    "revenue": 75600.0
-  },
-  {
-    "month": "2024-05",
-    "utm_source": "email",
-    "utm_medium": "apr_anons_uno",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 41160.0
+    "revenue": 35076.0
   },
   {
     "month": "2024-05",
     "utm_source": "social",
-    "utm_medium": "tg_alumni",
-    "deals": 3,
-    "paid_deals": 3,
-    "revenue": 35000.0
-  },
-  {
-    "month": "2024-05",
-    "utm_source": "social",
-    "utm_medium": "tg",
-    "deals": 29,
+    "utm_medium": "tg_hacker_lab",
+    "deals": 2,
     "paid_deals": 1,
-    "revenue": 32470.0
-  },
-  {
-    "month": "2024-05",
-    "utm_source": "email",
-    "utm_medium": "nov_anons",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 32400.0
+    "revenue": 28080.0
   },
   {
     "month": "2024-05",
     "utm_source": "email",
     "utm_medium": "mail",
-    "deals": 3,
-    "paid_deals": 2,
-    "revenue": 29988.0
-  },
-  {
-    "month": "2024-05",
-    "utm_source": "email",
-    "utm_medium": "yan_anons_sec",
-    "deals": 1,
+    "deals": 2,
     "paid_deals": 1,
-    "revenue": 21060.0
-  },
-  {
-    "month": "2024-05",
-    "utm_source": "email",
-    "utm_medium": "mar_anons_uno",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 20000.0
+    "revenue": 14994.0
   },
   {
     "month": "2024-05",
     "utm_source": "Botto Platform",
     "utm_medium": null,
     "deals": 1,
-    "paid_deals": 1,
-    "revenue": 15000.0
-  },
-  {
-    "month": "2024-05",
-    "utm_source": "social",
-    "utm_medium": "tg_cyber-ed",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 15000.0
-  },
-  {
-    "month": "2024-05",
-    "utm_source": "email",
-    "utm_medium": "anons3",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 10000.0
+    "paid_deals": 0,
+    "revenue": 0.0
   },
   {
     "month": "2024-05",
@@ -2546,6 +2386,22 @@
   {
     "month": "2024-05",
     "utm_source": "email",
+    "utm_medium": "anonovo",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-05",
+    "utm_source": "email",
+    "utm_medium": "anons3",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-05",
+    "utm_source": "email",
     "utm_medium": "calendar_fm",
     "deals": 1,
     "paid_deals": 0,
@@ -2555,7 +2411,7 @@
     "month": "2024-05",
     "utm_source": "email",
     "utm_medium": "email",
-    "deals": 25,
+    "deals": 23,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -2570,7 +2426,23 @@
   {
     "month": "2024-05",
     "utm_source": "email",
+    "utm_medium": "mar_anons_uno",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-05",
+    "utm_source": "email",
     "utm_medium": "mayo_anons_dos",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-05",
+    "utm_source": "email",
+    "utm_medium": "nov_anons",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -2602,32 +2474,24 @@
   {
     "month": "2024-05",
     "utm_source": "social",
-    "utm_medium": "email",
-    "deals": 9,
+    "utm_medium": "tg",
+    "deals": 28,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "month": "2024-05",
     "utm_source": "social",
-    "utm_medium": "tg-cyber-ed",
-    "deals": 8,
+    "utm_medium": "tg_alumni",
+    "deals": 3,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "month": "2024-05",
     "utm_source": "social",
-    "utm_medium": "tg_hacker_lab",
-    "deals": 2,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-05",
-    "utm_source": "tg_posev",
-    "utm_medium": "infosec_globe",
-    "deals": 2,
+    "utm_medium": "tg_cyber-ed",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -2643,65 +2507,41 @@
     "month": "2024-06",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 311,
-    "paid_deals": 20,
-    "revenue": 558013.6
+    "deals": 294,
+    "paid_deals": 35,
+    "revenue": 13902079.0
   },
   {
     "month": "2024-06",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 112,
-    "paid_deals": 14,
-    "revenue": 347176.0
+    "deals": 102,
+    "paid_deals": 13,
+    "revenue": 415396.0
   },
   {
     "month": "2024-06",
     "utm_source": "email",
     "utm_medium": "junio_anons_uno",
-    "deals": 4,
+    "deals": 3,
     "paid_deals": 2,
-    "revenue": 62160.0
+    "revenue": 121800.0
   },
   {
     "month": "2024-06",
     "utm_source": "email",
     "utm_medium": "mayo_anons_uno",
-    "deals": 2,
-    "paid_deals": 2,
-    "revenue": 58160.0
-  },
-  {
-    "month": "2024-06",
-    "utm_source": "social",
-    "utm_medium": "tg",
-    "deals": 2,
-    "paid_deals": 1,
-    "revenue": 37044.0
-  },
-  {
-    "month": "2024-06",
-    "utm_source": "email",
-    "utm_medium": "yan_anons_sec",
     "deals": 1,
     "paid_deals": 1,
-    "revenue": 34896.0
+    "revenue": 29080.0
   },
   {
     "month": "2024-06",
     "utm_source": "Botto Platform",
     "utm_medium": null,
     "deals": 1,
-    "paid_deals": 1,
-    "revenue": 18720.0
-  },
-  {
-    "month": "2024-06",
-    "utm_source": "email",
-    "utm_medium": "titulados",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 17550.0
+    "paid_deals": 0,
+    "revenue": 0.0
   },
   {
     "month": "2024-06",
@@ -2745,16 +2585,24 @@
   },
   {
     "month": "2024-06",
+    "utm_source": "email",
+    "utm_medium": "titulados",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-06",
     "utm_source": "refferal",
     "utm_medium": "tutortop",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "month": "2024-06",
     "utm_source": "social",
-    "utm_medium": "email",
+    "utm_medium": "tg",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -2770,23 +2618,7 @@
   {
     "month": "2024-06",
     "utm_source": "social",
-    "utm_medium": "tg_hacker_lab",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-06",
-    "utm_source": "social",
     "utm_medium": "vk-cyber-ed",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-06",
-    "utm_source": "tg_posev",
-    "utm_medium": "infosec_globe",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -2817,75 +2649,43 @@
   },
   {
     "month": "2024-07",
-    "utm_source": "undefined",
-    "utm_medium": "undefined",
-    "deals": 93,
-    "paid_deals": 18,
-    "revenue": 676390.0
+    "utm_source": null,
+    "utm_medium": null,
+    "deals": 426,
+    "paid_deals": 42,
+    "revenue": 2071880.0
   },
   {
     "month": "2024-07",
-    "utm_source": null,
-    "utm_medium": null,
-    "deals": 466,
-    "paid_deals": 19,
-    "revenue": 630924.0
+    "utm_source": "undefined",
+    "utm_medium": "undefined",
+    "deals": 78,
+    "paid_deals": 17,
+    "revenue": 550155.0
   },
   {
     "month": "2024-07",
     "utm_source": "social",
     "utm_medium": "tg-cyber-ed",
-    "deals": 8,
-    "paid_deals": 3,
-    "revenue": 90756.0
+    "deals": 7,
+    "paid_deals": 2,
+    "revenue": 53316.0
   },
   {
     "month": "2024-07",
     "utm_source": "email",
     "utm_medium": "sale-summer24-1",
-    "deals": 2,
-    "paid_deals": 2,
-    "revenue": 78204.0
+    "deals": 1,
+    "paid_deals": 1,
+    "revenue": 39102.0
   },
   {
     "month": "2024-07",
     "utm_source": "refferal",
     "utm_medium": "tutortop",
-    "deals": 4,
-    "paid_deals": 2,
-    "revenue": 49800.0
-  },
-  {
-    "month": "2024-07",
-    "utm_source": "yandex",
-    "utm_medium": "cpc",
-    "deals": 6,
+    "deals": 3,
     "paid_deals": 1,
-    "revenue": 33696.0
-  },
-  {
-    "month": "2024-07",
-    "utm_source": "email",
-    "utm_medium": "julio_anons_uno",
-    "deals": 74,
-    "paid_deals": 1,
-    "revenue": 26172.0
-  },
-  {
-    "month": "2024-07",
-    "utm_source": "email",
-    "utm_medium": "anons3",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 15876.0
-  },
-  {
-    "month": "2024-07",
-    "utm_source": "social",
-    "utm_medium": "tg_alumnus",
-    "deals": 11,
-    "paid_deals": 1,
-    "revenue": 12333.5
+    "revenue": 24900.0
   },
   {
     "month": "2024-07",
@@ -2922,8 +2722,8 @@
   {
     "month": "2024-07",
     "utm_source": "email",
-    "utm_medium": "junio_anons_uno",
-    "deals": 1,
+    "utm_medium": "julio_anons_uno",
+    "deals": 73,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -2978,14 +2778,6 @@
   {
     "month": "2024-07",
     "utm_source": "social",
-    "utm_medium": "tg",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-07",
-    "utm_source": "social",
     "utm_medium": "tg_alumni",
     "deals": 12,
     "paid_deals": 0,
@@ -2994,8 +2786,24 @@
   {
     "month": "2024-07",
     "utm_source": "social",
+    "utm_medium": "tg_alumnus",
+    "deals": 11,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-07",
+    "utm_source": "social",
     "utm_medium": "tg_cyber-ed",
-    "deals": 131,
+    "deals": 130,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-07",
+    "utm_source": "yandex",
+    "utm_medium": "cpc",
+    "deals": 5,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -3019,57 +2827,33 @@
     "month": "2024-08",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 1216,
-    "paid_deals": 38,
-    "revenue": 871124.8
+    "deals": 1161,
+    "paid_deals": 33,
+    "revenue": 997469.8
   },
   {
     "month": "2024-08",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 93,
-    "paid_deals": 20,
-    "revenue": 694947.28
+    "deals": 73,
+    "paid_deals": 18,
+    "revenue": 624110.0
   },
   {
     "month": "2024-08",
     "utm_source": "social",
     "utm_medium": "tg-cyber-ed",
-    "deals": 3,
-    "paid_deals": 2,
-    "revenue": 117080.0
-  },
-  {
-    "month": "2024-08",
-    "utm_source": "email",
-    "utm_medium": "anons3",
     "deals": 2,
-    "paid_deals": 2,
-    "revenue": 50220.0
+    "paid_deals": 1,
+    "revenue": 58540.0
   },
   {
     "month": "2024-08",
-    "utm_source": "email",
-    "utm_medium": "junio_anons_uno",
-    "deals": 1,
+    "utm_source": "refferal",
+    "utm_medium": "tutortop",
+    "deals": 2,
     "paid_deals": 1,
-    "revenue": 31080.0
-  },
-  {
-    "month": "2024-08",
-    "utm_source": "email",
-    "utm_medium": "anons",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 29160.0
-  },
-  {
-    "month": "2024-08",
-    "utm_source": "email",
-    "utm_medium": "yan_anons",
-    "deals": 3,
-    "paid_deals": 1,
-    "revenue": 29160.0
+    "revenue": 32440.0
   },
   {
     "month": "2024-08",
@@ -3090,8 +2874,32 @@
   {
     "month": "2024-08",
     "utm_source": "email",
+    "utm_medium": "anons",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-08",
+    "utm_source": "email",
+    "utm_medium": "anons3",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-08",
+    "utm_source": "email",
     "utm_medium": "email",
     "deals": 9,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-08",
+    "utm_source": "email",
+    "utm_medium": "junio_anons_uno",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -3105,25 +2913,9 @@
   },
   {
     "month": "2024-08",
-    "utm_source": "refferal",
-    "utm_medium": "tutortop",
-    "deals": 2,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-08",
-    "utm_source": "social",
-    "utm_medium": "email",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-08",
-    "utm_source": "social",
-    "utm_medium": "tg",
-    "deals": 1,
+    "utm_source": "email",
+    "utm_medium": "yan_anons",
+    "deals": 3,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -3147,25 +2939,25 @@
     "month": "2024-09",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 270,
-    "paid_deals": 26,
-    "revenue": 525546.8
+    "deals": 231,
+    "paid_deals": 32,
+    "revenue": 1065430.8
   },
   {
     "month": "2024-09",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 172,
-    "paid_deals": 11,
-    "revenue": 409266.0
+    "deals": 156,
+    "paid_deals": 8,
+    "revenue": 342678.0
   },
   {
     "month": "2024-09",
     "utm_source": "email",
     "utm_medium": "sep_anons_uno",
-    "deals": 206,
-    "paid_deals": 3,
-    "revenue": 67140.0
+    "deals": 204,
+    "paid_deals": 4,
+    "revenue": 99540.0
   },
   {
     "month": "2024-09",
@@ -3185,11 +2977,11 @@
   },
   {
     "month": "2024-09",
-    "utm_source": "email",
-    "utm_medium": "agosto_anons_uno",
-    "deals": 2,
+    "utm_source": "social",
+    "utm_medium": "post-03-08",
+    "deals": 1,
     "paid_deals": 1,
-    "revenue": 24012.0
+    "revenue": 32460.0
   },
   {
     "month": "2024-09",
@@ -3198,14 +2990,6 @@
     "deals": 255,
     "paid_deals": 1,
     "revenue": 20967.0
-  },
-  {
-    "month": "2024-09",
-    "utm_source": "social",
-    "utm_medium": "tg-cyber-ed",
-    "deals": 5,
-    "paid_deals": 1,
-    "revenue": 15876.0
   },
   {
     "month": "2024-09",
@@ -3219,6 +3003,14 @@
     "month": "2024-09",
     "utm_source": "cpc",
     "utm_medium": "tg_ads",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-09",
+    "utm_source": "email",
+    "utm_medium": "agosto_anons_uno",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -3243,7 +3035,7 @@
     "month": "2024-09",
     "utm_source": "refferal",
     "utm_medium": "tutortop",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -3251,14 +3043,6 @@
     "month": "2024-09",
     "utm_source": "social",
     "utm_medium": "alumni-cyber-ed",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-09",
-    "utm_source": "social",
-    "utm_medium": "post-03-08",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -3282,8 +3066,8 @@
   {
     "month": "2024-09",
     "utm_source": "social",
-    "utm_medium": "tg_alumni",
-    "deals": 1,
+    "utm_medium": "tg-cyber-ed",
+    "deals": 3,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -3291,14 +3075,6 @@
     "month": "2024-09",
     "utm_source": "social",
     "utm_medium": "tg_cyber-ed",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-09",
-    "utm_source": "social",
-    "utm_medium": "tg_ne_hacking_a_ib",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -3363,81 +3139,33 @@
     "month": "2024-10",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 312,
-    "paid_deals": 25,
-    "revenue": 605418.0
+    "deals": 263,
+    "paid_deals": 36,
+    "revenue": 1273966.0
   },
   {
     "month": "2024-10",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 195,
-    "paid_deals": 18,
-    "revenue": 576094.0
+    "deals": 180,
+    "paid_deals": 17,
+    "revenue": 546090.0
   },
   {
     "month": "2024-10",
     "utm_source": "diagnostika",
     "utm_medium": "tg_bot",
-    "deals": 2,
-    "paid_deals": 2,
-    "revenue": 157248.0
-  },
-  {
-    "month": "2024-10",
-    "utm_source": "email",
-    "utm_medium": "second",
     "deals": 1,
     "paid_deals": 1,
-    "revenue": 88784.0
-  },
-  {
-    "month": "2024-10",
-    "utm_source": "email",
-    "utm_medium": "anons3",
-    "deals": 2,
-    "paid_deals": 2,
-    "revenue": 83916.0
+    "revenue": 78624.0
   },
   {
     "month": "2024-10",
     "utm_source": "yandex",
     "utm_medium": "cpc",
-    "deals": 168,
+    "deals": 166,
     "paid_deals": 2,
-    "revenue": 74268.0
-  },
-  {
-    "month": "2024-10",
-    "utm_source": "social",
-    "utm_medium": "tg",
-    "deals": 2,
-    "paid_deals": 1,
-    "revenue": 41160.0
-  },
-  {
-    "month": "2024-10",
-    "utm_source": "social",
-    "utm_medium": "post-15-10",
-    "deals": 3,
-    "paid_deals": 2,
-    "revenue": 35280.0
-  },
-  {
-    "month": "2024-10",
-    "utm_source": "email",
-    "utm_medium": "yan_anons",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 33696.0
-  },
-  {
-    "month": "2024-10",
-    "utm_source": "social",
-    "utm_medium": "tg-cyber-ed",
-    "deals": 11,
-    "paid_deals": 1,
-    "revenue": 33696.0
+    "revenue": 46800.0
   },
   {
     "month": "2024-10",
@@ -3449,19 +3177,11 @@
   },
   {
     "month": "2024-10",
-    "utm_source": "email",
-    "utm_medium": "sep_anons_uno",
-    "deals": 9,
+    "utm_source": "social",
+    "utm_medium": "post-15-10",
+    "deals": 2,
     "paid_deals": 1,
-    "revenue": 7200.0
-  },
-  {
-    "month": "2024-10",
-    "utm_source": "Botto Platform",
-    "utm_medium": null,
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
+    "revenue": 17640.0
   },
   {
     "month": "2024-10",
@@ -3490,6 +3210,14 @@
   {
     "month": "2024-10",
     "utm_source": "email",
+    "utm_medium": "anons3",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-10",
+    "utm_source": "email",
     "utm_medium": "b-236",
     "deals": 1,
     "paid_deals": 0,
@@ -3500,14 +3228,6 @@
     "utm_source": "email",
     "utm_medium": "email",
     "deals": 5,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-10",
-    "utm_source": "email",
-    "utm_medium": "feb_anons_tres",
-    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -3532,6 +3252,30 @@
     "utm_source": "email",
     "utm_medium": "oct_anons_uno",
     "deals": 71,
+    "paid_deals": 1,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-10",
+    "utm_source": "email",
+    "utm_medium": "second",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-10",
+    "utm_source": "email",
+    "utm_medium": "sep_anons_uno",
+    "deals": 8,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-10",
+    "utm_source": "email",
+    "utm_medium": "yan_anons",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -3580,6 +3324,22 @@
     "utm_source": "social",
     "utm_medium": "post1-17-10",
     "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-10",
+    "utm_source": "social",
+    "utm_medium": "tg",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-10",
+    "utm_source": "social",
+    "utm_medium": "tg-cyber-ed",
+    "deals": 11,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -3691,41 +3451,41 @@
     "month": "2024-11",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 236,
-    "paid_deals": 20,
-    "revenue": 423081.0
+    "deals": 156,
+    "paid_deals": 27,
+    "revenue": 730955.0
   },
   {
     "month": "2024-11",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 179,
-    "paid_deals": 16,
-    "revenue": 405834.0
+    "deals": 159,
+    "paid_deals": 12,
+    "revenue": 403152.0
   },
   {
     "month": "2024-11",
     "utm_source": "tutuortop",
     "utm_medium": "refferal",
     "deals": 4,
-    "paid_deals": 2,
-    "revenue": 163660.0
+    "paid_deals": 1,
+    "revenue": 81830.0
+  },
+  {
+    "month": "2024-11",
+    "utm_source": "email",
+    "utm_medium": "mail",
+    "deals": 1,
+    "paid_deals": 1,
+    "revenue": 70000.0
   },
   {
     "month": "2024-11",
     "utm_source": "social",
     "utm_medium": "tg_cyber-ed",
-    "deals": 12,
+    "deals": 10,
     "paid_deals": 2,
-    "revenue": 39780.0
-  },
-  {
-    "month": "2024-11",
-    "utm_source": "email",
-    "utm_medium": "sep_anons_uno",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 30780.0
+    "revenue": 51240.0
   },
   {
     "month": "2024-11",
@@ -3734,14 +3494,6 @@
     "deals": 155,
     "paid_deals": 1,
     "revenue": 30000.0
-  },
-  {
-    "month": "2024-11",
-    "utm_source": "email",
-    "utm_medium": "anons-22-10",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 21060.0
   },
   {
     "month": "2024-11",
@@ -3762,16 +3514,8 @@
   {
     "month": "2024-11",
     "utm_source": "email",
-    "utm_medium": "mail",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-11",
-    "utm_source": "email",
     "utm_medium": "oct_anons_uno",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -3796,14 +3540,6 @@
     "utm_source": "social",
     "utm_medium": "anons1-19-09",
     "deals": 13,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2024-11",
-    "utm_source": "social",
-    "utm_medium": "post-03-08",
-    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -3857,75 +3593,35 @@
   },
   {
     "month": "2024-12",
-    "utm_source": "undefined",
-    "utm_medium": "undefined",
-    "deals": 136,
-    "paid_deals": 18,
-    "revenue": 794431.2
-  },
-  {
-    "month": "2024-12",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 182,
-    "paid_deals": 26,
-    "revenue": 764769.4
+    "deals": 163,
+    "paid_deals": 31,
+    "revenue": 1070991.0
   },
   {
     "month": "2024-12",
-    "utm_source": "yandex",
-    "utm_medium": "cpc",
-    "deals": 191,
-    "paid_deals": 4,
-    "revenue": 116727.0
-  },
-  {
-    "month": "2024-12",
-    "utm_source": "social",
-    "utm_medium": "tg-cyber-ed",
-    "deals": 3,
-    "paid_deals": 2,
-    "revenue": 38030.0
-  },
-  {
-    "month": "2024-12",
-    "utm_source": "email",
-    "utm_medium": "yan_anons_sec",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 34896.0
-  },
-  {
-    "month": "2024-12",
-    "utm_source": "email",
-    "utm_medium": "sp_track_i_bilet_offzone",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 29160.0
-  },
-  {
-    "month": "2024-12",
-    "utm_source": "email",
-    "utm_medium": "mayo_anons_uno",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 29080.0
+    "utm_source": "undefined",
+    "utm_medium": "undefined",
+    "deals": 123,
+    "paid_deals": 16,
+    "revenue": 663345.2
   },
   {
     "month": "2024-12",
     "utm_source": "social",
     "utm_medium": "vk_cyber-ed",
-    "deals": 3,
-    "paid_deals": 1,
-    "revenue": 15876.0
+    "deals": 2,
+    "paid_deals": 2,
+    "revenue": 56196.0
   },
   {
     "month": "2024-12",
-    "utm_source": "email",
-    "utm_medium": "sep_anons_uno",
-    "deals": 2,
-    "paid_deals": 1,
-    "revenue": 7200.0
+    "utm_source": "yandex",
+    "utm_medium": "cpc",
+    "deals": 190,
+    "paid_deals": 2,
+    "revenue": 56117.0
   },
   {
     "month": "2024-12",
@@ -3970,8 +3666,40 @@
   {
     "month": "2024-12",
     "utm_source": "email",
+    "utm_medium": "mayo_anons_uno",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-12",
+    "utm_source": "email",
     "utm_medium": "oct_anons_uno",
     "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-12",
+    "utm_source": "email",
+    "utm_medium": "sep_anons_uno",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-12",
+    "utm_source": "email",
+    "utm_medium": "sp_track_i_bilet_offzone",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-12",
+    "utm_source": "email",
+    "utm_medium": "yan_anons_sec",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4020,6 +3748,14 @@
     "utm_source": "social",
     "utm_medium": "tg",
     "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2024-12",
+    "utm_source": "social",
+    "utm_medium": "tg-cyber-ed",
+    "deals": 3,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4081,27 +3817,19 @@
   },
   {
     "month": "2025-01",
-    "utm_source": "undefined",
-    "utm_medium": "undefined",
-    "deals": 117,
-    "paid_deals": 17,
-    "revenue": 499874.2
-  },
-  {
-    "month": "2025-01",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 142,
-    "paid_deals": 13,
-    "revenue": 380031.8
+    "deals": 114,
+    "paid_deals": 28,
+    "revenue": 1149357.0
   },
   {
     "month": "2025-01",
-    "utm_source": "social",
-    "utm_medium": "vk_cyber-ed",
-    "deals": 5,
-    "paid_deals": 2,
-    "revenue": 50946.0
+    "utm_source": "undefined",
+    "utm_medium": "undefined",
+    "deals": 103,
+    "paid_deals": 18,
+    "revenue": 551425.0
   },
   {
     "month": "2025-01",
@@ -4113,9 +3841,25 @@
   },
   {
     "month": "2025-01",
+    "utm_source": "refferal",
+    "utm_medium": "classberu",
+    "deals": 1,
+    "paid_deals": 1,
+    "revenue": 35070.0
+  },
+  {
+    "month": "2025-01",
+    "utm_source": "social",
+    "utm_medium": "vk_cyber-ed",
+    "deals": 3,
+    "paid_deals": 1,
+    "revenue": 35070.0
+  },
+  {
+    "month": "2025-01",
     "utm_source": "social",
     "utm_medium": "tg_alumni",
-    "deals": 2,
+    "deals": 1,
     "paid_deals": 1,
     "revenue": 32565.0
   },
@@ -4132,14 +3876,6 @@
     "utm_source": "email",
     "utm_medium": "sep_anons_uno",
     "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2025-01",
-    "utm_source": "refferal",
-    "utm_medium": "classberu",
-    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4219,25 +3955,25 @@
     "month": "2025-01",
     "utm_source": "yandex",
     "utm_medium": "cpc",
-    "deals": 302,
+    "deals": 301,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "month": "2025-02",
-    "utm_source": "undefined",
-    "utm_medium": "undefined",
-    "deals": 200,
-    "paid_deals": 21,
-    "revenue": 720333.8
+    "utm_source": null,
+    "utm_medium": null,
+    "deals": 233,
+    "paid_deals": 42,
+    "revenue": 4817501.1
   },
   {
     "month": "2025-02",
-    "utm_source": null,
-    "utm_medium": null,
-    "deals": 271,
-    "paid_deals": 20,
-    "revenue": 397731.5
+    "utm_source": "undefined",
+    "utm_medium": "undefined",
+    "deals": 188,
+    "paid_deals": 24,
+    "revenue": 920543.4
   },
   {
     "month": "2025-02",
@@ -4249,19 +3985,19 @@
   },
   {
     "month": "2025-02",
-    "utm_source": "yandex",
-    "utm_medium": "cpc",
-    "deals": 351,
-    "paid_deals": 4,
-    "revenue": 148320.0
+    "utm_source": "social",
+    "utm_medium": "tg_cyber-ed-news",
+    "deals": 6,
+    "paid_deals": 3,
+    "revenue": 82760.0
   },
   {
     "month": "2025-02",
-    "utm_source": "social",
-    "utm_medium": "tg_cyber-ed-news",
-    "deals": 9,
-    "paid_deals": 5,
-    "revenue": 135660.0
+    "utm_source": "yandex",
+    "utm_medium": "cpc",
+    "deals": 349,
+    "paid_deals": 2,
+    "revenue": 74160.0
   },
   {
     "month": "2025-02",
@@ -4283,7 +4019,7 @@
     "month": "2025-02",
     "utm_source": "posev",
     "utm_medium": "hacking",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 1,
     "revenue": 30060.0
   },
@@ -4294,14 +4030,6 @@
     "deals": 2,
     "paid_deals": 1,
     "revenue": 26172.0
-  },
-  {
-    "month": "2025-02",
-    "utm_source": "email",
-    "utm_medium": "yan_anons_sec",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 21060.0
   },
   {
     "month": "2025-02",
@@ -4330,7 +4058,7 @@
   {
     "month": "2025-02",
     "utm_source": "email",
-    "utm_medium": "mayo_anons_uno",
+    "utm_medium": "r-301",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -4338,7 +4066,7 @@
   {
     "month": "2025-02",
     "utm_source": "email",
-    "utm_medium": "r-301",
+    "utm_medium": "yan_anons_sec",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -4356,14 +4084,6 @@
     "utm_source": "seo",
     "utm_medium": "bsoc_article",
     "deals": 15,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2025-02",
-    "utm_source": "seo",
-    "utm_medium": "interview_vsevolod",
-    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4457,99 +4177,59 @@
   },
   {
     "month": "2025-03",
-    "utm_source": "undefined",
-    "utm_medium": "undefined",
-    "deals": 267,
-    "paid_deals": 29,
-    "revenue": 1091724.0
+    "utm_source": null,
+    "utm_medium": null,
+    "deals": 300,
+    "paid_deals": 35,
+    "revenue": 1674916.4
   },
   {
     "month": "2025-03",
-    "utm_source": null,
-    "utm_medium": null,
-    "deals": 341,
-    "paid_deals": 27,
-    "revenue": 749872.4
+    "utm_source": "undefined",
+    "utm_medium": "undefined",
+    "deals": 238,
+    "paid_deals": 15,
+    "revenue": 717682.0
+  },
+  {
+    "month": "2025-03",
+    "utm_source": "seo",
+    "utm_medium": "bsoc_article",
+    "deals": 17,
+    "paid_deals": 1,
+    "revenue": 50940.0
   },
   {
     "month": "2025-03",
     "utm_source": "tutuortop",
     "utm_medium": "refferal",
-    "deals": 4,
-    "paid_deals": 3,
-    "revenue": 125370.0
-  },
-  {
-    "month": "2025-03",
-    "utm_source": "seo",
-    "utm_medium": "pentester_article",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 98560.0
-  },
-  {
-    "month": "2025-03",
-    "utm_source": "yandex",
-    "utm_medium": "cpc",
-    "deals": 392,
-    "paid_deals": 2,
-    "revenue": 59720.0
-  },
-  {
-    "month": "2025-03",
-    "utm_source": "social",
-    "utm_medium": "tg_alumni",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 54180.0
-  },
-  {
-    "month": "2025-03",
-    "utm_source": "social",
-    "utm_medium": "tg_cyber-ed",
     "deals": 2,
-    "paid_deals": 2,
-    "revenue": 37530.0
-  },
-  {
-    "month": "2025-03",
-    "utm_source": "email",
-    "utm_medium": "nov_anons",
-    "deals": 1,
     "paid_deals": 1,
-    "revenue": 32400.0
+    "revenue": 49599.0
   },
   {
     "month": "2025-03",
     "utm_source": "tg",
     "utm_medium": "undefined",
-    "deals": 30,
+    "deals": 29,
     "paid_deals": 1,
     "revenue": 32200.0
   },
   {
     "month": "2025-03",
+    "utm_source": "yandex",
+    "utm_medium": "cpc",
+    "deals": 391,
+    "paid_deals": 1,
+    "revenue": 29860.0
+  },
+  {
+    "month": "2025-03",
     "utm_source": "social",
     "utm_medium": "tg",
-    "deals": 4,
+    "deals": 3,
     "paid_deals": 1,
     "revenue": 26172.0
-  },
-  {
-    "month": "2025-03",
-    "utm_source": "email",
-    "utm_medium": "feb_anons",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 17640.0
-  },
-  {
-    "month": "2025-03",
-    "utm_source": "partner",
-    "utm_medium": "standoff",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 14112.0
   },
   {
     "month": "2025-03",
@@ -4563,7 +4243,7 @@
     "month": "2025-03",
     "utm_source": "refferal",
     "utm_medium": "tutortop",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 1,
     "revenue": 10080.0
   },
@@ -4602,8 +4282,24 @@
   {
     "month": "2025-03",
     "utm_source": "email",
+    "utm_medium": "feb_anons",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-03",
+    "utm_source": "email",
     "utm_medium": "mail",
     "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-03",
+    "utm_source": "email",
+    "utm_medium": "nov_anons",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4641,6 +4337,14 @@
   },
   {
     "month": "2025-03",
+    "utm_source": "partner",
+    "utm_medium": "standoff",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-03",
     "utm_source": "posev",
     "utm_medium": "tg",
     "deals": 132,
@@ -4651,7 +4355,7 @@
     "month": "2025-03",
     "utm_source": "posev",
     "utm_medium": "undefined",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4674,15 +4378,15 @@
   {
     "month": "2025-03",
     "utm_source": "seo",
-    "utm_medium": "bsoc_article",
-    "deals": 17,
+    "utm_medium": "bsoc_article#form_block_id",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "month": "2025-03",
     "utm_source": "seo",
-    "utm_medium": "bsoc_article#form_block_id",
+    "utm_medium": "pentester_article",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -4698,6 +4402,22 @@
   {
     "month": "2025-03",
     "utm_source": "social",
+    "utm_medium": "tg_alumni",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-03",
+    "utm_source": "social",
+    "utm_medium": "tg_cyber-ed",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-03",
+    "utm_source": "social",
     "utm_medium": "tg_cyber-ed-news",
     "deals": 2,
     "paid_deals": 0,
@@ -4707,14 +4427,6 @@
     "month": "2025-03",
     "utm_source": "tg",
     "utm_medium": "bsoc_article",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2025-03",
-    "utm_source": "tg",
-    "utm_medium": "mrrobot",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -4803,63 +4515,39 @@
     "month": "2025-04",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 708,
-    "paid_deals": 20,
-    "revenue": 602113.95
+    "deals": 650,
+    "paid_deals": 34,
+    "revenue": 1361401.14
   },
   {
     "month": "2025-04",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 155,
-    "paid_deals": 13,
-    "revenue": 263901.0
-  },
-  {
-    "month": "2025-04",
-    "utm_source": "yandex",
-    "utm_medium": "cpc",
-    "deals": 154,
-    "paid_deals": 4,
-    "revenue": 130164.3
+    "deals": 139,
+    "paid_deals": 12,
+    "revenue": 303623.0
   },
   {
     "month": "2025-04",
     "utm_source": "tutuortop",
     "utm_medium": "refferal",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 1,
     "revenue": 76960.0
   },
   {
     "month": "2025-04",
-    "utm_source": "email",
-    "utm_medium": "mar_anons_uno",
-    "deals": 1,
+    "utm_source": "yandex",
+    "utm_medium": "cpc",
+    "deals": 152,
     "paid_deals": 1,
-    "revenue": 39130.5
-  },
-  {
-    "month": "2025-04",
-    "utm_source": "social",
-    "utm_medium": "tg-cyber-ed",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 37440.0
-  },
-  {
-    "month": "2025-04",
-    "utm_source": "email",
-    "utm_medium": "agosto_anons_uno",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 24012.0
+    "revenue": 22200.3
   },
   {
     "month": "2025-04",
     "utm_source": "Securitylabru",
     "utm_medium": null,
-    "deals": 2,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4867,7 +4555,15 @@
     "month": "2025-04",
     "utm_source": "Unisender",
     "utm_medium": "email",
-    "deals": 4,
+    "deals": 3,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-04",
+    "utm_source": "email",
+    "utm_medium": "agosto_anons_uno",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4875,6 +4571,14 @@
     "month": "2025-04",
     "utm_source": "email",
     "utm_medium": "mail",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-04",
+    "utm_source": "email",
+    "utm_medium": "mar_anons_uno",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -4891,7 +4595,7 @@
     "month": "2025-04",
     "utm_source": "posev",
     "utm_medium": "tg",
-    "deals": 4,
+    "deals": 3,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4899,7 +4603,7 @@
     "month": "2025-04",
     "utm_source": "seo",
     "utm_medium": "bsoc_article",
-    "deals": 12,
+    "deals": 11,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4907,7 +4611,15 @@
     "month": "2025-04",
     "utm_source": "social",
     "utm_medium": "tg",
-    "deals": 2,
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-04",
+    "utm_source": "social",
+    "utm_medium": "tg-cyber-ed",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4923,7 +4635,7 @@
     "month": "2025-04",
     "utm_source": "tg",
     "utm_medium": null,
-    "deals": 5,
+    "deals": 3,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4939,7 +4651,7 @@
     "month": "2025-04",
     "utm_source": "tg",
     "utm_medium": "undefined",
-    "deals": 2,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4955,7 +4667,7 @@
     "month": "2025-04",
     "utm_source": "tutortop",
     "utm_medium": "refferal",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -4979,33 +4691,25 @@
     "month": "2025-04",
     "utm_source": "yandex_cpc",
     "utm_medium": "r301",
-    "deals": 5,
+    "deals": 4,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "month": "2025-05",
-    "utm_source": "undefined",
-    "utm_medium": "undefined",
-    "deals": 263,
-    "paid_deals": 64,
-    "revenue": 2398680.9
-  },
-  {
-    "month": "2025-05",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 790,
-    "paid_deals": 77,
-    "revenue": 2001309.55
+    "deals": 714,
+    "paid_deals": 25,
+    "revenue": 970070.65
   },
   {
     "month": "2025-05",
-    "utm_source": "yandex",
-    "utm_medium": "cpc",
-    "deals": 84,
-    "paid_deals": 5,
-    "revenue": 144677.0
+    "utm_source": "undefined",
+    "utm_medium": "undefined",
+    "deals": 240,
+    "paid_deals": 8,
+    "revenue": 231644.4
   },
   {
     "month": "2025-05",
@@ -5017,115 +4721,19 @@
   },
   {
     "month": "2025-05",
-    "utm_source": "social",
-    "utm_medium": "tg-cyber-ed",
-    "deals": 4,
-    "paid_deals": 3,
-    "revenue": 90940.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "social",
-    "utm_medium": "tg_cyber-ed",
-    "deals": 5,
+    "utm_source": "seo",
+    "utm_medium": "bsoc_article",
+    "deals": 16,
     "paid_deals": 2,
-    "revenue": 88260.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "email",
-    "utm_medium": "anons3",
-    "deals": 2,
-    "paid_deals": 2,
-    "revenue": 79920.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "diagnostika",
-    "utm_medium": "tg_bot",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 78624.0
+    "revenue": 53633.3
   },
   {
     "month": "2025-05",
     "utm_source": "tg",
     "utm_medium": "undefined",
-    "deals": 20,
-    "paid_deals": 2,
-    "revenue": 61300.3
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "refferal",
-    "utm_medium": "tutortop",
-    "deals": 3,
-    "paid_deals": 2,
-    "revenue": 60870.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "email",
-    "utm_medium": "sp_track_i_bilet_offzone",
-    "deals": 1,
+    "deals": 18,
     "paid_deals": 1,
-    "revenue": 52424.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "email",
-    "utm_medium": "special",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 52416.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "social",
-    "utm_medium": "vk_cyber-ed",
-    "deals": 3,
-    "paid_deals": 2,
-    "revenue": 45036.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "email",
-    "utm_medium": "apr_anons_uno",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 41160.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "email",
-    "utm_medium": "mayo_anons_uno",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 39102.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "email",
-    "utm_medium": "sale-summer24-1",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 39102.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "social",
-    "utm_medium": "tg",
-    "deals": 5,
-    "paid_deals": 1,
-    "revenue": 32470.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "email",
-    "utm_medium": "sep_anons_uno",
-    "deals": 2,
-    "paid_deals": 1,
-    "revenue": 30780.0
+    "revenue": 39100.0
   },
   {
     "month": "2025-05",
@@ -5134,62 +4742,6 @@
     "deals": 12,
     "paid_deals": 1,
     "revenue": 29080.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "refferal",
-    "utm_medium": "ciso",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 24192.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "email",
-    "utm_medium": "anons-22-10",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 21060.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "email",
-    "utm_medium": "nov_anons",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 21060.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "email",
-    "utm_medium": "anons",
-    "deals": 4,
-    "paid_deals": 1,
-    "revenue": 17640.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "social",
-    "utm_medium": "post-15-10",
-    "deals": 2,
-    "paid_deals": 1,
-    "revenue": 17640.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "email",
-    "utm_medium": "start",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 11988.0
-  },
-  {
-    "month": "2025-05",
-    "utm_source": "seo",
-    "utm_medium": "bsoc_article",
-    "deals": 17,
-    "paid_deals": 2,
-    "revenue": 9866.6
   },
   {
     "month": "2025-05",
@@ -5219,6 +4771,46 @@
     "month": "2025-05",
     "utm_source": "Unknown UTM Source",
     "utm_medium": "Unknown UTM Medium",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "diagnostika",
+    "utm_medium": "tg_bot",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "email",
+    "utm_medium": "anons",
+    "deals": 4,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "email",
+    "utm_medium": "anons-22-10",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "email",
+    "utm_medium": "anons3",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "email",
+    "utm_medium": "apr_anons_uno",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -5274,7 +4866,63 @@
   {
     "month": "2025-05",
     "utm_source": "email",
+    "utm_medium": "mayo_anons_uno",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "email",
+    "utm_medium": "nov_anons",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "email",
     "utm_medium": "oct_anons_uno",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "email",
+    "utm_medium": "sale-summer24-1",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "email",
+    "utm_medium": "sep_anons_uno",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "email",
+    "utm_medium": "sp_track_i_bilet_offzone",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "email",
+    "utm_medium": "special",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "email",
+    "utm_medium": "start",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -5313,6 +4961,22 @@
   },
   {
     "month": "2025-05",
+    "utm_source": "refferal",
+    "utm_medium": "ciso",
+    "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "refferal",
+    "utm_medium": "tutortop",
+    "deals": 3,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
     "utm_source": "seo",
     "utm_medium": "bsoc_article#form_block_id",
     "deals": 3,
@@ -5346,8 +5010,40 @@
   {
     "month": "2025-05",
     "utm_source": "social",
+    "utm_medium": "post-15-10",
+    "deals": 2,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "social",
+    "utm_medium": "tg",
+    "deals": 5,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "social",
+    "utm_medium": "tg-cyber-ed",
+    "deals": 4,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "social",
     "utm_medium": "tg_alumni",
     "deals": 3,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "social",
+    "utm_medium": "tg_cyber-ed",
+    "deals": 5,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5364,6 +5060,14 @@
     "utm_source": "social",
     "utm_medium": "tg_ne_hacking_a_ib",
     "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
+    "utm_source": "social",
+    "utm_medium": "vk_cyber-ed",
+    "deals": 3,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5417,6 +5121,14 @@
   },
   {
     "month": "2025-05",
+    "utm_source": "yandex",
+    "utm_medium": "cpc",
+    "deals": 78,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-05",
     "utm_source": "yandex_cpc",
     "utm_medium": "b301",
     "deals": 74,
@@ -5427,7 +5139,7 @@
     "month": "2025-05",
     "utm_source": "yandex_cpc",
     "utm_medium": "r301",
-    "deals": 143,
+    "deals": 142,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5443,57 +5155,33 @@
     "month": "2025-06",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 457,
-    "paid_deals": 12,
-    "revenue": 431166.01
+    "deals": 412,
+    "paid_deals": 19,
+    "revenue": 858595.69
   },
   {
     "month": "2025-06",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 534,
-    "paid_deals": 11,
-    "revenue": 288956.3
+    "deals": 525,
+    "paid_deals": 10,
+    "revenue": 426992.0
   },
   {
     "month": "2025-06",
     "utm_source": "Unknown UTM Source",
     "utm_medium": "Unknown UTM Medium",
-    "deals": 11,
+    "deals": 10,
     "paid_deals": 2,
-    "revenue": 44400.6
-  },
-  {
-    "month": "2025-06",
-    "utm_source": "social",
-    "utm_medium": "tg",
-    "deals": 2,
-    "paid_deals": 1,
-    "revenue": 41160.0
+    "revenue": 63600.3
   },
   {
     "month": "2025-06",
     "utm_source": "yandex",
     "utm_medium": "cpc",
-    "deals": 16,
+    "deals": 14,
     "paid_deals": 2,
     "revenue": 31600.0
-  },
-  {
-    "month": "2025-06",
-    "utm_source": "tg",
-    "utm_medium": "social",
-    "deals": 24,
-    "paid_deals": 1,
-    "revenue": 29080.0
-  },
-  {
-    "month": "2025-06",
-    "utm_source": "Community",
-    "utm_medium": null,
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
   },
   {
     "month": "2025-06",
@@ -5531,7 +5219,7 @@
     "month": "2025-06",
     "utm_source": "gosuslugi",
     "utm_medium": "social",
-    "deals": 6204,
+    "deals": 6201,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5547,7 +5235,7 @@
     "month": "2025-06",
     "utm_source": "mail",
     "utm_medium": "email",
-    "deals": 6,
+    "deals": 4,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5555,7 +5243,7 @@
     "month": "2025-06",
     "utm_source": "posev",
     "utm_medium": "tg",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5577,16 +5265,16 @@
   },
   {
     "month": "2025-06",
-    "utm_source": "seo",
-    "utm_medium": "pentester_article",
-    "deals": 2,
+    "utm_source": "social",
+    "utm_medium": "anons1-19-09",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
   {
     "month": "2025-06",
     "utm_source": "social",
-    "utm_medium": "anons1-19-09",
+    "utm_medium": "tg",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -5602,8 +5290,8 @@
   {
     "month": "2025-06",
     "utm_source": "tg",
-    "utm_medium": "undefined",
-    "deals": 1,
+    "utm_medium": "social",
+    "deals": 21,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5633,43 +5321,27 @@
   },
   {
     "month": "2025-07",
-    "utm_source": "undefined",
-    "utm_medium": "undefined",
-    "deals": 121,
-    "paid_deals": 13,
-    "revenue": 274667.1
+    "utm_source": null,
+    "utm_medium": null,
+    "deals": 245,
+    "paid_deals": 19,
+    "revenue": 1019216.6
   },
   {
     "month": "2025-07",
-    "utm_source": null,
-    "utm_medium": null,
-    "deals": 295,
-    "paid_deals": 14,
-    "revenue": 259945.0
+    "utm_source": "undefined",
+    "utm_medium": "undefined",
+    "deals": 104,
+    "paid_deals": 7,
+    "revenue": 181478.3
   },
   {
     "month": "2025-07",
     "utm_source": "tg",
     "utm_medium": "social",
-    "deals": 27,
-    "paid_deals": 5,
-    "revenue": 60000.0
-  },
-  {
-    "month": "2025-07",
-    "utm_source": "email",
-    "utm_medium": "anons",
-    "deals": 1,
-    "paid_deals": 1,
-    "revenue": 33160.0
-  },
-  {
-    "month": "2025-07",
-    "utm_source": "tutuortop",
-    "utm_medium": "refferal",
-    "deals": 5,
-    "paid_deals": 1,
-    "revenue": 26172.0
+    "deals": 23,
+    "paid_deals": 4,
+    "revenue": 36990.0
   },
   {
     "month": "2025-07",
@@ -5691,7 +5363,7 @@
     "month": "2025-07",
     "utm_source": "gosuslugi",
     "utm_medium": "social",
-    "deals": 125,
+    "deals": 124,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5723,7 +5395,7 @@
     "month": "2025-07",
     "utm_source": "seo",
     "utm_medium": "pentester_article#course_programm",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5732,6 +5404,14 @@
     "utm_source": "social",
     "utm_medium": "anons1-19-09",
     "deals": 1,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-07",
+    "utm_source": "tutuortop",
+    "utm_medium": "refferal",
+    "deals": 5,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5747,47 +5427,31 @@
     "month": "2025-08",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 3029,
-    "paid_deals": 14,
-    "revenue": 485694.6
+    "deals": 210,
+    "paid_deals": 18,
+    "revenue": 1005003.6
   },
   {
     "month": "2025-08",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 135,
-    "paid_deals": 8,
-    "revenue": 329224.3
+    "deals": 113,
+    "paid_deals": 9,
+    "revenue": 352862.3
   },
   {
     "month": "2025-08",
     "utm_source": "tg",
     "utm_medium": "social",
-    "deals": 4,
-    "paid_deals": 2,
-    "revenue": 111880.0
+    "deals": 2,
+    "paid_deals": 1,
+    "revenue": 82800.0
   },
   {
     "month": "2025-08",
     "utm_source": "Securitylab.ru",
     "utm_medium": "undefined",
     "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2025-08",
-    "utm_source": "Unknown UTM Source",
-    "utm_medium": "Unknown UTM Medium",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2025-08",
-    "utm_source": "chatgpt.com",
-    "utm_medium": null,
-    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5803,7 +5467,7 @@
     "month": "2025-08",
     "utm_source": "e-mail",
     "utm_medium": "social",
-    "deals": 2,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5811,7 +5475,7 @@
     "month": "2025-08",
     "utm_source": "email",
     "utm_medium": "11_08",
-    "deals": 8,
+    "deals": 6,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5819,7 +5483,7 @@
     "month": "2025-08",
     "utm_source": "email",
     "utm_medium": "13_08",
-    "deals": 3,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5859,15 +5523,7 @@
     "month": "2025-08",
     "utm_source": "email",
     "utm_medium": "social",
-    "deals": 11,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2025-08",
-    "utm_source": "fb",
-    "utm_medium": "paid",
-    "deals": 468,
+    "deals": 5,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5876,14 +5532,6 @@
     "utm_source": "gosuslugi",
     "utm_medium": "social",
     "deals": 33,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2025-08",
-    "utm_source": "ig",
-    "utm_medium": "paid",
-    "deals": 79,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5915,7 +5563,7 @@
     "month": "2025-08",
     "utm_source": "social",
     "utm_medium": null,
-    "deals": 2,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5939,7 +5587,7 @@
     "month": "2025-08",
     "utm_source": "tutuortop",
     "utm_medium": "refferal",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -5955,23 +5603,23 @@
     "month": "2025-09",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 894,
-    "paid_deals": 5,
-    "revenue": 156505.65
+    "deals": 389,
+    "paid_deals": 11,
+    "revenue": 547313.65
   },
   {
     "month": "2025-09",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 129,
-    "paid_deals": 4,
-    "revenue": 110640.0
+    "deals": 118,
+    "paid_deals": 7,
+    "revenue": 303280.0
   },
   {
     "month": "2025-09",
     "utm_source": "e-mail",
     "utm_medium": "social",
-    "deals": 6,
+    "deals": 4,
     "paid_deals": 1,
     "revenue": 59200.0
   },
@@ -5979,7 +5627,7 @@
     "month": "2025-09",
     "utm_source": "yandex",
     "utm_medium": "cpc",
-    "deals": 24,
+    "deals": 16,
     "paid_deals": 1,
     "revenue": 54435.0
   },
@@ -5987,15 +5635,15 @@
     "month": "2025-09",
     "utm_source": "tg",
     "utm_medium": "social",
-    "deals": 10,
-    "paid_deals": 2,
-    "revenue": 32160.0
+    "deals": 6,
+    "paid_deals": 1,
+    "revenue": 16080.0
   },
   {
     "month": "2025-09",
     "utm_source": "KursHub",
     "utm_medium": "KursHub",
-    "deals": 2,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6028,14 +5676,6 @@
     "utm_source": "dzen",
     "utm_medium": "social",
     "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2025-09",
-    "utm_source": "email",
-    "utm_medium": "julio_anons_uno",
-    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6107,7 +5747,7 @@
     "month": "2025-09",
     "utm_source": "ya",
     "utm_medium": "cpc",
-    "deals": 2,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6123,25 +5763,33 @@
     "month": "2025-10",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 1384,
-    "paid_deals": 16,
-    "revenue": 911793.15
+    "deals": 1075,
+    "paid_deals": 31,
+    "revenue": 2049915.5
   },
   {
     "month": "2025-10",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 108,
-    "paid_deals": 9,
-    "revenue": 286618.65
+    "deals": 97,
+    "paid_deals": 10,
+    "revenue": 418652.3
+  },
+  {
+    "month": "2025-10",
+    "utm_source": "tg",
+    "utm_medium": "social",
+    "deals": 40,
+    "paid_deals": 3,
+    "revenue": 149280.0
   },
   {
     "month": "2025-10",
     "utm_source": "site",
     "utm_medium": "social",
-    "deals": 46,
-    "paid_deals": 3,
-    "revenue": 198100.0
+    "deals": 44,
+    "paid_deals": 2,
+    "revenue": 131500.0
   },
   {
     "month": "2025-10",
@@ -6161,14 +5809,6 @@
   },
   {
     "month": "2025-10",
-    "utm_source": "social",
-    "utm_medium": "anons1-19-09",
-    "deals": 2,
-    "paid_deals": 1,
-    "revenue": 20967.0
-  },
-  {
-    "month": "2025-10",
     "utm_source": "Securitylab.ru",
     "utm_medium": null,
     "deals": 13,
@@ -6180,14 +5820,6 @@
     "utm_source": "Sendsay",
     "utm_medium": "email",
     "deals": 218,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2025-10",
-    "utm_source": "chatgpt.com",
-    "utm_medium": null,
-    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6243,7 +5875,15 @@
     "month": "2025-10",
     "utm_source": "seo",
     "utm_medium": "bsoc_article",
-    "deals": 97,
+    "deals": 95,
+    "paid_deals": 0,
+    "revenue": 0.0
+  },
+  {
+    "month": "2025-10",
+    "utm_source": "social",
+    "utm_medium": "anons1-19-09",
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6260,22 +5900,6 @@
     "utm_source": "social",
     "utm_medium": "vcru",
     "deals": 2,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2025-10",
-    "utm_source": "tg",
-    "utm_medium": "social",
-    "deals": 44,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2025-10",
-    "utm_source": "tg",
-    "utm_medium": "tg_cyber-ed-news",
-    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6323,7 +5947,7 @@
     "month": "2025-10",
     "utm_source": "yandex",
     "utm_medium": "cpc",
-    "deals": 29,
+    "deals": 23,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6347,15 +5971,15 @@
     "month": "2025-11",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 739,
-    "paid_deals": 19,
-    "revenue": 833326.0
+    "deals": 475,
+    "paid_deals": 27,
+    "revenue": 1844576.0
   },
   {
     "month": "2025-11",
     "utm_source": "yandex",
     "utm_medium": "cpc",
-    "deals": 105,
+    "deals": 104,
     "paid_deals": 1,
     "revenue": 24467.0
   },
@@ -6403,7 +6027,7 @@
     "month": "2025-11",
     "utm_source": "e-mail",
     "utm_medium": "social",
-    "deals": 7,
+    "deals": 6,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6451,8 +6075,8 @@
     "month": "2025-11",
     "utm_source": "partners",
     "utm_medium": "cpa",
-    "deals": 9,
-    "paid_deals": 0,
+    "deals": 8,
+    "paid_deals": 1,
     "revenue": 0.0
   },
   {
@@ -6547,7 +6171,7 @@
     "month": "2025-11",
     "utm_source": "tg",
     "utm_medium": "social",
-    "deals": 7,
+    "deals": 6,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6563,7 +6187,7 @@
     "month": "2025-11",
     "utm_source": "tutuortop",
     "utm_medium": "refferal",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6571,14 +6195,6 @@
     "month": "2025-11",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 5,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2025-11",
-    "utm_source": "vstrache_s_nastavnikom",
-    "utm_medium": "social",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -6619,7 +6235,7 @@
     "month": "2025-11",
     "utm_source": "yandex",
     "utm_medium": "vea_poisk",
-    "deals": 6,
+    "deals": 5,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6635,23 +6251,23 @@
     "month": "2025-12",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 740,
-    "paid_deals": 32,
-    "revenue": 2298665.0
+    "deals": 597,
+    "paid_deals": 38,
+    "revenue": 3024865.0
   },
   {
     "month": "2025-12",
     "utm_source": "hacker_tab",
     "utm_medium": "hacker",
-    "deals": 15,
-    "paid_deals": 2,
-    "revenue": 277932.0
+    "deals": 14,
+    "paid_deals": 3,
+    "revenue": 340832.0
   },
   {
     "month": "2025-12",
     "utm_source": "yd",
     "utm_medium": "context",
-    "deals": 233,
+    "deals": 121,
     "paid_deals": 2,
     "revenue": 171817.68
   },
@@ -6715,7 +6331,7 @@
     "month": "2025-12",
     "utm_source": "chatgpt.com",
     "utm_medium": null,
-    "deals": 2,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6723,7 +6339,7 @@
     "month": "2025-12",
     "utm_source": "demo_pentest_181225",
     "utm_medium": "demo_pentest_181225",
-    "deals": 2,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6731,14 +6347,6 @@
     "month": "2025-12",
     "utm_source": "demo_soc_181225",
     "utm_medium": "demo_soc_181225",
-    "deals": 2,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2025-12",
-    "utm_source": "email",
-    "utm_medium": "email",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -6746,7 +6354,7 @@
   {
     "month": "2025-12",
     "utm_source": "email",
-    "utm_medium": "mail",
+    "utm_medium": "email",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -6787,7 +6395,7 @@
     "month": "2025-12",
     "utm_source": "test041225_01",
     "utm_medium": "test041225_01",
-    "deals": 2,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6795,7 +6403,7 @@
     "month": "2025-12",
     "utm_source": "test051225_01_prof-soc-demo",
     "utm_medium": "test051225_01",
-    "deals": 2,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6803,7 +6411,7 @@
     "month": "2025-12",
     "utm_source": "test051225_01_prof_pentest_demo",
     "utm_medium": "test051225_01",
-    "deals": 2,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6819,7 +6427,7 @@
     "month": "2025-12",
     "utm_source": "undefined",
     "utm_medium": "undefined",
-    "deals": 5,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6851,7 +6459,7 @@
     "month": "2025-12",
     "utm_source": "yandex",
     "utm_medium": "context",
-    "deals": 13,
+    "deals": 9,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6867,7 +6475,7 @@
     "month": "2025-12",
     "utm_source": "yd",
     "utm_medium": "search",
-    "deals": 38,
+    "deals": 19,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6891,15 +6499,15 @@
     "month": "2026-01",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 1020,
-    "paid_deals": 40,
-    "revenue": 3783916.0
+    "deals": 870,
+    "paid_deals": 41,
+    "revenue": 3706696.0
   },
   {
     "month": "2026-01",
     "utm_source": "Sendsay",
     "utm_medium": "email",
-    "deals": 268,
+    "deals": 265,
     "paid_deals": 3,
     "revenue": 326588.4
   },
@@ -6915,15 +6523,15 @@
     "month": "2026-01",
     "utm_source": "yd",
     "utm_medium": "yanvar_context",
-    "deals": 224,
-    "paid_deals": 3,
+    "deals": 222,
+    "paid_deals": 2,
     "revenue": 192375.0
   },
   {
     "month": "2026-01",
     "utm_source": "yd",
     "utm_medium": "context",
-    "deals": 667,
+    "deals": 406,
     "paid_deals": 1,
     "revenue": 127429.2
   },
@@ -6931,7 +6539,7 @@
     "month": "2026-01",
     "utm_source": "email",
     "utm_medium": "email",
-    "deals": 16,
+    "deals": 14,
     "paid_deals": 1,
     "revenue": 127429.0
   },
@@ -6971,7 +6579,7 @@
     "month": "2026-01",
     "utm_source": "email",
     "utm_medium": "social",
-    "deals": 3,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -6995,7 +6603,7 @@
     "month": "2026-01",
     "utm_source": "hacker_tab",
     "utm_medium": "hacker",
-    "deals": 11,
+    "deals": 8,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -7035,7 +6643,7 @@
     "month": "2026-01",
     "utm_source": "sendsay",
     "utm_medium": "email",
-    "deals": 9,
+    "deals": 8,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -7059,7 +6667,7 @@
     "month": "2026-01",
     "utm_source": "site",
     "utm_medium": "social",
-    "deals": 22,
+    "deals": 21,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -7137,14 +6745,6 @@
   },
   {
     "month": "2026-01",
-    "utm_source": "undefined",
-    "utm_medium": "undefined",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-01",
     "utm_source": "vk",
     "utm_medium": "social",
     "deals": 1,
@@ -7163,7 +6763,7 @@
     "month": "2026-01",
     "utm_source": "yd",
     "utm_medium": "search",
-    "deals": 43,
+    "deals": 25,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -7179,7 +6779,7 @@
     "month": "2026-01",
     "utm_source": "yd",
     "utm_medium": "{source_type}",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -7187,15 +6787,15 @@
     "month": "2026-02",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 761,
+    "deals": 644,
     "paid_deals": 26,
-    "revenue": 3289231.32
+    "revenue": 3574591.32
   },
   {
     "month": "2026-02",
     "utm_source": "social",
     "utm_medium": "tg",
-    "deals": 46,
+    "deals": 45,
     "paid_deals": 1,
     "revenue": 143900.0
   },
@@ -7203,7 +6803,7 @@
     "month": "2026-02",
     "utm_source": "tg",
     "utm_medium": "social",
-    "deals": 8,
+    "deals": 7,
     "paid_deals": 1,
     "revenue": 143900.0
   },
@@ -7211,7 +6811,7 @@
     "month": "2026-02",
     "utm_source": "xaker",
     "utm_medium": "tg",
-    "deals": 16,
+    "deals": 15,
     "paid_deals": 1,
     "revenue": 143900.0
   },
@@ -7219,7 +6819,7 @@
     "month": "2026-02",
     "utm_source": "Securitylab.ru",
     "utm_medium": null,
-    "deals": 17,
+    "deals": 16,
     "paid_deals": 1,
     "revenue": 136072.32
   },
@@ -7227,7 +6827,7 @@
     "month": "2026-02",
     "utm_source": "sl",
     "utm_medium": "tg",
-    "deals": 67,
+    "deals": 65,
     "paid_deals": 2,
     "revenue": 127602.03
   },
@@ -7235,7 +6835,7 @@
     "month": "2026-02",
     "utm_source": "site",
     "utm_medium": "social",
-    "deals": 57,
+    "deals": 56,
     "paid_deals": 1,
     "revenue": 118900.0
   },
@@ -7243,7 +6843,7 @@
     "month": "2026-02",
     "utm_source": "yd",
     "utm_medium": "context",
-    "deals": 157,
+    "deals": 141,
     "paid_deals": 1,
     "revenue": 75510.0
   },
@@ -7267,7 +6867,7 @@
     "month": "2026-02",
     "utm_source": "Sendsay",
     "utm_medium": "email",
-    "deals": 155,
+    "deals": 154,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -7299,22 +6899,6 @@
     "month": "2026-02",
     "utm_source": "brand_250226_02",
     "utm_medium": "brand_250226_02",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
-    "utm_source": "chatgpt.com",
-    "utm_medium": null,
-    "deals": 3,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
-    "utm_source": "copilot.com",
-    "utm_medium": null,
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -7377,24 +6961,8 @@
   },
   {
     "month": "2026-02",
-    "utm_source": "ig",
-    "utm_medium": "social",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
     "utm_source": "kiberbez_130226_1",
     "utm_medium": "kiberbez_130226_1",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
-    "utm_source": "mitup",
-    "utm_medium": "presentation",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -7433,14 +7001,6 @@
   },
   {
     "month": "2026-02",
-    "utm_source": "perplexity",
-    "utm_medium": null,
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
     "utm_source": "pohek",
     "utm_medium": "tg",
     "deals": 23,
@@ -7473,22 +7033,6 @@
   },
   {
     "month": "2026-02",
-    "utm_source": "prof_pentest_demo_070226",
-    "utm_medium": "prof_pentest_demo_070226",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
-    "utm_source": "prof_pentest_demo_090226",
-    "utm_medium": "prof_pentest_demo_090226",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
     "utm_source": "prof_pentest_demo_1002226_2",
     "utm_medium": "prof_pentest_demo_1002226_2",
     "deals": 1,
@@ -7513,48 +7057,8 @@
   },
   {
     "month": "2026-02",
-    "utm_source": "prof_pentest_demo_2_070226",
-    "utm_medium": "prof_pentest_demo_2_070226",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
-    "utm_source": "prof_pentest_demo_test060226",
-    "utm_medium": "test060226",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
-    "utm_source": "prof_soc_demo_070226",
-    "utm_medium": "prof_soc_demo_070226",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
-    "utm_source": "prof_soc_demo_090226",
-    "utm_medium": "prof_soc_demo_090226",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
     "utm_source": "prof_soc_demo_1002226",
     "utm_medium": "prof_soc_demo_1002226",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
-    "utm_source": "prof_soc_demo_2_070226",
-    "utm_medium": "prof_soc_demo_2_070226",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -7579,7 +7083,7 @@
     "month": "2026-02",
     "utm_source": "rof_pentest_demo_240226_01",
     "utm_medium": "rof_pentest_demo_240226_01",
-    "deals": 2,
+    "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -7625,14 +7129,6 @@
   },
   {
     "month": "2026-02",
-    "utm_source": "test060226",
-    "utm_medium": "test060226",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
     "utm_source": "tsuniversity",
     "utm_medium": null,
     "deals": 2,
@@ -7643,14 +7139,6 @@
     "month": "2026-02",
     "utm_source": "tutuortop",
     "utm_medium": "refferal",
-    "deals": 3,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-02",
-    "utm_source": "undefined",
-    "utm_medium": "undefined",
     "deals": 3,
     "paid_deals": 0,
     "revenue": 0.0
@@ -7683,7 +7171,7 @@
     "month": "2026-02",
     "utm_source": "yd",
     "utm_medium": "search",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -7699,7 +7187,7 @@
     "month": "2026-02",
     "utm_source": "yd_prof_pentest_demo",
     "utm_medium": "context",
-    "deals": 26,
+    "deals": 25,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -7707,7 +7195,7 @@
     "month": "2026-02",
     "utm_source": "yd_prof_pentest_demo2",
     "utm_medium": "context",
-    "deals": 54,
+    "deals": 45,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -7715,7 +7203,7 @@
     "month": "2026-02",
     "utm_source": "yd_prof_soc_demo2",
     "utm_medium": "context",
-    "deals": 21,
+    "deals": 18,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -7723,23 +7211,23 @@
     "month": "2026-03",
     "utm_source": null,
     "utm_medium": null,
-    "deals": 1528,
-    "paid_deals": 26,
+    "deals": 1115,
+    "paid_deals": 25,
     "revenue": 2572199.24
   },
   {
     "month": "2026-03",
     "utm_source": "Sendsay",
     "utm_medium": "email",
-    "deals": 398,
-    "paid_deals": 4,
+    "deals": 397,
+    "paid_deals": 3,
     "revenue": 402920.0
   },
   {
     "month": "2026-03",
     "utm_source": "banner_header",
     "utm_medium": "website",
-    "deals": 29,
+    "deals": 27,
     "paid_deals": 2,
     "revenue": 273410.0
   },
@@ -7747,7 +7235,7 @@
     "month": "2026-03",
     "utm_source": "hacker_tab",
     "utm_medium": "hacker",
-    "deals": 7,
+    "deals": 6,
     "paid_deals": 1,
     "revenue": 136705.0
   },
@@ -7755,7 +7243,7 @@
     "month": "2026-03",
     "utm_source": "yd",
     "utm_medium": "context",
-    "deals": 359,
+    "deals": 352,
     "paid_deals": 2,
     "revenue": 51000.0
   },
@@ -7786,14 +7274,6 @@
   {
     "month": "2026-03",
     "utm_source": "chatgpt.com",
-    "utm_medium": null,
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-03",
-    "utm_source": "copilot.com",
     "utm_medium": null,
     "deals": 1,
     "paid_deals": 0,
@@ -7843,14 +7323,6 @@
     "month": "2026-03",
     "utm_source": "hacker_blog",
     "utm_medium": "hacker",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-03",
-    "utm_source": "ig",
-    "utm_medium": "social",
     "deals": 1,
     "paid_deals": 0,
     "revenue": 0.0
@@ -7907,7 +7379,7 @@
     "month": "2026-03",
     "utm_source": "refferal",
     "utm_medium": "digital_academy",
-    "deals": 3,
+    "deals": 2,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -7995,7 +7467,7 @@
     "month": "2026-03",
     "utm_source": "tg",
     "utm_medium": "social",
-    "deals": 55,
+    "deals": 54,
     "paid_deals": 0,
     "revenue": 0.0
   },
@@ -8009,18 +7481,10 @@
   },
   {
     "month": "2026-03",
-    "utm_source": "undefined",
-    "utm_medium": "undefined",
-    "deals": 1,
-    "paid_deals": 0,
-    "revenue": 0.0
-  },
-  {
-    "month": "2026-03",
     "utm_source": "vk",
     "utm_medium": "social",
     "deals": 2,
-    "paid_deals": 1,
+    "paid_deals": 0,
     "revenue": 0.0
   },
   {
@@ -8043,7 +7507,7 @@
     "month": "2026-03",
     "utm_source": "yd_prof_pentest_demo2",
     "utm_medium": "context",
-    "deals": 18,
+    "deals": 16,
     "paid_deals": 0,
     "revenue": 0.0
   },

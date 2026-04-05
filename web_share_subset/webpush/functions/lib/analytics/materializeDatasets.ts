@@ -654,9 +654,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        latest_yandex AS (
          SELECT
            CASE
-             WHEN (SELECT latest_spend_dt FROM latest_spend) IS NULL THEN (SELECT latest_created_dt FROM latest)
-             WHEN (SELECT latest_created_dt FROM latest) IS NULL THEN (SELECT latest_spend_dt FROM latest_spend)
-             WHEN date((SELECT latest_spend_dt FROM latest_spend)) >= date((SELECT latest_created_dt FROM latest)) THEN (SELECT latest_spend_dt FROM latest_spend)
+             WHEN (SELECT latest_spend_dt FROM latest_spend) IS NOT NULL THEN (SELECT latest_spend_dt FROM latest_spend)
              ELSE (SELECT latest_created_dt FROM latest)
            END AS latest_yandex_dt
        ),
