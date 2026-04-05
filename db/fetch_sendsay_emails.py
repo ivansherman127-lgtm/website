@@ -10,7 +10,7 @@ Replaces the manual CSV-export workflow that previously used
 
 Prerequisites
 =============
-  pip install sendsay-api-python
+  pip install requests (already a standard dependency)
 
 Credentials (via env vars or CLI flags)
 ========================================
@@ -29,13 +29,16 @@ Usage
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Literal, Optional
 
 import pandas as pd
+import requests
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -86,8 +89,51 @@ def _to_str(series: pd.Series) -> pd.Series:
     return series.fillna("").astype(str)
 
 
+# ---------------------------------------------------------------------------
+# Sendsay API helpers (direct HTTP – avoids broken sendsay-api-python library)
+# ---------------------------------------------------------------------------
+
+SENDSAY_URL = "https://api.sendsay.ru"
+
+
+def _sendsay_call(url: str, action: str, params: dict, session: Optional[str] = None) -> dict:
+    """POST a single JSON-RPC-style request to the Sendsay HTTP API."""
+    request_params: dict = {"action": action}
+    if session:
+        request_params["session"] = session
+    request_params.update(params)
+
+    post_data = {
+        "apiversion": 100,
+        "json": 1,
+        "request": json.dumps(request_params),
+        "request.id": f"script-{uuid.uuid4()}",
+    }
+    r = requests.post(url, data=post_data, timeout=60)
+    r.raise_for_status()
+    data = r.json()
+    if "errors" in data:
+        raise RuntimeError(f"Sendsay API error: {data['errors']}")
+    if "error" in data:
+        raise RuntimeError(f"Sendsay API error: {data['error']}")
+    return data
+
+
+def _sendsay_login(login: str, passwd: str, sublogin: str = "") -> tuple[str, str]:
+    """Authenticate and return (session_token, api_url_with_redirect)."""
+    creds = {"login": login, "sublogin": sublogin, "passwd": passwd}
+    data = _sendsay_call(SENDSAY_URL, "login", creds)
+    redirect = data.get("REDIRECT", "")
+    api_url = SENDSAY_URL + "/" + redirect.lstrip("/") if redirect else SENDSAY_URL
+    if redirect:
+        # Re-authenticate on the redirected server to get a valid session
+        data = _sendsay_call(api_url, "login", creds)
+    return data["session"], api_url
+
+
 def fetch_issues(
-    api,
+    session_token: str,
+    api_url: str,
     date_from: Optional[str] = None,
 ) -> pd.DataFrame:
     """
@@ -105,8 +151,8 @@ def fetch_issues(
         "order": ["issue.dt"],
     }
 
-    resp = api.request("stat.uni", params)
-    rows = resp.data.get("list", [])
+    resp = _sendsay_call(api_url, "stat.uni", params, session=session_token)
+    rows = resp.get("list", [])
     if not rows:
         return pd.DataFrame(columns=_SELECT)
 
@@ -183,20 +229,11 @@ def fetch_and_write(
 
     Returns the number of rows written.
     """
-    try:
-        from sendsay.api import SendsayAPI  # type: ignore
-    except ImportError:
-        print(
-            "Error: sendsay-api-python is not installed.\n"
-            "Run: pip install sendsay-api-python",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    api = SendsayAPI(login=login, sublogin=sublogin, password=password)
+    print("Authenticating to Sendsay …")
+    session_token, api_url = _sendsay_login(login, passwd=password, sublogin=sublogin)
 
     print(f"Fetching Sendsay issues (from={date_from or 'all time'}) …")
-    raw_df = fetch_issues(api, date_from=date_from)
+    raw_df = fetch_issues(session_token, api_url, date_from=date_from)
 
     if raw_df.empty:
         print("No email issues returned from Sendsay API.")
