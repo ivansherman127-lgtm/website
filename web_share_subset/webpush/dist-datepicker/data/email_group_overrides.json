@@ -1,0 +1,87 @@
+{
+  "version": 6,
+  "updated_at": "2026-03-29",
+  "groups": {
+    "open_day_oct_27_28": [
+      "open-day_271025",
+      "open-day_281025",
+      "open-day_start",
+      "Создано из «open-day_start» 28.10.2025, 18:47"
+    ],
+    "open_day_dec_25": [
+      "open-day_start_251225",
+      "open-day_251225",
+      "open-day_231225",
+      "open-day_191225"
+    ],
+    "attacking_january_26_all": [
+      "attacking_january_26_080127_17:30",
+      "attacking_january_26_080127_14:30",
+      "attacking_january_26_080127_10:30",
+      "attacking_january_26_080127_7:30",
+      "attacking_january_26_070127",
+      "attacking_january_26_060126",
+      "attacking_january_26_040126",
+      "attacking_january_26_030126",
+      "attacking_january_26_020126",
+      "attacking_january_26_010126",
+      "attacking_january_26_301225"
+    ],
+    "consultation_14_march": [
+      "soc-15min_140326",
+      "soc-1h_140326",
+      "soc-1day_130326",
+      "soc_110326"
+    ],
+    "marafon_professiy_feb_26": [
+      "kiberbez_sale-baza_270226",
+      "fin-success_25022026",
+      "kiberbez_after_190226",
+      "kiberbez_15min_190226",
+      "kiberbez-30min_19022026",
+      "kiberbez-morning_19022026",
+      "kiberbez-30min_18022026",
+      "kiberbez_18022026",
+      "kiberbez_16022026",
+      "kiberbez_14022026",
+      "Отправка по не открывшим выпуск «kiberbez_progrev_170226»",
+      "kiberbez_progrev_170226",
+      "kiberbez_sale_260226"
+    ],
+    "progrev": [
+      "progrev1",
+      "progrev"
+    ],
+    "trend_report": [
+      "trend-report_offer_211025",
+      "trend-report_replay_201025",
+      "web_trend-report_18-55",
+      "web_trend-report_18-00",
+      "web_trend-report_11-00",
+      "trendreports_081025"
+    ],
+    "novyy_god": [
+      "new-year_241225",
+      "new-year_181225"
+    ],
+    "threat_intelligence": [
+      "TIA_offer_241025",
+      "TIA_offer_231025",
+      "TIA-18-30_221025",
+      "TIA-08h_221025",
+      "Отправка по не открывшим выпуск «TIA_201025»",
+      "TIA_201025",
+      "TIA_171025"
+    ],
+    "zakrytaya_vstrecha": [
+      "close-meet-15minutes_270126",
+      "close-meet-1hour_270126",
+      "close-meet_260126",
+      "close-meet_200126"
+    ],
+    "ib_engineer": [
+      "Создано из «IB engineer 12/03/2026» 16.03.2026, 14:51",
+      "IB engineer 12/03/2026"
+    ]
+  }
+}

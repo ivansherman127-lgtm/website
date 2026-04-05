@@ -105,6 +105,31 @@ def read_bitrix_export(path: Path) -> pd.DataFrame:
     return pd.read_csv(path, sep=";", encoding="utf-8-sig", dtype=str, low_memory=False)
 
 
+def _build_voronka_patch(paths: list[Path]) -> pd.DataFrame:
+    """
+    Build a patch table {ID → Воронка} from files that have funnel data.
+    Earlier files are overridden by later files (last non-empty wins).
+    """
+    frames: list[pd.DataFrame] = []
+    for p in paths:
+        if not p.is_file():
+            continue
+        df = read_bitrix_export(p)
+        if "ID" not in df.columns or "Воронка" not in df.columns:
+            continue
+        sub = df[["ID", "Воронка"]].copy()
+        sub["ID"] = sub["ID"].map(_norm_id)
+        sub = sub[sub["ID"].str.strip().ne("")]
+        sub = sub[sub["Воронка"].notna() & sub["Воронка"].str.strip().ne("")]
+        if not sub.empty:
+            frames.append(sub)
+    if not frames:
+        return pd.DataFrame(columns=["ID", "Воронка"])
+    combined = pd.concat(frames, ignore_index=True)
+    # Last non-empty value for each ID wins (later file = fresher data)
+    return combined.drop_duplicates(subset=["ID"], keep="last").reset_index(drop=True)
+
+
 def load_bitrix_deals_union(
     fl_raw_path: Optional[Path] = None,
     bitrix_upd_path: Optional[Path] = None,
@@ -127,4 +152,21 @@ def load_bitrix_deals_union(
     out.columns = dedup_columns_sqlalchemy_safe(list(out.columns))
     if "ID" not in out.columns:
         raise ValueError("Union frames must contain column ID")
-    return dedup_bitrix_deals_by_highest_amount(out)
+    deduped = dedup_bitrix_deals_by_highest_amount(out)
+
+    # Patch «Воронка» from files that have funnel data, for rows missing it.
+    # bitrix_2025.csv covers 2025 deals; bitrix_60_days covers recent deals.
+    patch_paths = [ROOT / "bitrix_2025.csv", bitrix_upd_path]
+    patch = _build_voronka_patch(patch_paths)
+    if not patch.empty and "Воронка" in deduped.columns:
+        missing_mask = deduped["Воронка"].isna() | deduped["Воронка"].str.strip().eq("")
+        if missing_mask.any():
+            deduped = deduped.merge(
+                patch.rename(columns={"Воронка": "__voronka_patch"}),
+                on="ID",
+                how="left",
+            )
+            deduped.loc[missing_mask, "Воронка"] = deduped.loc[missing_mask, "__voronka_patch"]
+            deduped.drop(columns=["__voronka_patch"], inplace=True)
+
+    return deduped
