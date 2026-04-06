@@ -51,7 +51,8 @@ const ANALYTICS_DIST_DIR = process.env.ANALYTICS_DIST_DIR ?? join(process.cwd(),
 const ANALYTICS_REBUILD_SECRET = process.env.ANALYTICS_REBUILD_SECRET ?? "";
 
 // Python binary — prefer venv if available
-const repoRoot = join(__dirname, "..", "..");
+// __dirname = webpush/server/ → go up 3 levels to reach repo root
+const repoRoot = join(__dirname, "..", "..", "..");
 const _venvPython = join(repoRoot, ".venv", "bin", "python");
 const PYTHON_BIN = existsSync(_venvPython) ? _venvPython : "python3";
 
