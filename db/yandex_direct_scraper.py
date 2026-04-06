@@ -432,23 +432,83 @@ def _set_date_range_ui(page, date_from: str, date_to: str) -> bool:
     try:
         # Wait for wizard to load first
         page.wait_for_selector("button:has-text('Скачать')", state="visible", timeout=180000)
-        page.click("[data-testid='DateRangeSelect.DateRange'], [class*='DateRange']", timeout=10000)
-        page.wait_for_timeout(500)
-        # Enter start date
-        start_inp = page.query_selector("input[placeholder*='От'], input[placeholder*='Start'], input[data-testid*='from']")
+
+        # Click the date range display button via JS (CSS selectors unreliable due to overlapping elements).
+        # The date display contains Russian month text like "апр 2026" — find it by text content,
+        # skipping checkboxes and the "IncludeToday" label.
+        RU_MONTHS = ["янв", "фев", "мар", "апр", "май", "июн",
+                     "июл", "авг", "сен", "окт", "ноя", "дек"]
+        js_months = str(RU_MONTHS).replace("'", '"')
+        clicked = page.evaluate(f"""() => {{
+            const months = {js_months};
+            // Walk all elements that have 'DateRange' in their class
+            const candidates = [...document.querySelectorAll('[class*="DateRange"]')];
+            for (const el of candidates) {{
+                const tag = el.tagName.toLowerCase();
+                const testId = el.getAttribute('data-testid') || '';
+                // Skip labels (checkboxes), inputs, and the IncludeToday element
+                if (tag === 'label' || tag === 'input' || testId.includes('IncludeToday')) continue;
+                const text = (el.innerText || '').trim();
+                // The date display shows month names + 4-digit year
+                if (months.some(m => text.toLowerCase().includes(m)) && /\\d{{4}}/.test(text)) {{
+                    el.click();
+                    return 'found:' + testId + '|' + tag;
+                }}
+            }}
+            // Fallback: look for any non-label element with class containing DateRange
+            for (const el of candidates) {{
+                const tag = el.tagName.toLowerCase();
+                if (tag === 'label' || tag === 'input') continue;
+                if (el.getAttribute('data-testid')?.includes('IncludeToday')) continue;
+                el.click();
+                return 'fallback:' + (el.getAttribute('data-testid') || '') + '|' + tag;
+            }}
+            return 'not_found';
+        }}""")
+        print(f"  [date] Date display click result: {clicked}")
+        page.wait_for_timeout(800)
+
+        # Take screenshot to debug what opened
+        page.screenshot(path="/tmp/yd_after_date_click.png")
+
+        # Enter start date — try multiple selectors for the input fields
+        date_from_dd_mm_yyyy = date_from[8:10] + "." + date_from[5:7] + "." + date_from[:4]
+        date_to_dd_mm_yyyy   = date_to[8:10]   + "." + date_to[5:7]   + "." + date_to[:4]
+
+        start_inp = (
+            page.query_selector("input[data-testid*='DateRange'][data-testid*='from']") or
+            page.query_selector("input[data-testid*='DateRange'][data-testid*='start']") or
+            page.query_selector("input[placeholder*='От']") or
+            page.query_selector("input[placeholder*='от']") or
+            page.query_selector("input[placeholder*='начал']")
+        )
+        end_inp = (
+            page.query_selector("input[data-testid*='DateRange'][data-testid*='to']") or
+            page.query_selector("input[data-testid*='DateRange'][data-testid*='end']") or
+            page.query_selector("input[placeholder*='До']") or
+            page.query_selector("input[placeholder*='до']") or
+            page.query_selector("input[placeholder*='конец']")
+        )
+
         if start_inp:
-            start_inp.click(timeout=5000)
-            start_inp.select_text() if hasattr(start_inp, "select_text") else None
-            start_inp.fill(date_from[8:10] + "." + date_from[5:7] + "." + date_from[:4])
-        # Enter end date
-        end_inp = page.query_selector("input[placeholder*='До'], input[placeholder*='End'], input[data-testid*='to']")
+            start_inp.triple_click()
+            start_inp.type(date_from_dd_mm_yyyy)
+            print(f"  [date] Start date typed: {date_from_dd_mm_yyyy}")
         if end_inp:
-            end_inp.click(timeout=5000)
-            end_inp.fill(date_to[8:10] + "." + date_to[5:7] + "." + date_to[:4])
-        # Apply
-        page.keyboard.press("Enter")
-        page.wait_for_timeout(2000)
-        return True
+            end_inp.triple_click()
+            end_inp.type(date_to_dd_mm_yyyy)
+            print(f"  [date] End date typed: {date_to_dd_mm_yyyy}")
+
+        if start_inp or end_inp:
+            page.keyboard.press("Enter")
+            page.wait_for_timeout(2500)
+            page.screenshot(path="/tmp/yd_after_date_set.png")
+            return True
+        else:
+            # No input fields found — the calendar may not have opened
+            print("  [date] No date input fields found after click.")
+            page.screenshot(path="/tmp/yd_no_inputs.png")
+        return False
     except Exception as e:
         print(f"  [date] Custom date picker failed: {e} — using wizard default range.")
         return False
