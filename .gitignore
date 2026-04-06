@@ -39,3 +39,4 @@ deved.db
 *.csv
 website.db
 keys.json
+.yandex_session.json

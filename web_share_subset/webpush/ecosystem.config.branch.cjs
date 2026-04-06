@@ -48,7 +48,7 @@ module.exports = {
     {
       name: "yandex-sync-branch",
       script: pythonBin,
-      args: "-m db.yandex_api_sync --watch --interval 180",
+      args: "-m db.yandex_direct_scraper --watch --interval 180",
       interpreter: "none",
       cwd: repoRoot,
       watch: false,
@@ -56,8 +56,8 @@ module.exports = {
       restart_delay: 30000,
       env: {
         WEBSITE_DB_PATH: process.env.WEBSITE_DB_PATH || path.join(repoRoot, "website.db"),
-        YANDEX_TOKEN: serverSecrets.YANDEX_TOKEN || process.env.YANDEX_TOKEN || "",
-        YANDEX_CLIENT_LOGIN: serverSecrets.YANDEX_CLIENT_LOGIN || process.env.YANDEX_CLIENT_LOGIN || "",
+        YANDEX_LOGIN: serverSecrets.YANDEX_LOGIN || process.env.YANDEX_LOGIN || "",
+        YANDEX_PASSWORD: serverSecrets.YANDEX_PASSWORD || process.env.YANDEX_PASSWORD || "",
         ANALYTICS_REBUILD_URL: "http://127.0.0.1:3010/api/analytics/rebuild",
         ANALYTICS_REBUILD_SECRET: serverSecrets.ANALYTICS_REBUILD_SECRET || process.env.ANALYTICS_REBUILD_SECRET || "",
       },
