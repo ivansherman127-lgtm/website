@@ -759,6 +759,111 @@ def run_watch(
         time.sleep(sleep)
 
 
+def run_batch_months(
+    login: str,
+    password: str,
+    db_path: str,
+    batch_months: list,
+    base_url: str = DEFAULT_REPORT_URL,
+    ingest_url: Optional[str] = None,
+) -> None:
+    """
+    Single-session batch: download one CSV per month in one browser session.
+    Keeps the browser open between months to avoid repeated login overhead.
+    Each month uses its own date range (YYYY-MM-01 → YYYY-MM-last).
+
+    batch_months: list of 'YYYY-MM' strings in ascending order.
+    ingest_url:   if set, each CSV is POSTed to the server (push mode).
+    """
+    from calendar import monthrange
+    from playwright.sync_api import sync_playwright
+
+    secret = os.environ.get("ANALYTICS_REBUILD_SECRET", _read_env_file().get("ANALYTICS_REBUILD_SECRET", ""))
+
+    print("── Yandex batch-months ingest ───────────────────────────────")
+    print(f"  Months : {batch_months[0]} → {batch_months[-1]} ({len(batch_months)} months)")
+    if ingest_url:
+        print(f"  Mode   : push to server ({ingest_url})")
+    else:
+        print(f"  Mode   : local SQLite ({db_path})")
+
+    with sync_playwright() as p:
+        browser, ctx = _launch_context(p, headless=False)
+        page = ctx.new_page()
+
+        # Login check
+        try:
+            if not _is_logged_in(page):
+                print("  [browser] Session missing/expired — logging in…")
+                page.goto(
+                    "https://passport.yandex.ru/auth?origin=direct"
+                    "&retpath=https://direct.yandex.ru/",
+                    wait_until="domcontentloaded",
+                    timeout=PAGE_LOAD_TIMEOUT_MS,
+                )
+                if not _do_login(page, login, password):
+                    browser.close()
+                    return
+        except Exception as exc:
+            print(f"  [browser] Login check failed: {exc}", file=sys.stderr)
+            browser.close()
+            return
+
+        success_count = 0
+        for month in batch_months:
+            y, m = int(month[:4]), int(month[5:7])
+            date_from = f"{y:04d}-{m:02d}-01"
+            last_day = monthrange(y, m)[1]
+            date_to = f"{y:04d}-{m:02d}-{last_day:02d}"
+
+            print(f"\n── {month} ─── ({date_from} → {date_to}) ──────")
+
+            # Navigate to wizard (fresh page load per month)
+            try:
+                page.goto(base_url, wait_until="domcontentloaded", timeout=PAGE_LOAD_TIMEOUT_MS)
+            except Exception as exc:
+                print(f"  [nav] Error: {exc} — skipping {month}", file=sys.stderr)
+                continue
+
+            if "passport" in page.url:
+                print("  [auth] Session expired mid-batch — stopping.", file=sys.stderr)
+                break
+
+            # Set date range in wizard UI
+            _set_date_range_ui(page, date_from, date_to)
+
+            # Download CSV for this month
+            with tempfile.TemporaryDirectory() as tmpdir:
+                dl_path = _wait_for_data_and_download(page, Path(tmpdir))
+                if dl_path is None:
+                    print(f"  WARNING: Download failed for {month} — skipping.")
+                    continue
+
+                if ingest_url:
+                    ok = _push_csv_to_server(dl_path, ingest_url, secret, fallback_month=month)
+                    if ok:
+                        _set_local_last_sync(date_to)
+                        success_count += 1
+                else:
+                    n = _ingest_csv(dl_path, db_path, fallback_month=month)
+                    if n == 0:
+                        print(f"  WARNING: 0 rows ingested for {month}.")
+                    else:
+                        print(f"  stg_yandex_stats: {n} rows upserted for {month}")
+                        conn = sqlite3.connect(db_path)
+                        set_last_sync_date(conn, date_to)
+                        conn.close()
+                        success_count += 1
+
+        browser.close()
+
+    if not ingest_url and success_count > 0:
+        print("\n── Triggering analytics rebuild ─────────────────────────────")
+        trigger_analytics_rebuild()
+
+    print(f"\nBatch done: {success_count}/{len(batch_months)} months processed.")
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -811,6 +916,11 @@ def main() -> None:
         metavar="URL",
         help="Override the reports wizard URL",
     )
+    parser.add_argument(
+        "--batch-months",
+        metavar="YYYY-MM:YYYY-MM",
+        help="Batch mode: download every month in START:END range in one browser session",
+    )
     args = parser.parse_args()
 
     login_val, password_val = _get_creds()
@@ -818,6 +928,24 @@ def main() -> None:
 
     if args.login:
         interactive_login(login_val, password_val)
+        return
+
+    if args.batch_months:
+        start_m, end_m = args.batch_months.split(":")
+        months: list = []
+        y, m = int(start_m[:4]), int(start_m[5:7])
+        ey, em = int(end_m[:4]), int(end_m[5:7])
+        while (y, m) <= (ey, em):
+            months.append(f"{y:04d}-{m:02d}")
+            m += 1
+            if m > 12:
+                m = 1
+                y += 1
+        run_batch_months(
+            login_val, password_val, args.db, months,
+            base_url=args.report_url,
+            ingest_url=ingest_url_val,
+        )
         return
 
     if args.watch:
