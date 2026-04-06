@@ -45,5 +45,22 @@ module.exports = {
         ANALYTICS_REBUILD_SECRET: serverSecrets.ANALYTICS_REBUILD_SECRET || process.env.ANALYTICS_REBUILD_SECRET || "",
       },
     },
+    {
+      name: "yandex-sync-branch",
+      script: pythonBin,
+      args: "-m db.yandex_api_sync --watch --interval 180",
+      interpreter: "none",
+      cwd: repoRoot,
+      watch: false,
+      autorestart: true,
+      restart_delay: 30000,
+      env: {
+        WEBSITE_DB_PATH: process.env.WEBSITE_DB_PATH || path.join(repoRoot, "website.db"),
+        YANDEX_TOKEN: serverSecrets.YANDEX_TOKEN || process.env.YANDEX_TOKEN || "",
+        YANDEX_CLIENT_LOGIN: serverSecrets.YANDEX_CLIENT_LOGIN || process.env.YANDEX_CLIENT_LOGIN || "",
+        ANALYTICS_REBUILD_URL: "http://127.0.0.1:3010/api/analytics/rebuild",
+        ANALYTICS_REBUILD_SECRET: serverSecrets.ANALYTICS_REBUILD_SECRET || process.env.ANALYTICS_REBUILD_SECRET || "",
+      },
+    },
   ],
 };
