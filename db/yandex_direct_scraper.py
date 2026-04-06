@@ -437,13 +437,13 @@ def _set_date_range_ui(page, date_from: str, date_to: str) -> bool:
         # Enter start date
         start_inp = page.query_selector("input[placeholder*='От'], input[placeholder*='Start'], input[data-testid*='from']")
         if start_inp:
-            start_inp.click()
+            start_inp.click(timeout=5000)
             start_inp.select_text() if hasattr(start_inp, "select_text") else None
             start_inp.fill(date_from[8:10] + "." + date_from[5:7] + "." + date_from[:4])
         # Enter end date
         end_inp = page.query_selector("input[placeholder*='До'], input[placeholder*='End'], input[data-testid*='to']")
         if end_inp:
-            end_inp.click()
+            end_inp.click(timeout=5000)
             end_inp.fill(date_to[8:10] + "." + date_to[5:7] + "." + date_to[:4])
         # Apply
         page.keyboard.press("Enter")
