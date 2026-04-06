@@ -40,3 +40,5 @@ deved.db
 website.db
 keys.json
 .yandex_session.json
+.yandex_last_sync
+.yandex_browser_profile/

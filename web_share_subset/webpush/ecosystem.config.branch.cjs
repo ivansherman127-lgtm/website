@@ -52,8 +52,11 @@ module.exports = {
       interpreter: "none",
       cwd: repoRoot,
       watch: false,
-      autorestart: true,
-      restart_delay: 30000,
+      // NOTE: Server IP (reg.ru datacenter) is blocked by Yandex web access.
+      // The scraper must run on a residential IP (local Mac). This process is
+      // disabled on the server. To receive ingested data, the Mac scraper POSTs
+      // CSV to /api/yandex/ingest, which runs upsert_yandex_from_csv locally.
+      autorestart: false,
       env: {
         WEBSITE_DB_PATH: process.env.WEBSITE_DB_PATH || path.join(repoRoot, "website.db"),
         YANDEX_LOGIN: serverSecrets.YANDEX_LOGIN || process.env.YANDEX_LOGIN || "",

@@ -118,7 +118,7 @@ def _normalize_yandex_month(v: object) -> str:
 # Load + normalise new CSV
 # ---------------------------------------------------------------------------
 
-def load_and_normalize(csv_path: Path) -> pd.DataFrame:
+def load_and_normalize(csv_path: Path, fallback_month: str | None = None) -> pd.DataFrame:
     df = pd.read_csv(csv_path, encoding="utf-8", low_memory=False)
     print(f"Loaded {len(df)} rows from {csv_path}", flush=True)
 
@@ -130,7 +130,13 @@ def load_and_normalize(csv_path: Path) -> pd.DataFrame:
         df["Месяц"] = dt.dt.strftime("%Y-%m")
         print("Converted «День» → ISO date and derived «Месяц»", flush=True)
     elif "Месяц" not in df.columns:
-        raise ValueError(f"Cannot find «Месяц» or «День» column in {csv_path}")
+        # New wizard export: campaign-level totals with no date column.
+        # Use fallback_month (YYYY-MM) derived from the scraper's date_from.
+        if fallback_month:
+            df["Месяц"] = fallback_month
+            print(f"No date column — assigned Месяц = {fallback_month!r} from date_from", flush=True)
+        else:
+            raise ValueError(f"Cannot find «Месяц» or «День» column in {csv_path}")
 
     if "День" in df.columns:
         day_dt = pd.to_datetime(df["День"], dayfirst=True, errors="coerce")
@@ -331,6 +337,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--wrangler-config", default=str(WRANGLER_CONFIG), help="Wrangler config used for D1 push")
     parser.add_argument("--skip-push", action="store_true", help="Only update local SQLite; do not push stg_yandex_stats to D1")
     parser.add_argument("--skip-rebuild", action="store_true", help="Do not call cloud analytics rebuild after push")
+    parser.add_argument("--month", default=None, help="Fallback month (YYYY-MM) when CSV has no date column (wizard export)")
     return parser.parse_args()
 
 
@@ -352,7 +359,7 @@ def main() -> None:
     engine = create_engine(f"sqlite:///{db_path}")
     print(f"Using SQLite DB: {db_path}", flush=True)
 
-    df = load_and_normalize(csv_path)
+    df = load_and_normalize(csv_path, fallback_month=args.month)
     upsert_to_sqlite(df, engine)
     if not args.skip_push:
         push_to_d1(Path(args.wrangler_config))
