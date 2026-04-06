@@ -476,6 +476,11 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       return;
     }
 
+    // Root → analytics dashboard
+    if (pathname === "/") {
+      res.writeHead(302, { "location": "/analytics/" }); res.end(); return;
+    }
+
     // ── Analytics SPA static files ────────────────────────────────────────────
     if (pathname === "/analytics" || pathname.startsWith("/analytics/")) {
       if (!isAnalyticsAuthenticated(req)) {
