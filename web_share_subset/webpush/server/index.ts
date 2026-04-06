@@ -440,6 +440,24 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
           );
         });
         jsonRes(res, 200, { ok: true });
+        // Non-blocking: trigger analytics rebuild so Yandex data appears immediately
+        if (WEBSITEDB) {
+          setImmediate(async () => {
+            try {
+              const rebuildReq = new Request("http://localhost/api/analytics/rebuild", {
+                method: "POST",
+                headers: { authorization: `Bearer ${_analyticsRebuildSecret}`, "content-type": "application/json" },
+                body: JSON.stringify({ force: false }),
+              });
+              const rbRes = await analyticsRebuildPost({ request: rebuildReq, env: { DB: WEBSITEDB!, ANALYTICS_REBUILD_SECRET: _analyticsRebuildSecret } as any });
+              if (rbRes.status === 200) datasetCache.clear();
+              const rbResult = await rbRes.json() as Record<string, unknown>;
+              console.log("[yandex-ingest] analytics rebuild:", JSON.stringify(rbResult));
+            } catch (rbErr) {
+              console.error("[yandex-ingest] rebuild trigger failed:", rbErr);
+            }
+          });
+        }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         console.error("[yandex-ingest] error:", msg);

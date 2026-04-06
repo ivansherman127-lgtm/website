@@ -707,7 +707,7 @@ def run_once(
             browser.close()
 
             if ingest_url:
-                # Push mode: POST CSV to server, server handles ingest + rebuild
+                # Push mode: POST CSV to server; server upserts and triggers analytics rebuild
                 print("── Pushing CSV to server ────────────────────────────")
                 ok = _push_csv_to_server(dl_path, ingest_url, secret, fallback_month=date_from[:7])
                 if not ok:
