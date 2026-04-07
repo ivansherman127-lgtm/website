@@ -342,7 +342,7 @@ def build_marts(engine) -> dict:
     if SENDSAY_CSV.exists():
         s = pd.read_csv(SENDSAY_CSV, encoding="utf-8", low_memory=False)
         if "Дата отправки" in s.columns:
-            dt = pd.to_datetime(s["Дата отправки"], dayfirst=True, errors="coerce")
+            dt = pd.to_datetime(s["Дата отправки"], dayfirst=False, errors="coerce")
             s["month"] = dt.dt.strftime("%Y-%m")
         s.to_sql("stg_email_sends", engine, if_exists="replace", index=False)
 
