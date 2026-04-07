@@ -223,6 +223,8 @@ def build_marts(engine) -> dict:
     bitrix["is_attacking_january"] = (bitrix["event_class"] == "Attacking January").astype(int)
     if "Типы некачественного лида" not in bitrix.columns:
         bitrix["Типы некачественного лида"] = ""
+    if "Типы некачественных лидов" not in bitrix.columns:
+        bitrix["Типы некачественных лидов"] = bitrix["Типы некачественного лида"]
     if "Ответственный" not in bitrix.columns:
         bitrix["Ответственный"] = ""
 
@@ -270,6 +272,7 @@ def build_marts(engine) -> dict:
         "classification_confidence",
         "is_attacking_january",
         "Типы некачественного лида",
+        "Типы некачественных лидов",
         "Ответственный",
     ]
     bitrix[mart_cols].to_sql(
