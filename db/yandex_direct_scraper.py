@@ -527,51 +527,44 @@ def _set_date_range_ui(page, date_from: str, date_to: str) -> bool:
         print(f"  [date] Date-format inputs found: {len(date_locs)}")
 
         if len(date_locs) >= 2:
-            start_loc = page.locator(
+            _start_tid = (
                 "[data-testid='DateRangeSelect.RangeCalendarWithButton.RangeCalendar.StartInput']"
             )
-            end_loc = page.locator(
+            _end_tid = (
                 "[data-testid='DateRangeSelect.RangeCalendarWithButton.RangeCalendar.EndInput']"
             )
+            start_loc = page.locator(_start_tid)
+            end_loc = page.locator(_end_tid)
 
-            def _toolbar_matches():
-                txt = page.evaluate("""() => {
+            _month_ru = {
+                "01": "янв", "02": "февр", "03": "мар", "04": "апр",
+                "05": "мая",  "06": "июн",  "07": "июл", "08": "авг",
+                "09": "сен",  "10": "окт",  "11": "ноя", "12": "дек",
+            }
+
+            def _toolbar_text():
+                return page.evaluate("""() => {
                     const b = document.querySelector(
                         '[data-testid="DateRangeSelect.RangeCalendarWithButton.Calendar"]');
                     return b ? (b.innerText||'').trim() : '';
                 }""")
+
+            def _toolbar_matches():
+                txt = _toolbar_text()
                 print(f"  [date] Toolbar: {txt}")
-                return (date_from_dmy[:2] in txt and date_from_dmy[6:] in txt)
+                start_m = date_from_dmy[3:5]
+                end_m   = date_to_dmy[3:5]
+                year    = date_from_dmy[6:]
+                start_abbr = _month_ru.get(start_m, "")
+                if start_m == end_m:
+                    # Same-month range: month appears once, txt like "01 – 31 янв 2025"
+                    # Must NOT contain any other month abbreviation (e.g. "янв" when we want "февр")
+                    other = [v for k, v in _month_ru.items() if k != start_m]
+                    return start_abbr in txt and year in txt and not any(m in txt for m in other)
+                else:
+                    return start_abbr in txt and year in txt
 
-            # Method 1: JS atomic native value setter (avoids React auto-reset of end=start)
-            js_set = page.evaluate("""([from_d, to_d]) => {
-                const startIn = document.querySelector(
-                    '[data-testid="DateRangeSelect.RangeCalendarWithButton.RangeCalendar.StartInput"]');
-                const endIn = document.querySelector(
-                    '[data-testid="DateRangeSelect.RangeCalendarWithButton.RangeCalendar.EndInput"]');
-                if (!startIn || !endIn) return 'not-found';
-                const nset = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-                startIn.focus();
-                nset.call(startIn, from_d);
-                startIn.dispatchEvent(new InputEvent('input', {bubbles: true, data: from_d}));
-                endIn.focus();
-                nset.call(endIn, to_d);
-                endIn.dispatchEvent(new InputEvent('input', {bubbles: true, data: to_d}));
-                endIn.dispatchEvent(new KeyboardEvent('keydown',
-                    {key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true}));
-                endIn.dispatchEvent(new KeyboardEvent('keyup',
-                    {key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true}));
-                return startIn.value + '/' + endIn.value;
-            }""", [date_from_dmy, date_to_dmy])
-            print(f"  [date] JS atomic set: {js_set}")
-            page.wait_for_timeout(1200)
-            if _toolbar_matches():
-                page.screenshot(path="/tmp/yd_after_date_set.png")
-                return True
-
-            # Method 2: keyboard typing (up to 3 retries, reopens popup if needed)
-            print("  [date] JS set not confirmed, trying keyboard input...")
-            for _attempt in range(3):
+            def _ensure_popup_open():
                 popup_visible = page.evaluate(
                     """() => { const p = document.querySelector('[data-testid="Popup"]');
                                return p !== null && p.offsetParent !== null; }"""
@@ -587,14 +580,36 @@ def _set_date_range_ui(page, date_from: str, date_to: str) -> bool:
                     except Exception:
                         pass
                     page.wait_for_timeout(300)
+
+            # Focus input via JS (bypasses overlay — works even with news popup backdrop).
+            # Then type using Playwright keyboard events (React's synthetic event system sees these).
+            # Flow: focus start → type start → React auto-resets end when start > old end
+            #       → focus end → type end → Enter to confirm.
+            for _attempt in range(3):
+                _ensure_popup_open()
                 try:
-                    start_loc.click(force=True)
+                    page.evaluate(
+                        """(tid) => {
+                            const el = document.querySelector(tid);
+                            if (el) { el.focus(); el.select(); }
+                        }""",
+                        _start_tid.replace("'", '"'),
+                    )
+                    page.wait_for_timeout(150)
                     page.keyboard.press("Control+a")
-                    page.keyboard.type(date_from_dmy, delay=0)
-                    page.wait_for_timeout(50)
-                    end_loc.click(force=True)
+                    page.keyboard.type(date_from_dmy, delay=20)
+                    page.wait_for_timeout(300)  # Let React process start change + auto-reset end
+
+                    page.evaluate(
+                        """(tid) => {
+                            const el = document.querySelector(tid);
+                            if (el) { el.focus(); el.select(); }
+                        }""",
+                        _end_tid.replace("'", '"'),
+                    )
+                    page.wait_for_timeout(150)
                     page.keyboard.press("Control+a")
-                    page.keyboard.type(date_to_dmy, delay=0)
+                    page.keyboard.type(date_to_dmy, delay=20)
                     page.keyboard.press("Enter")
                     page.wait_for_timeout(1200)
                     print(f"  [date] Keyboard attempt {_attempt + 1}: {date_from_dmy}/{date_to_dmy}")
