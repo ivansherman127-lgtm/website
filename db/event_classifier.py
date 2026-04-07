@@ -90,10 +90,11 @@ def _confidence_for_field(field: str) -> str:
 
 def classify_event_from_row(row: dict, fields: Iterable[str] = FIELD_PRIORITY) -> ClassificationResult:
     # UTM-based open day pre-check (beats field-priority to avoid generic "Open Day" match winning)
-    utm_txt = normalize_text(row.get("UTM Campaign", ""))
-    if utm_txt:
+    # Use raw lowercase (not normalize_text) so underscores in UTM keys are preserved for matching
+    utm_raw = str(row.get("UTM Campaign") or "").strip().lower()
+    if utm_raw:
         for pattern, event in OPEN_DAY_UTM_MAP:
-            if re.search(pattern, utm_txt, flags=re.IGNORECASE):
+            if re.search(pattern, utm_raw, flags=re.IGNORECASE):
                 return ClassificationResult(
                     event=event,
                     source_field="UTM Campaign",
