@@ -11,6 +11,12 @@ TARGET_EVENTS = [
     "Демо Блю",
     "ПБХ",
     "Blue Team Stepik",
+    "Опен дэй 27.10.25",
+    "Опен дэй 28.10.25",
+    "Опен дэй 19.12.25",
+    "Опен дэй 23.12.25",
+    "Опен дэй 25.12.25",
+    "Опен дэй 24.03.26",
     "Опен дэй",
     "Встреча с экспертом",
     "Другое",
@@ -51,10 +57,24 @@ EVENT_RULES = [
     ("Тренд репорты", [r"\bтренд\b", r"\btrend report"]),
     ("Демо Ред", [r"\bдемо ред\b", r"\bdemo red\b", r"\bprof pentest demo\b"]),
     ("Демо Блю", [r"\bдемо блю\b", r"\bdemo blue\b", r"\bprof soc demo\b"]),
-    ("ПБХ", [r"\bпбх\b"]),
+    ("ПБХ", [r"\bпбх\b", r"\bпрофессия белый хакер\b", r"\bpbh\b", r"\bwhite hacker\b"]),
     ("Blue Team Stepik", [r"\bblue team stepik\b", r"\bstepik\b"]),
+    # Dated open days — specific deal name patterns (UTM-based done via OPEN_DAY_UTM_MAP pre-check)
+    ("Опен дэй 24.03.26", [r"\bopen day\b.*\b24\b.*\b03\b"]),
     ("Опен дэй", [r"\bопен деи\b", r"\bопен дэй\b", r"\bopen day\b"]),
     ("Встреча с экспертом", [r"\bвстреча с экспертом\b", r"\bexpert meeting\b"]),
+]
+
+
+# UTM campaign → dated open day event name.
+# Checked BEFORE the field-priority loop so that UTM-tagged rows get specific labels
+# even when the deal name is a generic "Open Day".
+OPEN_DAY_UTM_MAP: list[tuple[str, str]] = [
+    (r"\bopen_day_271025\b", "Опен дэй 27.10.25"),
+    (r"\bopen_day_281025\b", "Опен дэй 28.10.25"),
+    (r"\bopen_day_191225\b", "Опен дэй 19.12.25"),
+    (r"\bopen_day_231225\b", "Опен дэй 23.12.25"),
+    (r"\bopen_day_251225\b", "Опен дэй 25.12.25"),
 ]
 
 
@@ -69,6 +89,18 @@ def _confidence_for_field(field: str) -> str:
 
 
 def classify_event_from_row(row: dict, fields: Iterable[str] = FIELD_PRIORITY) -> ClassificationResult:
+    # UTM-based open day pre-check (beats field-priority to avoid generic "Open Day" match winning)
+    utm_txt = normalize_text(row.get("UTM Campaign", ""))
+    if utm_txt:
+        for pattern, event in OPEN_DAY_UTM_MAP:
+            if re.search(pattern, utm_txt, flags=re.IGNORECASE):
+                return ClassificationResult(
+                    event=event,
+                    source_field="UTM Campaign",
+                    matched_pattern=pattern,
+                    confidence="high",
+                )
+
     for field in fields:
         raw = row.get(field, "")
         txt = normalize_text(raw)
