@@ -124,11 +124,13 @@ def load_and_normalize(csv_path: Path, fallback_month: str | None = None) -> pd.
 
     # Detect format: old export has «Месяц», new daily export has «День».
     # Keep «День» as ISO date for downstream max-date metrics.
+    _день_already_iso = False
     if "День" in df.columns and "Месяц" not in df.columns:
         dt = pd.to_datetime(df["День"], dayfirst=True, errors="coerce")
         df["День"] = dt.dt.strftime("%Y-%m-%d")
         df["Месяц"] = dt.dt.strftime("%Y-%m")
         print("Converted «День» → ISO date and derived «Месяц»", flush=True)
+        _день_already_iso = True
     elif "Месяц" not in df.columns:
         # New wizard export: campaign-level totals with no date column.
         # Use fallback_month (YYYY-MM) derived from the scraper's date_from.
@@ -138,7 +140,10 @@ def load_and_normalize(csv_path: Path, fallback_month: str | None = None) -> pd.
         else:
             raise ValueError(f"Cannot find «Месяц» or «День» column in {csv_path}")
 
-    if "День" in df.columns:
+    # Only re-parse «День» when it has NOT already been converted to ISO above.
+    # pandas 3.x with dayfirst=True on already-ISO "YYYY-MM-DD" strings swaps day↔month
+    # for ambiguous cases (day ≤ 12), producing wrong future dates.
+    if "День" in df.columns and not _день_already_iso:
         day_dt = pd.to_datetime(df["День"], dayfirst=True, errors="coerce")
         df["День"] = day_dt.dt.strftime("%Y-%m-%d")
 
