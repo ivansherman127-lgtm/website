@@ -234,7 +234,7 @@ CREATE INDEX IF NOT EXISTS idx_deal_enrichments_event_class
 
 -- mart_deals_enriched is the main table queried by the API (assoc-revenue.ts etc.).
 -- It is regenerated from raw_bitrix_deals JOIN mart_deal_enrichments before each
--- D1 push; do not edit it directly.
+-- D1 push -- do not edit it directly.
 -- Schema defined by D1 migrations (0001_initial.sql + ALTER migrations).
 
 -- mart_attacking_january_cohort_deals has been DROPPED (migration 0016).
