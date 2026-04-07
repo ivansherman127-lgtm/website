@@ -43,6 +43,9 @@ module.exports = {
         WEBSITE_DB_PATH: process.env.WEBSITE_DB_PATH || path.join(repoRoot, "website.db"),
         ANALYTICS_DIST_DIR: process.env.ANALYTICS_DIST_DIR || path.join(__dirname, "dist-branch-analytics"),
         ANALYTICS_REBUILD_SECRET: serverSecrets.ANALYTICS_REBUILD_SECRET || process.env.ANALYTICS_REBUILD_SECRET || "",
+        SENDSAY_LOGIN: serverSecrets.SENDSAY_LOGIN || process.env.SENDSAY_LOGIN || "",
+        SENDSAY_PASSWORD: serverSecrets.SENDSAY_PASSWORD || process.env.SENDSAY_PASSWORD || "",
+        SENDSAY_SUBLOGIN: serverSecrets.SENDSAY_SUBLOGIN || process.env.SENDSAY_SUBLOGIN || "",
       },
     },
     {
