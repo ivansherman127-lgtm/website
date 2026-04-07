@@ -1,9 +1,10 @@
 """
 Build a unique contacts table from Bitrix deals export.
 
-Aggressive merge rule:
-- Rows are merged into one contact_uid if they share at least one
-  normalized phone OR one normalized email.
+Merge rule:
+- Rows are merged into one contact_uid only if they share at least one
+  normalized email address.
+- Phone numbers are collected and stored for display but do not trigger merges.
 - "Контакт: ID" is preserved as metadata and does not constrain merges.
 """
 
@@ -259,9 +260,9 @@ def build_contacts_uid_table(df: pd.DataFrame) -> tuple[pd.DataFrame, Dict[str, 
     uf = UnionFind(len(rows_payload))
     token_owner: Dict[str, int] = {}
 
-    # Aggressive merge by any shared phone/email token.
+    # Merge only by shared email token (phone is kept for display but not used for dedup).
     for idx, payload in enumerate(rows_payload):
-        tokens = {f"p:{p}" for p in payload.phones} | {f"e:{e}" for e in payload.emails}
+        tokens = {f"e:{e}" for e in payload.emails}
         for token in tokens:
             prev = token_owner.get(token)
             if prev is None:
