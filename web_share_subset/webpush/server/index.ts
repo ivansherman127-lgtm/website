@@ -44,9 +44,6 @@ const PORT = parseInt(process.env.PORT ?? "3000", 10);
 const WEBSITE_DB_PATH = process.env.WEBSITE_DB_PATH ?? join(process.cwd(), "website.db");
 const ANALYTICS_DIST_DIR = process.env.ANALYTICS_DIST_DIR ?? join(process.cwd(), "dist-analytics");
 const ANALYTICS_REBUILD_SECRET = process.env.ANALYTICS_REBUILD_SECRET ?? "";
-const SENDSAY_LOGIN = process.env.SENDSAY_LOGIN ?? "";
-const SENDSAY_PASSWORD = process.env.SENDSAY_PASSWORD ?? "";
-const SENDSAY_SUBLOGIN = process.env.SENDSAY_SUBLOGIN ?? "";
 
 // Python binary — prefer venv if available
 // __dirname = webpush/server/ → go up 3 levels to reach repo root
@@ -62,6 +59,9 @@ try {
 } catch { /* file optional */ }
 const ANALYTICS_PASSWORD: string = _serverSecrets["ANALYTICS_PASSWORD"] ?? process.env.ANALYTICS_PASSWORD ?? "";
 const _analyticsRebuildSecret: string = _serverSecrets["ANALYTICS_REBUILD_SECRET"] ?? ANALYTICS_REBUILD_SECRET;
+const SENDSAY_LOGIN = _serverSecrets["SENDSAY_LOGIN"] ?? process.env.SENDSAY_LOGIN ?? "";
+const SENDSAY_PASSWORD = _serverSecrets["SENDSAY_PASSWORD"] ?? process.env.SENDSAY_PASSWORD ?? "";
+const SENDSAY_SUBLOGIN = _serverSecrets["SENDSAY_SUBLOGIN"] ?? process.env.SENDSAY_SUBLOGIN ?? "";
 
 // In-memory cache for dataset_json API responses (path → JSON body string).
 // Populated lazily on first read; cleared whenever rebuild or materialize succeeds.
