@@ -1,0 +1,254 @@
+[
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://direct.yandex.ru/dna/reports/wizard?ulogin=ivansherman127&state=2619475",
+    "post_data": null
+  },
+  {
+    "type": "response",
+    "status": 302,
+    "url": "https://direct.yandex.ru/dna/reports/wizard?ulogin=ivansherman127&state=2619475",
+    "content_type": "text/html; charset=utf-8"
+  },
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://direct.yandex.ru/dna/reports/wizard/?ulogin=ivansherman127&state=2619475",
+    "post_data": null
+  },
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://yandex.ru/clck/click/dtype=stred/path=start.session/pageName=module_page/ui=desktop/uid=2346711884/u=1775486138756/tids=1498223,0,17;1482728,0,26;1503337,0,31;1519338,0,70;1509665,0,16;1523149,0,51;1514764,0,94;1509358,0,94;1502922,0,55;1464716,0,64;1486934,0,35;1505933,0,62;1515391,0,79;1511912,0,50;1466584,0,50;1459305,0,12;1504880,0,19;1530473,0,59/reqid=1775486138244-723139317162269/referer=/table=rmp-redir-log/*https://direct.yandex.ru/dna/reports/wizard/?ulogin=ivansherman127&state=2619475",
+    "post_data": null
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://direct.yandex.ru/dna/reports/wizard/?ulogin=ivansherman127&state=2619475",
+    "content_type": "text/html; charset=utf-8",
+    "body_preview": "<!doctype html><html lang=\"ru\" class=\"font_loaded ua_webkit ua_webkit_537 ua_chromium ua_chromium_124 ua_chrome ua_chrome_124 ua_macos ua_macos_10\"><head><meta charSet=\"utf-8\"/><script type=\"application/json\" id=\"exp\">{\"reqId\":\"1775486138244-723139317162269\",\"regionId\":213,\"tids\":[\"1498223,0,17\",\"1482728,0,26\",\"1503337,0,31\",\"1519338,0,70\",\"1509665,0,16\",\"1523149,0,51\",\"1514764,0,94\",\"1509358,0,94\",\"1502922,0,55\",\"1464716,0,64\",\"1486934,0,35\",\"1505933,0,62\",\"1515391,0,79\",\"1511912,0,50\",\"1466584"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://yandex.ru/clck/click/dtype=stred/path=start.session/pageName=module_page/ui=desktop/uid=2346711884/u=1775486138756/tids=1498223,0,17;1482728,0,26;1503337,0,31;1519338,0,70;1509665,0,16;1523149,0,51;1514764,0,94;1509358,0,94;1502922,0,55;1464716,0,64;1486934,0,35;1505933,0,62;1515391,0,79;1511912,0,50;1466584,0,50;1459305,0,12;1504880,0,19;1530473,0,59/reqid=1775486138244-723139317162269/referer=/table=rmp-redir-log/*https://direct.yandex.ru/dna/reports/wizard/?ulogin=ivansherman127&state=2619475",
+    "content_type": "image/gif"
+  },
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://yandex.ru/clck/click/dtype=stred/path=show.page/timestamp_milliseconds=1775486149944/timezone=Asia%2FTbilisi/pageName=module_page/ulogin=ivansherman127/eventId=1775486138244-723139317162269/ui=desktop/uid=2346711884/u=1775486149954/tids=1498223,0,17;1482728,0,26;1503337,0,31;1519338,0,70;1509665,0,16;1523149,0,51;1514764,0,94;1509358,0,94;1502922,0,55;1464716,0,64;1486934,0,35;1505933,0,62;1515391,0,79;1511912,0,50;1466584,0,50;1459305,0,12;1504880,0,19;1530473,0,59/reqid=1775486138244-723139317162269/referer=/table=rmp-redir-log/*https://direct.yandex.ru/dna/reports/wizard/?ulogin=ivansherman127&state=2619475",
+    "post_data": null
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://yandex.ru/clck/click/dtype=stred/path=show.page/timestamp_milliseconds=1775486149944/timezone=Asia%2FTbilisi/pageName=module_page/ulogin=ivansherman127/eventId=1775486138244-723139317162269/ui=desktop/uid=2346711884/u=1775486149954/tids=1498223,0,17;1482728,0,26;1503337,0,31;1519338,0,70;1509665,0,16;1523149,0,51;1514764,0,94;1509358,0,94;1502922,0,55;1464716,0,64;1486934,0,35;1505933,0,62;1515391,0,79;1511912,0,50;1466584,0,50;1459305,0,12;1504880,0,19;1530473,0,59/reqid=1775486138244-723139317162269/referer=/table=rmp-redir-log/*https://direct.yandex.ru/dna/reports/wizard/?ulogin=ivansherman127&state=2619475",
+    "content_type": "image/gif"
+  },
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://mc.yandex.ru/watch/71495719?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&nohit=1&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&browser-info=pv%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A1%3Adp%3A0%3Als%3A1447848299686%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183553%3Aet%3A1775486153%3Ac%3A1%3Arn%3A498555709%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486155%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)clc(0-0-0)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)ti(1)",
+    "post_data": null
+  },
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://mc.yandex.ru/watch/34?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&nohit=1&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&browser-info=pv%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A2%3Adp%3A0%3Als%3A1281088550329%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183553%3Aet%3A1775486154%3Ac%3A1%3Arn%3A347202841%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486155%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)clc(0-0-0)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648448)ti(1)",
+    "post_data": null
+  },
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://mc.yandex.ru/watch/191494?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&nohit=1&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&browser-info=pv%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A3%3Adp%3A0%3Als%3A69773050571%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183554%3Aet%3A1775486154%3Ac%3A1%3Arn%3A493108011%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486155%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)clc(0-0-0)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)ti(1)",
+    "post_data": null
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://mc.yandex.ru/watch/191494?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&nohit=1&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&browser-info=pv%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A3%3Adp%3A0%3Als%3A69773050571%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183554%3Aet%3A1775486154%3Ac%3A1%3Arn%3A493108011%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486155%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)clc(0-0-0)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)ti(1)",
+    "content_type": "application/json; charset=utf-8",
+    "body_preview": "{\"settings\":{\"auto_goals\":0,\"button_goals\":1,\"c_recp\":\"1.00000\",\"form_goals\":0,\"pcs\":\"1\",\"publisher\":{\"schema\":\"microdata\"},\"webvisor\":{\"arch_type\":\"none\",\"date\":\"2026-03-23 23:53:57\",\"forms\":1,\"recp\":\"0.03990\"},\"sbp\": {\"a\":\"RepCYOKqzRaFlOjjReXzQE7S98VwLOUKePhWoNUctZwPWEPPL0SG3SJjQKk0S01D\", \"b\":\"Sr0Qqy5csFE5wTkCnXKq28hR8bjc3gZUgCGgC6djJFjgatm7vSrr2YIPCOFkQz1g\"},\"eu\":0,\"hittoken\":\"1775486155_35b894bbc294c82ed362976c5626454526685c46958bb05f83b50237480d04f1\",\"wstoken\":\"10993.j_DBIqmjq9uEMz7nEZTUTLf"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://mc.yandex.ru/watch/71495719?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&nohit=1&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&browser-info=pv%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A1%3Adp%3A0%3Als%3A1447848299686%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183553%3Aet%3A1775486153%3Ac%3A1%3Arn%3A498555709%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486155%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)clc(0-0-0)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)ti(1)",
+    "content_type": "application/json; charset=utf-8",
+    "body_preview": "{\"settings\":{\"auto_goals\":1,\"button_goals\":0,\"c_recp\":\"1.00000\",\"form_goals\":1,\"pcs\":\"1\",\"webvisor\":{\"arch_type\":\"none\",\"date\":\"2026-01-12 19:09:08\",\"forms\":1,\"recp\":\"0.09460\"},\"sbp\": {\"a\":\"uY16d7y0Jjb/RGSd4PkRVNa3ts3fzd4A6IJ69E/sOd6bcBD5ay/mkRA2vR3u09kv\", \"b\":\"1orWzIZUEEk24eJ3S3sMIqiEpE3lNlgVjrpV/YUfdi7FDLR5N9aAUV0df8EfJeUS\"},\"eu\":0,\"hittoken\":\"1775486155_34f8818cc6a3282f44d157ace279c42453c8d749795a9dcd9c7f40a51c7bbd00\",\"wstoken\":\"10993.YDlxmudFI8P8hlWnYtPMLpnZV2QrA1iJJsgOYmxAjDt21XK-6aOus33ECe"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://mc.yandex.ru/watch/34?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&nohit=1&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&browser-info=pv%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A2%3Adp%3A0%3Als%3A1281088550329%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183553%3Aet%3A1775486154%3Ac%3A1%3Arn%3A347202841%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486155%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)clc(0-0-0)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648448)ti(1)",
+    "content_type": "application/json; charset=utf-8",
+    "body_preview": "{\"settings\":{\"auto_goals\":0,\"button_goals\":0,\"c_recp\":\"1.00000\",\"form_goals\":0,\"pcs\":\"1\",\"webvisor\":{\"arch_type\":\"html\",\"date\":\"2025-09-19 14:26:00\",\"forms\":1,\"recp\":\"1.00000\",\"urls\":\"regexp:.*\"},\"sbp\": {\"a\":\"hE9xAza1FvCtoZ3/7AyhVpfhAxtgkPqPmyQy8KL7JoU8zcfaiRtqad+IlbsxkV3I\", \"b\":\"2Yp8Mn/KZBPIjk84fLRdiCSEmtGAhO940dgskrxyTj3tnAr1JZLzIVeTSUd5DK9O\"},\"eu\":0,\"hittoken\":\"1775486155_d0c389a8db4ef202c65911d3fa28ed9b1dad022809e5974b54a0295c6fd3e028\",\"wstoken\":\"10993.Mv2KIHAf-TQqZlpEX-fyIm-kByeGN9Pu7ruD7xy"
+  },
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://mc.yandex.ru/watch/191494?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hittoken=1775486155_35b894bbc294c82ed362976c5626454526685c46958bb05f83b50237480d04f1&browser-info=pv%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A3%3Adp%3A0%3Als%3A69773050571%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183556%3Aet%3A1775486156%3Ac%3A1%3Arn%3A118291538%3Arqn%3A4%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Afp%3A2228%3Awv%3A2%3Ads%3A0%2C0%2C516%2C621%2C502%2C502%2C1%2C609%2C12%2C6942%2C6952%2C2%2C6881%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486156%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)mc(h-3-p-1)clc(0-0-0)rqnt(1)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)w2s(0)ti(1)",
+    "post_data": null
+  },
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://mc.yandex.ru/watch/71495719?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hittoken=1775486155_34f8818cc6a3282f44d157ace279c42453c8d749795a9dcd9c7f40a51c7bbd00&browser-info=pv%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A1%3Adp%3A0%3Als%3A1447848299686%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183556%3Aet%3A1775486156%3Ac%3A1%3Arn%3A198703457%3Arqn%3A4%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Afp%3A2228%3Awv%3A2%3Ads%3A0%2C0%2C516%2C621%2C502%2C502%2C1%2C609%2C12%2C6942%2C6952%2C2%2C6881%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486156%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)mc(h-3-p-1)clc(0-0-0)rqnt(1)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)w2s(0)ti(1)",
+    "post_data": null
+  },
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://mc.yandex.ru/watch/34?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hittoken=1775486155_d0c389a8db4ef202c65911d3fa28ed9b1dad022809e5974b54a0295c6fd3e028&browser-info=pv%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A2%3Adp%3A0%3Als%3A1281088550329%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183556%3Aet%3A1775486156%3Ac%3A1%3Arn%3A946794379%3Arqn%3A5%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Afp%3A2228%3Awv%3A2%3Ads%3A0%2C0%2C516%2C621%2C502%2C502%2C1%2C609%2C12%2C6942%2C6952%2C2%2C6881%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486157%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)mc(h-3-p-1)clc(0-0-0)rqnt(1)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648448)w2s(0)ti(1)",
+    "post_data": null
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://mc.yandex.ru/watch/191494?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hittoken=1775486155_35b894bbc294c82ed362976c5626454526685c46958bb05f83b50237480d04f1&browser-info=pv%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A3%3Adp%3A0%3Als%3A69773050571%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183556%3Aet%3A1775486156%3Ac%3A1%3Arn%3A118291538%3Arqn%3A4%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Afp%3A2228%3Awv%3A2%3Ads%3A0%2C0%2C516%2C621%2C502%2C502%2C1%2C609%2C12%2C6942%2C6952%2C2%2C6881%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486156%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)mc(h-3-p-1)clc(0-0-0)rqnt(1)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)w2s(0)ti(1)",
+    "content_type": "application/json; charset=utf-8",
+    "body_preview": "{\"settings\":{\"auto_goals\":0,\"button_goals\":1,\"c_recp\":\"1.00000\",\"form_goals\":0,\"pcs\":\"1\",\"publisher\":{\"schema\":\"microdata\"},\"webvisor\":{\"arch_type\":\"none\",\"date\":\"2026-03-23 23:53:57\",\"forms\":1,\"recp\":\"0.03990\"},\"sbp\": {\"a\":\"USIFvbC8RPocHRfvPt20nNtCogsto6Md7lqV5ZjF+VRzIeCuvt3mnCsEQ/Kg+0PV\", \"b\":\"E4juND84MCLtF0HUtck3y/t6gXqdnPDoHjZIOLfAtNHvz3Xl3KpA253ofSIJglVv\"},\"eu\":0,\"hittoken\":\"1775486156_739f6e9901fa4844f27686ee22c9b631d71ca9e8b07e3ad20564193e4892abf5\",\"wstoken\":\"10993.iaSZfU9Q0j2v5zXzhQ0fay4"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://mc.yandex.ru/watch/71495719?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hittoken=1775486155_34f8818cc6a3282f44d157ace279c42453c8d749795a9dcd9c7f40a51c7bbd00&browser-info=pv%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A1%3Adp%3A0%3Als%3A1447848299686%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183556%3Aet%3A1775486156%3Ac%3A1%3Arn%3A198703457%3Arqn%3A4%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Afp%3A2228%3Awv%3A2%3Ads%3A0%2C0%2C516%2C621%2C502%2C502%2C1%2C609%2C12%2C6942%2C6952%2C2%2C6881%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486156%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)mc(h-3-p-1)clc(0-0-0)rqnt(1)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)w2s(0)ti(1)",
+    "content_type": "application/json; charset=utf-8",
+    "body_preview": "{\"settings\":{\"auto_goals\":1,\"button_goals\":0,\"c_recp\":\"1.00000\",\"form_goals\":1,\"pcs\":\"1\",\"webvisor\":{\"arch_type\":\"none\",\"date\":\"2026-01-12 19:09:08\",\"forms\":1,\"recp\":\"0.09460\"},\"sbp\": {\"a\":\"3NzppYKFGAtRL+e5Gj255fsV35QxRmIP6EGraiDJ6XK0jzE3H9tl60z+3XpSBPRN\", \"b\":\"n1BhAuEfhZvvxJy9qWBPTvwj6lmXjCRNqYaUMb2oMaI6DY4zv25mUDMEhUisckpy\"},\"eu\":0,\"hittoken\":\"1775486156_951a8a5f4612f6388526c9096b406d1db785887b0c12cfec971ac5f773e3214e\",\"wstoken\":\"10993.8uZE5cb8im1h4VY90Fxa0ke9_OGZZh9Y-O2-0ZmUBOeKb9ba6_XVY44eac"
+  },
+  {
+    "type": "request",
+    "method": "POST",
+    "url": "https://mc.yandex.ru/watch/34/1?page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hidv2=1735119814760857844&hittoken=1775486155_d0c389a8db4ef202c65911d3fa28ed9b1dad022809e5974b54a0295c6fd3e028&browser-info=pa%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A2%3Adp%3A0%3Als%3A1281088550329%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183556%3Aet%3A1775486156%3Ac%3A1%3Arn%3A923453991%3Arqn%3A6%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486157&t=gdpr(13-0)mc(h-3-p-1)clc(0-0-0)rqnt(2)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648448)w2s(0)ti(0)&force-urlencoded=1&site-info=%7B%22sidebar%22%3A%7B%22show%22%3A%7B%22logo%22%3Atrue%2C%22expanded%22%3Atrue%7D%7D%2C%22create-group-choice%22%3A%7B%22show%22%3Atrue%7D%2C%22create-banner-choice%22%3A%7B%22show%22%3Atrue%7D%2C%22create-keywords-choice%22%3A%7B%22show%22%3Atrue%7D%7D",
+    "post_data": null
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://mc.yandex.ru/watch/34?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hittoken=1775486155_d0c389a8db4ef202c65911d3fa28ed9b1dad022809e5974b54a0295c6fd3e028&browser-info=pv%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A2%3Adp%3A0%3Als%3A1281088550329%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183556%3Aet%3A1775486156%3Ac%3A1%3Arn%3A946794379%3Arqn%3A5%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Afp%3A2228%3Awv%3A2%3Ads%3A0%2C0%2C516%2C621%2C502%2C502%2C1%2C609%2C12%2C6942%2C6952%2C2%2C6881%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486157%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)mc(h-3-p-1)clc(0-0-0)rqnt(1)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648448)w2s(0)ti(1)",
+    "content_type": "application/json; charset=utf-8",
+    "body_preview": "{\"settings\":{\"auto_goals\":0,\"button_goals\":0,\"c_recp\":\"1.00000\",\"form_goals\":0,\"pcs\":\"1\",\"webvisor\":{\"arch_type\":\"html\",\"date\":\"2025-09-19 14:26:00\",\"forms\":1,\"recp\":\"1.00000\",\"urls\":\"regexp:.*\"},\"sbp\": {\"a\":\"LfOaOY94mBSjfkXVnSlBw5kwl9tLbKQWNlUCkdq5Rvs/8C0q44QjIE0Mi4+LYexE\", \"b\":\"0jkAJzqwJfYGHTuMUgjqy4gt3JgOEo5Ud27ykWJCvuITxdXkYgJYz5T/tuuQKZ24\"},\"eu\":0,\"hittoken\":\"1775486156_d15948f81e6f8de33b6f52d4024500359edc02e916c962a0bb485b05398d19bc\",\"wstoken\":\"10993.Gq4uq6ci6E-3B2GnWL815RREWVg4ZQ6Ni9mrF9F"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://mc.yandex.ru/watch/34/1?page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hidv2=1735119814760857844&hittoken=1775486155_d0c389a8db4ef202c65911d3fa28ed9b1dad022809e5974b54a0295c6fd3e028&browser-info=pa%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A2%3Adp%3A0%3Als%3A1281088550329%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183556%3Aet%3A1775486156%3Ac%3A1%3Arn%3A923453991%3Arqn%3A6%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3Arqnl%3A1%3Ast%3A1775486157&t=gdpr(13-0)mc(h-3-p-1)clc(0-0-0)rqnt(2)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648448)w2s(0)ti(0)&force-urlencoded=1&site-info=%7B%22sidebar%22%3A%7B%22show%22%3A%7B%22logo%22%3Atrue%2C%22expanded%22%3Atrue%7D%7D%2C%22create-group-choice%22%3A%7B%22show%22%3Atrue%7D%2C%22create-banner-choice%22%3A%7B%22show%22%3Atrue%7D%2C%22create-keywords-choice%22%3A%7B%22show%22%3Atrue%7D%7D",
+    "content_type": "image/gif"
+  },
+  {
+    "type": "request",
+    "method": "POST",
+    "url": "https://mc.yandex.ru/watch/52122583?browser-info=rn%3A643853%3Ac%3A1%3As%3A1280x720x24%3Aen%3Autf-8%3At%3A%D0%A1%D1%82%D0%B0%D1%82%D0%B8%D1%81%D1%82%D0%B8%D0%BA%D0%B0&rn=38883&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&site-info=%7B%22serviceId%22%3A%2215%22%2C%22workspaceId%22%3A%22undefined%22%2C%22orgId%22%3A%22undefined%22%2C%22version%22%3A%221.43.0%22%2C%22visitId%22%3A%22msngr_widget_i1sl8%22%7D",
+    "post_data": " "
+  },
+  {
+    "type": "request",
+    "method": "POST",
+    "url": "https://mc.yandex.ru/watch/52122583?browser-info=rn%3A24937%3Ac%3A1%3As%3A1280x720x24%3Aen%3Autf-8%3At%3A%D0%A1%D1%82%D0%B0%D1%82%D0%B8%D1%81%D1%82%D0%B8%D0%BA%D0%B0&rn=421904&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&site-info=%7B%22serviceId%22%3A%2215%22%2C%22workspaceId%22%3A%22undefined%22%2C%22orgId%22%3A%22undefined%22%2C%22version%22%3A%221.43.0%22%2C%22visitId%22%3A%22msngr_widget_s8jr4%22%7D",
+    "post_data": " "
+  },
+  {
+    "type": "request",
+    "method": "POST",
+    "url": "https://surveys.yandex.ru/api/v0/feedback/survey/suitable?owner_id=d02f2a17-526a-423b-85dd-da40c08f1cf1&source_url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&lang=ru&uid=2346711884&test-id=1498223%2C0%2C17%2C1482728%2C0%2C26%2C1503337%2C0%2C31%2C1519338%2C0%2C70%2C1509665%2C0%2C16%2C1523149%2C0%2C51%2C1514764%2C0%2C94%2C1509358%2C0%2C94%2C1502922%2C0%2C55%2C1464716%2C0%2C64%2C1486934%2C0%2C35%2C1505933%2C0%2C62%2C1515391%2C0%2C79%2C1511912%2C0%2C50%2C1466584%2C0%2C50%2C1459305%2C0%2C12%2C1504880%2C0%2C19%2C1530473%2C0%2C59",
+    "post_data": "{\"customParams\":{\"isPro\":1,\"isOperator\":0,\"slugs\":[],\"justCreatedCampaignType\":\"\",\"justCreatedCampaignInterfaceType\":\"\",\"justCreatedCampaignFlowType\":\"\",\"sur_id\":\"\",\"login\":\"ivansherman127\",\"walletBalance\":-47619.08,\"hasWallet\":1}}"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://mc.yandex.ru/watch/52122583?browser-info=rn%3A643853%3Ac%3A1%3As%3A1280x720x24%3Aen%3Autf-8%3At%3A%D0%A1%D1%82%D0%B0%D1%82%D0%B8%D1%81%D1%82%D0%B8%D0%BA%D0%B0&rn=38883&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&site-info=%7B%22serviceId%22%3A%2215%22%2C%22workspaceId%22%3A%22undefined%22%2C%22orgId%22%3A%22undefined%22%2C%22version%22%3A%221.43.0%22%2C%22visitId%22%3A%22msngr_widget_i1sl8%22%7D",
+    "content_type": "image/gif"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://mc.yandex.ru/watch/52122583?browser-info=rn%3A24937%3Ac%3A1%3As%3A1280x720x24%3Aen%3Autf-8%3At%3A%D0%A1%D1%82%D0%B0%D1%82%D0%B8%D1%81%D1%82%D0%B8%D0%BA%D0%B0&rn=421904&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&site-info=%7B%22serviceId%22%3A%2215%22%2C%22workspaceId%22%3A%22undefined%22%2C%22orgId%22%3A%22undefined%22%2C%22version%22%3A%221.43.0%22%2C%22visitId%22%3A%22msngr_widget_s8jr4%22%7D",
+    "content_type": "image/gif"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://surveys.yandex.ru/api/v0/feedback/survey/suitable?owner_id=d02f2a17-526a-423b-85dd-da40c08f1cf1&source_url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&lang=ru&uid=2346711884&test-id=1498223%2C0%2C17%2C1482728%2C0%2C26%2C1503337%2C0%2C31%2C1519338%2C0%2C70%2C1509665%2C0%2C16%2C1523149%2C0%2C51%2C1514764%2C0%2C94%2C1509358%2C0%2C94%2C1502922%2C0%2C55%2C1464716%2C0%2C64%2C1486934%2C0%2C35%2C1505933%2C0%2C62%2C1515391%2C0%2C79%2C1511912%2C0%2C50%2C1466584%2C0%2C50%2C1459305%2C0%2C12%2C1504880%2C0%2C19%2C1530473%2C0%2C59",
+    "content_type": "application/json",
+    "body_preview": "{\"passiveFeedbackSurvey\":{\"slug\":\"WP8rAV5VfT7LvGFDaM8q4u\",\"targetings\":[],\"showEvents\":[],\"feedbackType\":\"passive\",\"noAnnoyExclusion\":{\"global\":false,\"site\":false,\"survey\":false},\"appearance\":{\"branding\":{\"darkTheme\":{\"header\":{\"bg\":\"#677a9e33\"},\"underlay\":{\"bg\":\"#323135\"}},\"header\":{\"bg\":\"#ffffff\"},\"spinner\":{\"view\":\"portal\"},\"underlay\":{\"bg\":\"#ffffff\"}},\"buttonText\":\"Оставить отзыв\",\"closeAfterSeconds\":{\"time\":1},\"direction\":\"top\",\"isButtonHidden\":true,\"isHeightAuto\":false,\"lang\":\"ru\"}},\"activ"
+  },
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://yandex.ru/clck/click/dtype=stred/path=show.page/timestamp_milliseconds=1775486172628/timezone=Asia%2FTbilisi/pageName=module_page/ulogin=ivansherman127/eventId=1775486166268-8364442635519926/ui=desktop/uid=2346711884/u=1775486172628/tids=1498223,0,17;1482728,0,26;1503337,0,31;1519338,0,70;1509665,0,16;1523149,0,51;1514764,0,94;1509358,0,94;1502922,0,55;1464716,0,64;1486934,0,35;1505933,0,62;1515391,0,79;1511912,0,50;1466584,0,50;1459305,0,12;1504880,0,19;1530473,0,59/reqid=1775486138244-723139317162269/referer=/table=rmp-redir-log/*https://direct.yandex.ru/dna/reports/wizard/?ulogin=ivansherman127&state=2619475",
+    "post_data": null
+  },
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://mc.yandex.ru/watch/71495719?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hittoken=1775486155_34f8818cc6a3282f44d157ace279c42453c8d749795a9dcd9c7f40a51c7bbd00&browser-info=pv%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A1%3Adp%3A0%3Als%3A1447848299686%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183606%3Aet%3A1775486166%3Ac%3A1%3Arn%3A800309220%3Arqn%3A5%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3App%3A3629563401%3Arqnl%3A1%3Ast%3A1775486176%3At%3A%D0%A1%D1%82%D0%B0%D1%82%D0%B8%D1%81%D1%82%D0%B8%D0%BA%D0%B0&t=gdpr(13-0)mc(h-3-p-1)clc(0-0-0)rqnt(2)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)prs(2)wss(2)w2s(0)evs(MTkxNDk0OjA6Nyw3MTQ5NTcxOTowOjcsMzQ6MDo3LDE5MTQ5NDowOjgsMTkxNDk0OjA6OSwzNDowOjk%3D)evt(3506)ti(1)",
+    "post_data": null
+  },
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://mc.yandex.ru/watch/34?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hittoken=1775486155_d0c389a8db4ef202c65911d3fa28ed9b1dad022809e5974b54a0295c6fd3e028&browser-info=pv%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A2%3Adp%3A0%3Als%3A1281088550329%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183606%3Aet%3A1775486167%3Ac%3A1%3Arn%3A407345149%3Arqn%3A7%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3App%3A3629563401%3Arqnl%3A1%3Ast%3A1775486176%3At%3A%D0%A1%D1%82%D0%B0%D1%82%D0%B8%D1%81%D1%82%D0%B8%D0%BA%D0%B0&t=gdpr(13-0)mc(h-4-p-1)clc(0-0-0)rqnt(3)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648448)prs(2)wss(2)w2s(0)evs(MTkxNDk0OjA6Nyw3MTQ5NTcxOTowOjcsMzQ6MDo3LDE5MTQ5NDowOjgsMTkxNDk0OjA6OSwzNDowOjk%3D)evt(2970)ti(1)",
+    "post_data": null
+  },
+  {
+    "type": "request",
+    "method": "GET",
+    "url": "https://mc.yandex.ru/watch/191494?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hittoken=1775486155_35b894bbc294c82ed362976c5626454526685c46958bb05f83b50237480d04f1&browser-info=pv%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A3%3Adp%3A0%3Als%3A69773050571%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183606%3Aet%3A1775486167%3Ac%3A1%3Arn%3A661394753%3Arqn%3A5%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3App%3A3629563401%3Arqnl%3A1%3Ast%3A1775486176%3At%3A%D0%A1%D1%82%D0%B0%D1%82%D0%B8%D1%81%D1%82%D0%B8%D0%BA%D0%B0&t=gdpr(13-0)mc(h-5-p-1)clc(0-0-0)rqnt(2)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)prs(2)wss(2)w2s(0)evs(MTkxNDk0OjA6Nyw3MTQ5NTcxOTowOjcsMzQ6MDo3LDE5MTQ5NDowOjgsMTkxNDk0OjA6OSwzNDowOjk%3D)evt(2353)ti(1)",
+    "post_data": null
+  },
+  {
+    "type": "request",
+    "method": "POST",
+    "url": "https://surveys.yandex.ru/api/v0/feedback/survey/suitable?owner_id=d02f2a17-526a-423b-85dd-da40c08f1cf1&source_url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&lang=ru&uid=2346711884&test-id=1498223%2C0%2C17%2C1482728%2C0%2C26%2C1503337%2C0%2C31%2C1519338%2C0%2C70%2C1509665%2C0%2C16%2C1523149%2C0%2C51%2C1514764%2C0%2C94%2C1509358%2C0%2C94%2C1502922%2C0%2C55%2C1464716%2C0%2C64%2C1486934%2C0%2C35%2C1505933%2C0%2C62%2C1515391%2C0%2C79%2C1511912%2C0%2C50%2C1466584%2C0%2C50%2C1459305%2C0%2C12%2C1504880%2C0%2C19%2C1530473%2C0%2C59",
+    "post_data": "{\"customParams\":{\"isPro\":1,\"isOperator\":0,\"slugs\":[],\"justCreatedCampaignType\":\"\",\"justCreatedCampaignInterfaceType\":\"\",\"justCreatedCampaignFlowType\":\"\",\"sur_id\":\"\",\"login\":\"ivansherman127\",\"walletBalance\":-47619.08,\"hasWallet\":1}}"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://yandex.ru/clck/click/dtype=stred/path=show.page/timestamp_milliseconds=1775486172628/timezone=Asia%2FTbilisi/pageName=module_page/ulogin=ivansherman127/eventId=1775486166268-8364442635519926/ui=desktop/uid=2346711884/u=1775486172628/tids=1498223,0,17;1482728,0,26;1503337,0,31;1519338,0,70;1509665,0,16;1523149,0,51;1514764,0,94;1509358,0,94;1502922,0,55;1464716,0,64;1486934,0,35;1505933,0,62;1515391,0,79;1511912,0,50;1466584,0,50;1459305,0,12;1504880,0,19;1530473,0,59/reqid=1775486138244-723139317162269/referer=/table=rmp-redir-log/*https://direct.yandex.ru/dna/reports/wizard/?ulogin=ivansherman127&state=2619475",
+    "content_type": "image/gif"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://mc.yandex.ru/watch/71495719?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hittoken=1775486155_34f8818cc6a3282f44d157ace279c42453c8d749795a9dcd9c7f40a51c7bbd00&browser-info=pv%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A1%3Adp%3A0%3Als%3A1447848299686%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183606%3Aet%3A1775486166%3Ac%3A1%3Arn%3A800309220%3Arqn%3A5%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3App%3A3629563401%3Arqnl%3A1%3Ast%3A1775486176%3At%3A%D0%A1%D1%82%D0%B0%D1%82%D0%B8%D1%81%D1%82%D0%B8%D0%BA%D0%B0&t=gdpr(13-0)mc(h-3-p-1)clc(0-0-0)rqnt(2)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)prs(2)wss(2)w2s(0)evs(MTkxNDk0OjA6Nyw3MTQ5NTcxOTowOjcsMzQ6MDo3LDE5MTQ5NDowOjgsMTkxNDk0OjA6OSwzNDowOjk%3D)evt(3506)ti(1)",
+    "content_type": "application/json; charset=utf-8",
+    "body_preview": "{\"settings\":{\"auto_goals\":1,\"button_goals\":0,\"c_recp\":\"1.00000\",\"form_goals\":1,\"pcs\":\"1\",\"webvisor\":{\"arch_type\":\"none\",\"date\":\"2026-01-12 19:09:08\",\"forms\":1,\"recp\":\"0.09460\"},\"sbp\": {\"a\":\"aCwzI3jHr67f2/tLMWb/U0kA2snOa20VqOD9n4ROBpI0LiKTsP+IIUQKIrwRSLfE\", \"b\":\"81ze4moh8HTPB56UkjO+nCABX2CSp546pvZvU3WoqGdrI4ZkowjInALHgFPv1+N3\"},\"eu\":0,\"hittoken\":\"1775486176_672574204a86968d81a869a05494e0873c50e5a75b846d24ae3d5d3eaa741a64\",\"wstoken\":\"10993.2h8MUP3x6POjl-e6aniGxgr0XVCEbcf4EMkaAt-imNQezLX7HAlVMi3GwM"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://mc.yandex.ru/watch/34?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hittoken=1775486155_d0c389a8db4ef202c65911d3fa28ed9b1dad022809e5974b54a0295c6fd3e028&browser-info=pv%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A2%3Adp%3A0%3Als%3A1281088550329%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183606%3Aet%3A1775486167%3Ac%3A1%3Arn%3A407345149%3Arqn%3A7%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3App%3A3629563401%3Arqnl%3A1%3Ast%3A1775486176%3At%3A%D0%A1%D1%82%D0%B0%D1%82%D0%B8%D1%81%D1%82%D0%B8%D0%BA%D0%B0&t=gdpr(13-0)mc(h-4-p-1)clc(0-0-0)rqnt(3)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648448)prs(2)wss(2)w2s(0)evs(MTkxNDk0OjA6Nyw3MTQ5NTcxOTowOjcsMzQ6MDo3LDE5MTQ5NDowOjgsMTkxNDk0OjA6OSwzNDowOjk%3D)evt(2970)ti(1)",
+    "content_type": "application/json; charset=utf-8",
+    "body_preview": "{\"settings\":{\"auto_goals\":0,\"button_goals\":0,\"c_recp\":\"1.00000\",\"form_goals\":0,\"pcs\":\"1\",\"webvisor\":{\"arch_type\":\"html\",\"date\":\"2025-09-19 14:26:00\",\"forms\":1,\"recp\":\"1.00000\",\"urls\":\"regexp:.*\"},\"sbp\": {\"a\":\"pmbYG3RcMs5ZOhjYpWPexHsYfYfajeXgFbULaGdosTbevnazNNjYOq6WRfR+QG+x\", \"b\":\"DyIqEpOM3sDBFjPy+xEoV/zNjfUVsRFUkfpnbw4J6zFj/ueix+2k/xmHerO5ntlJ\"},\"eu\":0,\"hittoken\":\"1775486176_74751949d8c09d12f25f22d7e46cc9646bf986e249bc7eee37cab2f6a20d1368\",\"wstoken\":\"10993.wnQQ15IHN6KR5eiJYybf4aPoByZ6KiiLLiJdvgO"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://mc.yandex.ru/watch/191494?wmode=7&page-url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hittoken=1775486155_35b894bbc294c82ed362976c5626454526685c46958bb05f83b50237480d04f1&browser-info=pv%3A1%3Aar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A0%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A3%3Adp%3A0%3Als%3A69773050571%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183606%3Aet%3A1775486167%3Ac%3A1%3Arn%3A661394753%3Arqn%3A5%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3App%3A3629563401%3Arqnl%3A1%3Ast%3A1775486176%3At%3A%D0%A1%D1%82%D0%B0%D1%82%D0%B8%D1%81%D1%82%D0%B8%D0%BA%D0%B0&t=gdpr(13-0)mc(h-5-p-1)clc(0-0-0)rqnt(2)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)prs(2)wss(2)w2s(0)evs(MTkxNDk0OjA6Nyw3MTQ5NTcxOTowOjcsMzQ6MDo3LDE5MTQ5NDowOjgsMTkxNDk0OjA6OSwzNDowOjk%3D)evt(2353)ti(1)",
+    "content_type": "application/json; charset=utf-8",
+    "body_preview": "{\"settings\":{\"auto_goals\":0,\"button_goals\":1,\"c_recp\":\"1.00000\",\"form_goals\":0,\"pcs\":\"1\",\"publisher\":{\"schema\":\"microdata\"},\"webvisor\":{\"arch_type\":\"none\",\"date\":\"2026-03-23 23:53:57\",\"forms\":1,\"recp\":\"0.03990\"},\"sbp\": {\"a\":\"7JdYTr+6r/JkMCDTcQuyi1sX7hsW/GZTUOIIF5BpBELQ7a+dqzneduPL3KCLw/00\", \"b\":\"rtdKFSN5dCAw7X5sV2MSW9MQno7GSErrgk+9xTtg/zKKYQkEmOtW7GwEfI022iYV\"},\"eu\":0,\"hittoken\":\"1775486176_fb85d630cbf8cee4dfab6389138dd2cf04af9f524c8ce7840f8b6d2154f79b80\",\"wstoken\":\"10993.lg8F_nVx4yi5kBKsJy3qkOO"
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://surveys.yandex.ru/api/v0/feedback/survey/suitable?owner_id=d02f2a17-526a-423b-85dd-da40c08f1cf1&source_url=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&lang=ru&uid=2346711884&test-id=1498223%2C0%2C17%2C1482728%2C0%2C26%2C1503337%2C0%2C31%2C1519338%2C0%2C70%2C1509665%2C0%2C16%2C1523149%2C0%2C51%2C1514764%2C0%2C94%2C1509358%2C0%2C94%2C1502922%2C0%2C55%2C1464716%2C0%2C64%2C1486934%2C0%2C35%2C1505933%2C0%2C62%2C1515391%2C0%2C79%2C1511912%2C0%2C50%2C1466584%2C0%2C50%2C1459305%2C0%2C12%2C1504880%2C0%2C19%2C1530473%2C0%2C59",
+    "content_type": "application/json",
+    "body_preview": "{\"passiveFeedbackSurvey\":{\"slug\":\"WP8rAV5VfT7LvGFDaM8q4u\",\"targetings\":[],\"showEvents\":[],\"feedbackType\":\"passive\",\"noAnnoyExclusion\":{\"global\":false,\"site\":false,\"survey\":false},\"appearance\":{\"branding\":{\"darkTheme\":{\"header\":{\"bg\":\"#677a9e33\"},\"underlay\":{\"bg\":\"#323135\"}},\"header\":{\"bg\":\"#ffffff\"},\"spinner\":{\"view\":\"portal\"},\"underlay\":{\"bg\":\"#ffffff\"}},\"buttonText\":\"Оставить отзыв\",\"closeAfterSeconds\":{\"time\":1},\"direction\":\"top\",\"isButtonHidden\":true,\"isHeightAuto\":false,\"lang\":\"ru\"}},\"activ"
+  },
+  {
+    "type": "request",
+    "method": "POST",
+    "url": "https://mc.yandex.ru/watch/191494/1?page-url=btn%3A%2F%2Fdirect.yandex.ru%2F%3Fp%3D%253F1A1AAAAA1AA1AA1AA1AA1A%26c%3D3507435175&page-ref=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hidv2=1735124977397792903&hittoken=1775486155_35b894bbc294c82ed362976c5626454526685c46958bb05f83b50237480d04f1&browser-info=ar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A3%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A3%3Adp%3A0%3Als%3A69773050571%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183634%3Aet%3A1775486194%3Ac%3A1%3Arn%3A670223631%3Arqn%3A6%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3App%3A3629563401%3Arqnl%3A1%3Ast%3A1775486194%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)mc(h-6-p-1)clc(0-0-0)rqnt(3)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)prs(2)wss(2)w2s(0)evs(MTkxNDk0OjA6Nyw3MTQ5NTcxOTowOjcsMzQ6MDo3LDE5MTQ5NDowOjgsMTkxNDk0OjA6OSwzNDowOjksNzE0OTU3MTk6MDo5)evt(2353)fid(32740)ti(0)&force-urlencoded=1&site-info=%7B%22__ym%22%3A%7B%22ite%22%3A1%7D%7D",
+    "post_data": null
+  },
+  {
+    "type": "response",
+    "status": 200,
+    "url": "https://mc.yandex.ru/watch/191494/1?page-url=btn%3A%2F%2Fdirect.yandex.ru%2F%3Fp%3D%253F1A1AAAAA1AA1AA1AA1AA1A%26c%3D3507435175&page-ref=https%3A%2F%2Fdirect.yandex.ru%2Fdna%2Freports%2Fwizard%2F%3Fulogin%3Divansherman127%26state%3D2619475&charset=utf-8&ut=noindex&uah=chu%0A%22Chromium%22%3Bv%3D%22146%22%2C%22Not-A.Brand%22%3Bv%3D%2224%22%2C%22Google%20Chrome%22%3Bv%3D%22146%22%0Acha%0Ax86%0Achb%0A64%0Achf%0A146.0.7680.178%0Achl%0A%22Chromium%22%3Bv%3D%22146.0.7680.178%22%2C%22Not-A.Brand%22%3Bv%3D%2224.0.0.0%22%2C%22Google%20Chrome%22%3Bv%3D%22146.0.7680.178%22%0Achm%0A%3F0%0Achp%0AmacOS%0Achv%0A10_15_7&hidv2=1735124977397792903&hittoken=1775486155_35b894bbc294c82ed362976c5626454526685c46958bb05f83b50237480d04f1&browser-info=ar%3A1%3Avf%3Acw41qwg7gq0rlux5yszsuh61936jj%3Afu%3A3%3Aen%3Autf-8%3Ala%3Aen-GB%3Av%3A2450%3Acn%3A3%3Adp%3A0%3Als%3A69773050571%3Ahid%3A728718175%3Az%3A240%3Ai%3A20260406183634%3Aet%3A1775486194%3Ac%3A1%3Arn%3A670223631%3Arqn%3A6%3Au%3A1775483606659144609%3Aw%3A1280x720%3As%3A1280x720x24%3Ask%3A1%3Awv%3A2%3Aco%3A0%3Acpf%3A1%3Aeu%3A0%3Ans%3A1775486137045%3Aadb%3A2%3App%3A3629563401%3Arqnl%3A1%3Ast%3A1775486194%3At%3A%D0%9C%D0%B0%D1%81%D1%82%D0%B5%D1%80%20%D0%BE%D1%82%D1%87%D1%91%D1%82%D0%BE%D0%B2&t=gdpr(13-0)mc(h-6-p-1)clc(0-0-0)rqnt(3)aw(1)rcm(1)yu(1835524081775483592)cdl(na)eco(12648452)prs(2)wss(2)w2s(0)evs(MTkxNDk0OjA6Nyw3MTQ5NTcxOTowOjcsMzQ6MDo3LDE5MTQ5NDowOjgsMTkxNDk0OjA6OSwzNDowOjksNzE0OTU3MTk6MDo5)evt(2353)fid(32740)ti(0)&force-urlencoded=1&site-info=%7B%22__ym%22%3A%7B%22ite%22%3A1%7D%7D",
+    "content_type": "image/gif"
+  }
+]

@@ -10,10 +10,11 @@
  */
 
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
-import { createReadStream, existsSync, readFileSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { join, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import { execFile } from "node:child_process";
 import Database from "better-sqlite3";
 
 import { createD1Compat } from "./d1-compat.js";
@@ -48,6 +49,12 @@ const SCHEMA_PATH = join(process.cwd(), "server", "utm-schema.sql");
 const WEBSITE_DB_PATH = process.env.WEBSITE_DB_PATH ?? join(process.cwd(), "website.db");
 const ANALYTICS_DIST_DIR = process.env.ANALYTICS_DIST_DIR ?? join(process.cwd(), "dist-analytics");
 const ANALYTICS_REBUILD_SECRET = process.env.ANALYTICS_REBUILD_SECRET ?? "";
+
+// Python binary — prefer venv if available
+// __dirname = webpush/server/ → go up 3 levels to reach repo root
+const repoRoot = join(__dirname, "..", "..", "..");
+const _venvPython = join(repoRoot, ".venv", "bin", "python");
+const PYTHON_BIN = existsSync(_venvPython) ? _venvPython : "python3";
 
 // Read secrets from .env.server.json if present (takes priority over process.env)
 let _serverSecrets: Record<string, string> = {};
@@ -404,6 +411,63 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       return;
     }
 
+    if (pathname === "/api/yandex/ingest") {
+      if (req.method !== "POST") { jsonRes(res, 405, { ok: false, error: "method_not_allowed" }); return; }
+      // Auth: same bearer secret as analytics rebuild
+      const ingestAuth = req.headers["authorization"] ?? "";
+      const ingestMatch = /^Bearer\s+(.+)$/i.exec(ingestAuth.trim());
+      if (!_analyticsRebuildSecret || !ingestMatch || ingestMatch[1] !== _analyticsRebuildSecret) {
+        jsonRes(res, 401, { ok: false, error: "unauthorized" }); return;
+      }
+      const csvBody = await readBody(req);
+      const tmpCsv = `/tmp/yandex_ingest_${randomUUID()}.csv`;
+      // Optional ?month=YYYY-MM for wizard exports without a date column
+      const urlObj = new URL(req.url || "/", "http://localhost");
+      const monthArg = urlObj.searchParams.get("month");
+      const extraArgs = monthArg ? ["--month", monthArg] : [];
+      try {
+        writeFileSync(tmpCsv, csvBody);
+        await new Promise<void>((resolve, reject) => {
+          execFile(
+            PYTHON_BIN,
+            ["-m", "db.upsert_yandex_from_csv", tmpCsv, ...extraArgs],
+            { cwd: repoRoot, timeout: 120_000 },
+            (err, stdout, stderr) => {
+              if (stdout) console.log("[yandex-ingest]", stdout.trim());
+              if (stderr) console.error("[yandex-ingest]", stderr.trim());
+              if (err) reject(err); else resolve();
+            }
+          );
+        });
+        jsonRes(res, 200, { ok: true });
+        // Non-blocking: trigger analytics rebuild so Yandex data appears immediately
+        if (WEBSITEDB) {
+          setImmediate(async () => {
+            try {
+              const rebuildReq = new Request("http://localhost/api/analytics/rebuild", {
+                method: "POST",
+                headers: { authorization: `Bearer ${_analyticsRebuildSecret}`, "content-type": "application/json" },
+                body: JSON.stringify({ force: false }),
+              });
+              const rbRes = await analyticsRebuildPost({ request: rebuildReq, env: { DB: WEBSITEDB!, ANALYTICS_REBUILD_SECRET: _analyticsRebuildSecret } as any });
+              if (rbRes.status === 200) datasetCache.clear();
+              const rbResult = await rbRes.json() as Record<string, unknown>;
+              console.log("[yandex-ingest] analytics rebuild:", JSON.stringify(rbResult));
+            } catch (rbErr) {
+              console.error("[yandex-ingest] rebuild trigger failed:", rbErr);
+            }
+          });
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("[yandex-ingest] error:", msg);
+        jsonRes(res, 500, { ok: false, error: msg });
+      } finally {
+        try { unlinkSync(tmpCsv); } catch { /* ignore */ }
+      }
+      return;
+    }
+
     if (pathname === "/api/analytics/rebuild") {
       if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
       if (req.method !== "POST") { jsonRes(res, 405, { ok: false, error: "method_not_allowed" }); return; }
@@ -428,6 +492,11 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       if (webRes.status === 200) datasetCache.clear();
       await sendWebResponse(webRes, res);
       return;
+    }
+
+    // Root → analytics dashboard
+    if (pathname === "/") {
+      res.writeHead(302, { "location": "/analytics/" }); res.end(); return;
     }
 
     // ── Analytics SPA static files ────────────────────────────────────────────

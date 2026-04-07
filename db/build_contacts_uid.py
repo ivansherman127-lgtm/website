@@ -18,6 +18,8 @@ from typing import Dict, Iterable, List, Set
 
 import pandas as pd
 
+from event_classifier import classify_event_from_row
+
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_INPUT = PROJECT_ROOT / "DEAL_20260315_aa9ba8d2_69b70d4041fcb.csv"
@@ -145,6 +147,8 @@ class RowPayload:
     phones: Set[str]
     emails: Set[str]
     contact_ids: Set[str]
+    deal_date: str   # ISO "YYYY-MM-DD" or empty
+    event_class: str  # from classify_event_from_row
 
 
 def _collect_columns(df: pd.DataFrame) -> Dict[str, List[str]]:
@@ -203,12 +207,27 @@ def _extract_row_payload(row: pd.Series, cols: Dict[str, List[str]]) -> RowPaylo
                     contact_ids.add(cid)
 
     deal_id = normalize_name(_cell_to_str(row.get("ID", "")))
+
+    raw_date = _cell_to_str(row.get("Дата создания", ""))
+    deal_date = ""
+    if raw_date:
+        try:
+            dt = pd.to_datetime(raw_date, dayfirst=True, errors="coerce")
+            if pd.notna(dt):
+                deal_date = dt.strftime("%Y-%m-%d")
+        except Exception:
+            pass
+
+    event_class = classify_event_from_row(row.to_dict()).event
+
     return RowPayload(
         deal_id=deal_id,
         names=names,
         phones=phones,
         emails=emails,
         contact_ids=contact_ids,
+        deal_date=deal_date,
+        event_class=event_class,
     )
 
 
@@ -263,6 +282,7 @@ def build_contacts_uid_table(df: pd.DataFrame) -> tuple[pd.DataFrame, Dict[str, 
         all_emails: Set[str] = set()
         all_contact_ids: Set[str] = set()
         all_deal_ids: Set[str] = set()
+        dated_events: list[tuple[str, str]] = []
         for i in idxs:
             payload = rows_payload[i]
             all_names |= payload.names
@@ -271,6 +291,11 @@ def build_contacts_uid_table(df: pd.DataFrame) -> tuple[pd.DataFrame, Dict[str, 
             all_contact_ids |= payload.contact_ids
             if payload.deal_id:
                 all_deal_ids.add(payload.deal_id)
+            dated_events.append((payload.deal_date or "9999", payload.event_class))
+        dated_events.sort(key=lambda x: x[0])
+        first_deal_date = dated_events[0][0] if dated_events and dated_events[0][0] != "9999" else ""
+        first_touch_event = dated_events[0][1] if dated_events else "Другое"
+        all_events = _join_sorted({ev for _, ev in dated_events})
         records.append(
             {
                 "contact_uid": uid,
@@ -279,6 +304,9 @@ def build_contacts_uid_table(df: pd.DataFrame) -> tuple[pd.DataFrame, Dict[str, 
                 "all_phones": _join_sorted(all_phones),
                 "all_emails": _join_sorted(all_emails),
                 "all_deal_ids": _join_sorted(all_deal_ids),
+                "first_deal_date": first_deal_date,
+                "first_touch_event": first_touch_event,
+                "all_events": all_events,
                 "deals_count": len(all_deal_ids),
                 "contact_ids_count": len(all_contact_ids),
                 "names_count": len(all_names),

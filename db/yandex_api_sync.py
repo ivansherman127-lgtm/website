@@ -570,6 +570,145 @@ def rebuild_yandex_stats(conn: sqlite3.Connection) -> int:
 
 
 # ---------------------------------------------------------------------------
+# SQLite — stg_yandex_stats  (daily, matches the analytics API schema)
+# ---------------------------------------------------------------------------
+
+def _ensure_stg_stats_table(conn: sqlite3.Connection) -> None:
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS stg_yandex_stats (
+            "Месяц"                        TEXT,
+            "День"                         TEXT,
+            "№ Кампании"                   REAL,
+            "Название кампании"            TEXT,
+            "№ Группы"                     REAL,
+            "Название группы"              TEXT,
+            "№ Объявления"                 REAL,
+            "Статус объявления"            TEXT,
+            "Тип объявления"               TEXT,
+            "Заголовок"                    TEXT,
+            "Текст"                        TEXT,
+            "Ссылка"                       TEXT,
+            "Путь до изображения"          TEXT,
+            "Название файла изображения"   TEXT,
+            "Идентификатор видео"          TEXT,
+            "Путь до превью видео"         TEXT,
+            "Место клика"                  TEXT,
+            "Формат"                       TEXT,
+            "Источник текста"              TEXT,
+            "Расход, ₽"                    REAL,
+            "Клики"                        INTEGER,
+            "Конверсии"                    INTEGER,
+            "CR, %"                        TEXT,
+            "CPA, ₽"                       TEXT,
+            month                          TEXT
+        )
+    """)
+    conn.commit()
+
+
+def rebuild_stg_yandex_stats(conn: sqlite3.Connection) -> int:
+    """
+    Replace stg_yandex_stats with daily rows from raw_yandex_stats JOIN raw_yandex_ads.
+    This is the table read by the analytics server API.
+    Image/video columns (not available from the Reports API) are set to ''.
+    """
+    _ensure_stg_stats_table(conn)
+    with conn:
+        conn.execute("DELETE FROM stg_yandex_stats")
+        conn.execute("""
+            INSERT INTO stg_yandex_stats (
+                "Месяц", "День",
+                "№ Кампании", "Название кампании",
+                "№ Группы",   "Название группы",
+                "№ Объявления",
+                "Статус объявления", "Тип объявления",
+                "Заголовок", "Текст", "Ссылка",
+                "Путь до изображения", "Название файла изображения",
+                "Идентификатор видео", "Путь до превью видео",
+                "Место клика", "Формат", "Источник текста",
+                "Расход, ₽", "Клики", "Конверсии", "CR, %", "CPA, ₽",
+                month
+            )
+            SELECT
+                substr(s."Date", 1, 7)                                       AS "Месяц",
+                s."Date"                                                      AS "День",
+                CAST(NULLIF(s."CampaignId", '') AS REAL)                      AS "№ Кампании",
+                s."CampaignName"                                              AS "Название кампании",
+                CAST(NULLIF(s."AdGroupId",   '') AS REAL)                     AS "№ Группы",
+                s."AdGroupName"                                               AS "Название группы",
+                CAST(NULLIF(s."AdId",        '') AS REAL)                     AS "№ Объявления",
+                COALESCE(a."State",  '')                                      AS "Статус объявления",
+                COALESCE(a."Type",   '')                                      AS "Тип объявления",
+                COALESCE(a."Title",  '')                                      AS "Заголовок",
+                COALESCE(a."Text",   '')                                      AS "Текст",
+                COALESCE(a."Href",   '')                                      AS "Ссылка",
+                '' AS "Путь до изображения",
+                '' AS "Название файла изображения",
+                '' AS "Идентификатор видео",
+                '' AS "Путь до превью видео",
+                '' AS "Место клика",
+                '' AS "Формат",
+                '' AS "Источник текста",
+                ROUND(CAST(NULLIF(s."Cost",        '') AS REAL), 2)           AS "Расход, ₽",
+                CAST(NULLIF(s."Clicks",      '') AS INTEGER)                  AS "Клики",
+                CAST(NULLIF(s."Conversions", '') AS INTEGER)                  AS "Конверсии",
+                CASE
+                    WHEN CAST(NULLIF(s."Clicks", '') AS INTEGER) IS NULL
+                      OR CAST(NULLIF(s."Clicks", '') AS INTEGER) = 0
+                    THEN '0'
+                    ELSE CAST(ROUND(
+                        100.0 * CAST(NULLIF(s."Conversions", '') AS REAL)
+                              / CAST(NULLIF(s."Clicks",      '') AS REAL), 2
+                    ) AS TEXT)
+                END AS "CR, %",
+                CASE
+                    WHEN CAST(NULLIF(s."Conversions", '') AS INTEGER) IS NULL
+                      OR CAST(NULLIF(s."Conversions", '') AS INTEGER) = 0
+                    THEN '0'
+                    ELSE CAST(ROUND(
+                        CAST(NULLIF(s."Cost",        '') AS REAL)
+                      / CAST(NULLIF(s."Conversions", '') AS REAL), 2
+                    ) AS TEXT)
+                END AS "CPA, ₽",
+                substr(s."Date", 1, 7)                                       AS month
+            FROM raw_yandex_stats s
+            LEFT JOIN raw_yandex_ads a ON a."Id" = s."AdId"
+            WHERE s."Date" IS NOT NULL AND s."Date" != ''
+            ORDER BY s."Date", s."CampaignId", s."AdGroupId", s."AdId"
+        """)
+    n: int = conn.execute("SELECT COUNT(*) FROM stg_yandex_stats").fetchone()[0]
+    return n
+
+
+# ---------------------------------------------------------------------------
+# Analytics rebuild trigger
+# ---------------------------------------------------------------------------
+
+def trigger_analytics_rebuild(port: int = 3000) -> None:
+    """POST to the analytics rebuild endpoint to invalidate the query cache."""
+    url = os.environ.get(
+        "ANALYTICS_REBUILD_URL", f"http://127.0.0.1:{port}/api/analytics/rebuild"
+    )
+    secret = os.environ.get("ANALYTICS_REBUILD_SECRET", "")
+    try:
+        payload = json.dumps({"force": False}).encode("utf-8")
+        req = urllib.request.Request(url, data=payload, method="POST")
+        req.add_header("Content-Type", "application/json")
+        if secret:
+            req.add_header("Authorization", f"Bearer {secret}")
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            result = json.loads(resp.read().decode())
+        skipped = result.get("skipped") or (result.get("result") or {}).get("skipped")
+        if skipped:
+            print("  [rebuild] Analytics up to date — skipped.")
+        else:
+            paths = (result.get("result") or {}).get("dataset_paths", "?")
+            print(f"  [rebuild] Analytics rebuild complete — {paths} paths materialized.")
+    except Exception as exc:
+        print(f"  [rebuild] Warning: analytics rebuild call failed: {exc}", file=sys.stderr)
+
+
+# ---------------------------------------------------------------------------
 # Entity runners
 # ---------------------------------------------------------------------------
 
@@ -650,6 +789,11 @@ def run_once(
         print("── Aggregating yandex_stats ────────────────────────────")
         n = rebuild_yandex_stats(conn)
         print(f"  yandex_stats: {n} monthly rows")
+        print("── Rebuilding stg_yandex_stats ─────────────────────────")
+        n2 = rebuild_stg_yandex_stats(conn)
+        print(f"  stg_yandex_stats: {n2} daily rows")
+        print("── Triggering analytics cache rebuild ──────────────────")
+        trigger_analytics_rebuild()
 
     print(f"\nSync complete in {time.time() - t0:.1f}s")
 

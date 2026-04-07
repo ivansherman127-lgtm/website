@@ -73,6 +73,9 @@ def main() -> None:
             names_count = to_int(row.get("names_count", ""))
             phones_count = to_int(row.get("phones_count", ""))
             emails_count = to_int(row.get("emails_count", ""))
+            first_deal_date = norm_str(row.get("first_deal_date", "")) or None
+            first_touch_event = norm_str(row.get("first_touch_event", "")) or None
+            all_events = norm_str(row.get("all_events", "")) or None
 
             for contact_id in contact_ids:
                 rows_to_insert.append(
@@ -86,15 +89,19 @@ def main() -> None:
                         names_count,
                         phones_count,
                         emails_count,
+                        first_deal_date,
+                        first_touch_event,
+                        all_events,
                     )
                 )
 
     conn = get_conn(args.db)
     try:
         cur = conn.cursor()
+        cur.execute("DROP TABLE IF EXISTS stg_contacts_uid")
         cur.execute(
             """
-            CREATE TABLE IF NOT EXISTS stg_contacts_uid (
+            CREATE TABLE stg_contacts_uid (
               contact_uid TEXT NOT NULL,
               contact_id TEXT NOT NULL,
               all_names TEXT,
@@ -104,13 +111,15 @@ def main() -> None:
               names_count INTEGER,
               phones_count INTEGER,
               emails_count INTEGER,
+              first_deal_date TEXT,
+              first_touch_event TEXT,
+              all_events TEXT,
               PRIMARY KEY (contact_uid, contact_id)
             )
             """
         )
         cur.execute("CREATE INDEX IF NOT EXISTS idx_stg_contacts_uid_contact_id ON stg_contacts_uid(contact_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_stg_contacts_uid_contact_uid ON stg_contacts_uid(contact_uid)")
-        cur.execute("DELETE FROM stg_contacts_uid")
 
         cur.executemany(
             """
@@ -123,9 +132,12 @@ def main() -> None:
               contact_ids_count,
               names_count,
               phones_count,
-              emails_count
+              emails_count,
+              first_deal_date,
+              first_touch_event,
+              all_events
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             rows_to_insert,
         )

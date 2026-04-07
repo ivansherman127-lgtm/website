@@ -55,9 +55,9 @@ function buildUtmTag(values: {
     `utm_source=${encodeURIComponent(values.source)}`,
     `utm_medium=${encodeURIComponent(values.medium)}`,
     `utm_campaign=${encodeURIComponent(values.campaign)}`,
-    `utm_content=${encodeURIComponent(values.content)}`,
-    `utm_term=${encodeURIComponent(values.term)}`,
-  ].join("&");
+    values.content ? `utm_content=${encodeURIComponent(values.content)}` : "",
+    values.term ? `utm_term=${encodeURIComponent(values.term)}` : "",
+  ].filter(Boolean).join("&");
 
   const link = values.link.trim();
   if (!link) return params;

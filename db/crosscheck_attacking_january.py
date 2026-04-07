@@ -8,15 +8,13 @@ from pathlib import Path
 import pandas as pd
 
 from bitrix_union_io import load_bitrix_deals_union
+from event_classifier import classify_event_from_row
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONTACTS = PROJECT_ROOT / "sheets" / "bitrix_contact_export.csv"
 DEFAULT_OUT = PROJECT_ROOT / "bitrix_contacts_attacking_january.csv"
 DEFAULT_REPORT = PROJECT_ROOT / "bitrix_contacts_attacking_january_report.json"
 DEFAULT_UNMATCHED_OUT = PROJECT_ROOT / "bitrix_contacts_attacking_january_unmatched.csv"
-
-
-CAMPAIGN_RE = re.compile(r"(атакующ\w*\s+январ\w*|attacking[_ ]?january)", re.IGNORECASE)
 
 
 def _norm_str(v: object) -> str:
@@ -33,14 +31,6 @@ def _norm_id(v: object) -> str:
     if re.fullmatch(r"\d+\.0+", s):
         return s.split(".", 1)[0]
     return s
-
-
-def _contains_campaign_token(row: pd.Series, cols: list[str]) -> bool:
-    for c in cols:
-        val = _norm_str(row.get(c, ""))
-        if val and CAMPAIGN_RE.search(val):
-            return True
-    return False
 
 
 def run(
@@ -60,13 +50,8 @@ def run(
     deals["ID"] = deals["ID"].map(_norm_id)
     deals["Контакт: ID"] = deals["Контакт: ID"].map(_norm_id)
 
-    # Use likely campaign-bearing columns first; fall back to all string columns if needed.
-    preferred_cols = [c for c in ["Название сделки", "UTM Campaign", "Источник (подробно)", "Источник обращения"] if c in deals.columns]
-    if not preferred_cols:
-        preferred_cols = [c for c in deals.columns if deals[c].dtype == object]
-
-    deals["is_attacking_january"] = deals.apply(lambda r: _contains_campaign_token(r, preferred_cols), axis=1)
-    jan_deals = deals[deals["is_attacking_january"]].copy()
+    deals["event_class"] = deals.apply(lambda r: classify_event_from_row(r.to_dict()).event, axis=1)
+    jan_deals = deals[deals["event_class"] == "Attacking January"].copy()
 
     jan_deals = jan_deals[jan_deals["Контакт: ID"] != ""]
     grouped = (

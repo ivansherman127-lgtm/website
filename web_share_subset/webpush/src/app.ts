@@ -2,15 +2,8 @@ import "./style.css";
 import Chart from "chart.js/auto";
 import { dataUrl, staticUrl } from "./data-source";
 import { mapYandexProjectGroup } from "./yandexProjectGroups";
-import mediumConfigJson from "../functions/api/utm_medium_sources.json";
-
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const columnAliasesByView = new Map<string, Record<string, string>>();
-let utmLatestTag = "";
-let utmSessionRows: Record<string, unknown>[] = [];
-
-type UtmMediumEntry = { value: string; label: string; sourceType: "select" | "freetext"; hasPartner?: boolean; sources: string[] };
-const UTM_MEDIUM_CONFIG: UtmMediumEntry[] = (mediumConfigJson as { mediums: UtmMediumEntry[] }).mediums;
 
 
 async function fetchJson<T>(path: string): Promise<T> {
@@ -528,7 +521,7 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
   `;
 }
 
-type TabKey = "assoc_builder" | "email" | "yandex" | "budget" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa" | "utm";
+type TabKey = "assoc_builder" | "email" | "yandex" | "budget" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa";
 type ViewKey =
   | "assoc_dynamic"
   | "media_email"
@@ -550,8 +543,7 @@ type ViewKey =
   | "qa_dedup_collisions"
   | "qa_campaign_mapping"
   | "qa_top50_cohort"
-  | "qa_share_global"
-  | "utm_constructor";
+  | "qa_share_global";
 
 type ViewMeta = { tab: TabKey; label: string; path: string; rowsLabel: string; title: string; kind?: "assoc" | "email" | "generic" };
 type PnlMode = "cohort" | "pnl";
@@ -584,10 +576,9 @@ const VIEW_META: Record<ViewKey, ViewMeta> = {
   qa_campaign_mapping: { tab: "qa", label: "Маппинг кампаний", path: "data/qa/yandex_campaign_mapping_seed.json", rowsLabel: "Кампаний", title: "Контроль качества" },
   qa_top50_cohort: { tab: "qa", label: "Топ-50 когорт", path: "data/qa/other_top50_cohort.json", rowsLabel: "Строк", title: "Контроль качества" },
   qa_share_global: { tab: "qa", label: "Доля прочих (глобально)", path: "data/qa/other_share_global.json", rowsLabel: "Строк", title: "Контроль качества" },
-  utm_constructor: { tab: "utm", label: "UTM Конструктор", path: "/api/utm", rowsLabel: "Тегов", title: "UTM Конструктор" },
 };
 const ALL_VIEWS = Object.keys(VIEW_META) as ViewKey[];
-type MenuMode = "dashboard" | "reports" | "charts" | "utm";
+type MenuMode = "dashboard" | "reports" | "charts";
 
 const PNL_PATH_BY_VIEW: Partial<Record<ViewKey, string>> = {
   managers_sales_month: "data/manager_sales_by_month_pnl.json",
@@ -607,7 +598,7 @@ function readUrlState(): { menu: MenuMode; view?: ViewKey } {
   const q = new URLSearchParams(window.location.search);
   const m = (q.get("m") || "").trim().toLowerCase();
   const v = (q.get("v") || "").trim();
-  const menu: MenuMode = m === "reports" ? "reports" : m === "charts" ? "charts" : m === "utm" ? "utm" : "dashboard";
+  const menu: MenuMode = m === "reports" ? "reports" : m === "charts" ? "charts" : "dashboard";
   return { menu, view: isViewKey(v) ? v : undefined };
 }
 
@@ -633,10 +624,6 @@ function viewPath(view: ViewKey, options?: { pnlMode?: PnlMode; dateFrom?: strin
 }
 
 async function openTableView(view: ViewKey, dealsIndex: DealsIndex): Promise<void> {
-  if (view === "utm_constructor") {
-    await renderTable(view, utmSessionRows, dealsIndex);
-    return;
-  }
   let rows: Record<string, unknown>[] = [];
   try {
     rows = await fetchJson<Record<string, unknown>[]>(viewPath(view));
@@ -647,7 +634,6 @@ async function openTableView(view: ViewKey, dealsIndex: DealsIndex): Promise<voi
         <button class="side-btn" data-menu="dashboard">Главная</button>
         <button class="side-btn active" data-menu="reports">Детальные отчеты</button>
         <button class="side-btn" data-menu="charts">Графики</button>
-        <button class="side-btn" data-menu="utm">UTM Конструктор</button>
       </aside>
       <main class="main-content">
         <div class="err">Ошибка загрузки данных: ${escapeHtml(String(e))}</div>
@@ -659,7 +645,6 @@ async function openTableView(view: ViewKey, dealsIndex: DealsIndex): Promise<voi
         if (m === "dashboard") await openMenu("dashboard", dealsIndex, view);
         else if (m === "reports") await openMenu("reports", dealsIndex, view);
         else if (m === "charts") await openMenu("charts", dealsIndex, view);
-        else if (m === "utm") await openMenu("utm", dealsIndex, view);
       };
     });
     return;
@@ -676,11 +661,7 @@ async function openMenu(menu: MenuMode, dealsIndex: DealsIndex, currentView?: Vi
     await renderCharts(dealsIndex);
     return;
   }
-  if (menu === "utm") {
-    await openTableView("utm_constructor", dealsIndex);
-    return;
-  }
-  await openTableView(currentView && currentView !== "utm_constructor" ? currentView : "months_total", dealsIndex);
+  await openTableView(currentView && currentView ? currentView : "months_total", dealsIndex);
 }
 
 function managerFormulaNote(_view: ViewKey): string {
@@ -1363,7 +1344,6 @@ function isHiddenUiColumn(col: string): boolean {
 }
 
 async function renderTable(view: ViewKey, rows: Record<string, unknown>[], dealsIndex: DealsIndex, options: RenderOptions = {}): Promise<void> {
-  const isUtmConstructor = view === "utm_constructor";
   const _now = new Date();
   const _toY = _now.getFullYear();
   const _toM = String(_now.getMonth() + 1).padStart(2, "0");
@@ -1375,10 +1355,10 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   let dateTo = options.initialDateTo ?? `${_toY}-${_toM}-${_toD}`;
   let pnlMode: PnlMode = options.initialPnlMode ?? "cohort";
 
-  writeUrlState(isUtmConstructor ? "utm" : "reports", view);
+  writeUrlState("reports", view);
   const meta = VIEW_META[view];
   const tab = meta.tab;
-  const tabViews = (Object.keys(VIEW_META) as ViewKey[]).filter((k) => VIEW_META[k].tab === tab && VIEW_META[k].tab !== "utm");
+  const tabViews = (Object.keys(VIEW_META) as ViewKey[]).filter((k) => VIEW_META[k].tab === tab);
   const resolvedPath = viewPath(view, { pnlMode, dateFrom, dateTo });
   const aliasMetaRow = rows.length > 0 && String(rows[0]["__type"] ?? "") === "column_aliases" ? rows[0] : undefined;
   if (aliasMetaRow) {
@@ -2320,15 +2300,14 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   app.innerHTML = `<div class="app-layout">
     <aside class="side-menu">
       <button class="side-btn" data-menu="dashboard">Главная</button>
-      <button class="side-btn ${isUtmConstructor ? "" : "active"}" data-menu="reports">Детальные отчеты</button>
+      <button class="side-btn active" data-menu="reports">Детальные отчеты</button>
       <button class="side-btn" data-menu="charts">Графики</button>
-      <button class="side-btn ${isUtmConstructor ? "active" : ""}" data-menu="utm">UTM Конструктор</button>
     </aside>
     <main class="main-content">
     <header><h1>${escapeHtml(meta.title)}</h1><p class="sub">${escapeHtml(resolvedPath)} · ${viewRows.length} строк</p></header>
     ${managerFormulaNote(view)}
     <div class="toolbar">
-      ${isUtmConstructor ? "" : `<div class="tabs-row top-tabs">
+      <div class="tabs-row top-tabs">
         <button class="tab-btn ${tab === "months" ? "active" : ""}" data-tab="months">По месяцам</button>
         <button class="tab-btn ${tab === "assoc_builder" ? "active" : ""}" data-tab="assoc_builder">Ассоц. выручка</button>
         <button class="tab-btn ${tab === "email" ? "active" : ""}" data-tab="email">Email</button>
@@ -2349,18 +2328,14 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           )
           .join("")}
       </div>`
-        : ""}`}
+        : ""}
       ${
         view === "assoc_dynamic" && assocEvents.length > 0
           ? `<div class="tabs-row event-tabs">${assocEvents.map((ev) => `<button class="tab-btn${ev === assocEventTab ? " active" : ""}" data-event="${escapeHtml(ev)}">${escapeHtml(ev)}</button>`).join("")}</div>`
           : ""
       }
-      ${
-        isUtmConstructor
-          ? ""
-          : `<button class="copy-table-btn">Скопировать таблицу</button>
-      <button class="download-table-btn">Загрузить таблицу</button>`
-      }
+      <button class="copy-table-btn">Скопировать таблицу</button>
+      <button class="download-table-btn">Загрузить таблицу</button>
       ${
         view === "contacts_unique"
           ? `<button class="contacts-full-btn">Контакты: имя + телефон + email (${contactsFullOnly ? "on" : "off"})</button>`
@@ -2389,54 +2364,9 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       }
       <span class="row-note"></span>
     </div>
-    ${isUtmConstructor ? "" : '<div class="table-filter-row"><input type="search" placeholder="Фильтр по строке…" class="filter-input" /></div>'}
+    <div class="table-filter-row"><input type="search" placeholder="Фильтр по строке…" class="filter-input" /></div>
     ${canSaveViewJson ? '<div class="push-status muted"></div>' : ""}
-    ${
-      isUtmConstructor
-        ? `<section class="utm-builder">
-      <h3>Создать UTM тег</h3>
-      <div class="utm-grid">
-        <label>Medium <span class="required-marker">*</span>
-          <select class="utm-medium-select"></select>
-        </label>
-        <label>Source <span class="required-marker">*</span>
-          <select class="utm-source-select"></select>
-          <input class="utm-source-freetext" type="text" placeholder="Введите источник" style="display:none" />
-        </label>
-        <label>Name (Campaign) <span class="required-marker">*</span>
-          <span class="utm-campaign-row">
-            <input class="utm-campaign-input" type="text" placeholder="Например, spring_sale_2026" />
-            <span class="utm-partner-field">
-              <label class="utm-partner-toggle-wrap" style="display:none" title="Partner"><input type="checkbox" class="utm-partner-toggle" aria-label="Partner" /><span>Partner</span></label>
-              <input class="utm-partner-input" type="text" placeholder="Partner" style="display:none" />
-            </span>
-          </span>
-        </label>
-        <label>Link <span class="required-marker">*</span>
-          <input class="utm-link-input" type="url" placeholder="https://example.com/campaign" />
-        </label>
-        <label>Content
-          <input class="utm-content-input" type="text" placeholder="Например, banner_a" />
-        </label>
-        <label>Term
-          <input class="utm-term-input" type="text" placeholder="Например, python_course" />
-        </label>
-      </div>
-      <div class="utm-actions">
-        <button class="utm-write-btn" disabled>write</button>
-        <span class="utm-write-status muted"></span>
-      </div>
-      ${utmLatestTag ? `<div class="utm-preview-wrap">
-        <h4>Готовый UTM тег</h4>
-        <table>
-          <thead><tr><th>UTM Tag</th><th>Действие</th></tr></thead>
-          <tbody><tr><td class="utm-preview-cell">${escapeHtml(utmLatestTag)}</td><td><button class="copy-utm-row-btn">Copy</button></td></tr></tbody>
-        </table>
-      </div>` : ""}
-    </section>`
-        : ""
-    }
-    ${!isUtmConstructor || viewRows.length > 0 ? `<div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody></tbody></table></div>` : ""}
+    ${viewRows.length > 0 ? `<div class="table-scroll"><table><thead><tr>${cols.map((c) => `<th>${escapeHtml(prettyColName(c))}</th>`).join("")}</tr></thead><tbody></tbody></table></div>` : ""}
     </main>
   </div>`;
 
@@ -2570,7 +2500,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
     btn.onclick = async () => {
       const m = btn.getAttribute("data-menu");
-      if (m === "dashboard" || m === "reports" || m === "charts" || m === "utm") {
+      if (m === "dashboard" || m === "reports" || m === "charts") {
         await openMenu(m, dealsIndex, view);
       }
     };
@@ -2580,145 +2510,6 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       contactsFullOnly = !contactsFullOnly;
       contactsFullBtn.textContent = `Контакты: имя + телефон + email (${contactsFullOnly ? "on" : "off"})`;
       draw();
-    };
-  }
-  const utmMediumSelect = app.querySelector<HTMLSelectElement>(".utm-medium-select");
-  const utmSourceSelect = app.querySelector<HTMLSelectElement>(".utm-source-select");
-  const utmSourceFreetext = app.querySelector<HTMLInputElement>(".utm-source-freetext");
-  const utmCampaignInput = app.querySelector<HTMLInputElement>(".utm-campaign-input");
-  const utmPartnerToggleWrap = app.querySelector<HTMLElement>(".utm-partner-toggle-wrap");
-  const utmPartnerToggle = app.querySelector<HTMLInputElement>(".utm-partner-toggle");
-  const utmPartnerInput = app.querySelector<HTMLInputElement>(".utm-partner-input");
-  const utmLinkInput = app.querySelector<HTMLInputElement>(".utm-link-input");
-  const utmContentInput = app.querySelector<HTMLInputElement>(".utm-content-input");
-  const utmTermInput = app.querySelector<HTMLInputElement>(".utm-term-input");
-  const utmWriteBtn = app.querySelector<HTMLButtonElement>(".utm-write-btn");
-  const utmWriteStatus = app.querySelector<HTMLSpanElement>(".utm-write-status");
-  const utmPreviewCell = app.querySelector<HTMLElement>(".utm-preview-cell");
-  const copyUtmRowBtn = app.querySelector<HTMLButtonElement>(".copy-utm-row-btn");
-
-  const setUtmPreview = (tag: string): void => {
-    utmLatestTag = tag;
-    if (utmPreviewCell) utmPreviewCell.textContent = tag;
-  };
-
-  const setSources = (medium: string): void => {
-    if (!utmSourceSelect) return;
-    const entry = UTM_MEDIUM_CONFIG.find(m => m.value === medium);
-    if (entry?.sourceType === "freetext") {
-      utmSourceSelect.style.display = "none";
-      if (utmSourceFreetext) { utmSourceFreetext.style.display = ""; utmSourceFreetext.value = ""; }
-    } else {
-      utmSourceSelect.style.display = "";
-      if (utmSourceFreetext) { utmSourceFreetext.style.display = "none"; utmSourceFreetext.value = ""; }
-      const sources = entry?.sources || [];
-      utmSourceSelect.innerHTML = sources.map((src) => `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`).join("");
-    }
-    const showPartner = !!(entry?.hasPartner);
-    if (utmPartnerToggleWrap) utmPartnerToggleWrap.style.display = showPartner ? "" : "none";
-    if (!showPartner) {
-      if (utmPartnerToggle) utmPartnerToggle.checked = false;
-      if (utmPartnerInput) { utmPartnerInput.style.display = "none"; utmPartnerInput.value = ""; }
-    }
-  };
-
-  const syncUtmWriteState = (): void => {
-    if (!utmWriteBtn || !utmMediumSelect || !utmSourceSelect || !utmCampaignInput || !utmLinkInput || !utmContentInput || !utmTermInput) return;
-    const entry = UTM_MEDIUM_CONFIG.find(m => m.value === utmMediumSelect.value);
-    const sourceValue = entry?.sourceType === "freetext"
-      ? (utmSourceFreetext?.value ?? "")
-      : utmSourceSelect.value;
-    const partnerRequired = !!(utmPartnerToggle?.checked);
-    const partnerValue = partnerRequired ? (utmPartnerInput?.value ?? "") : "x";
-    const ready = [
-      utmMediumSelect.value,
-      sourceValue,
-      utmCampaignInput.value,
-      utmLinkInput.value,
-      partnerValue,
-    ].every((value) => String(value || "").trim() !== "");
-    utmWriteBtn.disabled = !ready;
-  };
-
-  if (utmMediumSelect && utmSourceSelect && utmWriteBtn && utmCampaignInput && utmLinkInput && utmContentInput && utmTermInput) {
-    const mediums = UTM_MEDIUM_CONFIG.map(m => m.value);
-    utmMediumSelect.innerHTML = mediums.map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
-    setSources(utmMediumSelect.value || mediums[0] || "");
-    syncUtmWriteState();
-
-    utmMediumSelect.onchange = () => {
-      setSources(utmMediumSelect.value);
-      syncUtmWriteState();
-    };
-    utmSourceSelect.onchange = syncUtmWriteState;
-    if (utmSourceFreetext) utmSourceFreetext.oninput = syncUtmWriteState;
-    utmCampaignInput.oninput = syncUtmWriteState;
-    utmLinkInput.oninput = syncUtmWriteState;
-    utmContentInput.oninput = syncUtmWriteState;
-    utmTermInput.oninput = syncUtmWriteState;
-    if (utmPartnerToggle) {
-      utmPartnerToggle.onchange = () => {
-        if (utmPartnerInput) utmPartnerInput.style.display = utmPartnerToggle.checked ? "" : "none";
-        if (!utmPartnerToggle.checked && utmPartnerInput) utmPartnerInput.value = "";
-        syncUtmWriteState();
-      };
-    }
-    if (utmPartnerInput) utmPartnerInput.oninput = syncUtmWriteState;
-
-    utmWriteBtn.onclick = async () => {
-      const entry = UTM_MEDIUM_CONFIG.find(m => m.value === utmMediumSelect.value);
-      const sourceValue = entry?.sourceType === "freetext"
-        ? (utmSourceFreetext?.value || "").trim()
-        : (utmSourceSelect.value || "").trim();
-      const campaignBase = (utmCampaignInput.value || "").trim();
-      const partnerVal = utmPartnerToggle?.checked ? (utmPartnerInput?.value || "").trim() : "";
-      const campaignFinal = partnerVal ? `${campaignBase}|${partnerVal}` : campaignBase;
-      const payload = {
-        utm_medium: (utmMediumSelect.value || "").trim(),
-        utm_source: sourceValue,
-        utm_campaign: campaignFinal,
-        campaign_link: (utmLinkInput.value || "").trim(),
-        utm_content: (utmContentInput.value || "").trim(),
-        utm_term: (utmTermInput.value || "").trim(),
-      };
-      if (!payload.utm_medium || !payload.utm_source || !payload.utm_campaign || !payload.campaign_link) {
-        if (utmWriteStatus) utmWriteStatus.textContent = "Заполните обязательные поля";
-        return;
-      }
-      utmWriteBtn.disabled = true;
-      if (utmWriteStatus) utmWriteStatus.textContent = "Сохраняю...";
-      try {
-        const resp = await fetch("/api/utm", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await resp.json() as { ok?: boolean; row?: Record<string, unknown>; utm_tag?: string; error?: string };
-        if (!resp.ok || !data.ok) {
-          if (utmWriteStatus) utmWriteStatus.textContent = `Ошибка записи: ${String(data.error || resp.status)}`;
-          return;
-        }
-        utmSessionRows = data.row ? [data.row] : [];
-        setUtmPreview(String(data.row?.["UTM Tag"] ?? data.utm_tag ?? ""));
-        if (utmWriteStatus) utmWriteStatus.textContent = "Сохранено";
-        await renderTable(view, utmSessionRows, dealsIndex);
-      } catch (e) {
-        if (utmWriteStatus) utmWriteStatus.textContent = `Ошибка записи: ${String(e)}`;
-      } finally {
-        utmWriteBtn.disabled = false;
-      }
-    };
-  }
-
-  if (copyUtmRowBtn) {
-    copyUtmRowBtn.onclick = async () => {
-      if (!utmLatestTag) return;
-      try {
-        await navigator.clipboard.writeText(utmLatestTag);
-        if (utmWriteStatus) utmWriteStatus.textContent = "UTM скопирован";
-      } catch (e) {
-        if (utmWriteStatus) utmWriteStatus.textContent = `Ошибка копирования: ${String(e)}`;
-      }
     };
   }
 
@@ -2752,10 +2543,6 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     URL.revokeObjectURL(a.href);
     if (status) status.textContent = `Скачано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
   };
-  if (isUtmConstructor && !utmLatestTag) {
-    const lastFromRows = String(viewRows[0]?.["UTM Tag"] ?? "");
-    setUtmPreview(lastFromRows);
-  }
   draw();
 }
 
@@ -2777,7 +2564,6 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
       <button class="side-btn" data-menu="dashboard">Главная</button>
       <button class="side-btn" data-menu="reports">Детальные отчеты</button>
       <button class="side-btn active" data-menu="charts">Графики</button>
-      <button class="side-btn" data-menu="utm">UTM Конструктор</button>
     </aside>
     <main class="main-content">
       <header>
@@ -2794,7 +2580,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
   app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
     btn.onclick = async () => {
       const m = btn.getAttribute("data-menu");
-      if (m === "dashboard" || m === "reports" || m === "charts" || m === "utm") {
+      if (m === "dashboard" || m === "reports" || m === "charts") {
         await openMenu(m, dealsIndex, "year_total");
       }
     };
@@ -3262,7 +3048,6 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
         <button class="side-btn active" data-menu="dashboard">Главная</button>
         <button class="side-btn" data-menu="reports">Детальные отчеты</button>
         <button class="side-btn" data-menu="charts">Графики</button>
-        <button class="side-btn" data-menu="utm">UTM Конструктор</button>
       </aside>
       <main class="main-content">
         <header>
@@ -3337,7 +3122,7 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
     app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
       btn.onclick = async () => {
         const m = btn.getAttribute("data-menu");
-        if (m === "dashboard" || m === "reports" || m === "charts" || m === "utm") {
+        if (m === "dashboard" || m === "reports" || m === "charts") {
           await openMenu(m, dealsIndex, "year_total");
         }
       };

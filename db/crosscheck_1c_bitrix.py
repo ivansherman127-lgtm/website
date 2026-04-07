@@ -12,13 +12,13 @@ from typing import Optional
 
 import pandas as pd
 
+from event_classifier import classify_event_from_row
 from utils import _n, _id, _amt
 
 ROOT = Path(__file__).resolve().parent.parent
 ONEC_PATH = ROOT / "sheets" / "1c.csv"
 BITRIX_PATH = ROOT / "sheets" / "bitrix_19.03.26"
 OUT_DIR = ROOT / "reports" / "slices" / "qa"
-CAMPAIGN_RE = re.compile(r"(атакующ\w*\s+январ\w*|attacking[_ ]?january)", re.IGNORECASE)
 
 
 def _date(v: object) -> Optional[pd.Timestamp]:
@@ -55,15 +55,7 @@ def _name_similarity(a: str, b: str) -> float:
 
 
 def _is_aj_deal(row: pd.Series) -> bool:
-    preferred = ["Название сделки", "UTM Campaign", "Источник (подробно)", "Источник обращения"]
-    cols = [c for c in preferred if c in row.index]
-    if not cols:
-        cols = [c for c in row.index if isinstance(row.get(c, ""), str)]
-    for c in cols:
-        val = _n(row.get(c, ""))
-        if val and CAMPAIGN_RE.search(val):
-            return True
-    return False
+    return classify_event_from_row(row.to_dict()).event == "Attacking January"
 
 
 def read_1c(path: Path) -> pd.DataFrame:

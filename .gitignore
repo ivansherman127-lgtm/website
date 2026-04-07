@@ -38,3 +38,7 @@ web_share_subset/webpush/deved.db
 deved.db
 *.csv
 website.db
+keys.json
+.yandex_session.json
+.yandex_last_sync
+.yandex_browser_profile/

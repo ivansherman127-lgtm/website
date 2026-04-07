@@ -17,7 +17,7 @@ from bitrix_lead_quality import (
 )
 from bitrix_union_io import dedup_bitrix_deals_by_highest_amount, load_bitrix_deals_union
 from conn import get_engine, ensure_schema
-from event_classifier import classify_event_from_row, is_attacking_january, normalize_course_code
+from event_classifier import classify_event_from_row, normalize_course_code
 from revenue_variant3 import variant3_revenue_mask
 from utils import _n, _id, _amt, _month
 
@@ -219,7 +219,6 @@ def build_marts(engine) -> dict:
     if "Код курса" in bitrix.columns:
         course_raw = course_raw.mask(course_raw.astype(str).str.strip().eq(""), bitrix["Код курса"].fillna(""))
     bitrix["course_code_norm"] = course_raw.map(normalize_course_code)
-    bitrix["is_attacking_january"] = bitrix.apply(lambda r: int(is_attacking_january(r.to_dict())), axis=1)
 
     staging = _staging_deals_analytics_df(bitrix)
     staging.to_sql(
@@ -263,7 +262,6 @@ def build_marts(engine) -> dict:
         "classification_source",
         "classification_pattern",
         "classification_confidence",
-        "is_attacking_january",
     ]
     bitrix[mart_cols].to_sql(
         "mart_deals_enriched",
@@ -281,7 +279,7 @@ def build_marts(engine) -> dict:
                 CREATE TABLE mart_attacking_january_contacts AS
                 SELECT DISTINCT "Контакт: ID" AS contact_id
                 FROM mart_deals_enriched
-                WHERE is_attacking_january = 1 AND COALESCE("Контакт: ID", '') <> ''
+                WHERE event_class = 'Attacking January' AND COALESCE("Контакт: ID", '') <> ''
                 """
             )
         )
@@ -340,7 +338,7 @@ def build_marts(engine) -> dict:
         "bitrix_source": bitrix_source,
         "raw_bitrix_rows": int(len(bitrix)),
         "mart_deals_enriched_rows": int(len(bitrix)),
-        "attacking_january_contacts": int(bitrix.loc[bitrix["is_attacking_january"] == 1, "Контакт: ID"].replace("", pd.NA).dropna().nunique()),
+        "attacking_january_contacts": int(bitrix.loc[bitrix["event_class"] == "Attacking January", "Контакт: ID"].replace("", pd.NA).dropna().nunique()),
         "stg_yandex_rows": int(y_rows),
     }
 

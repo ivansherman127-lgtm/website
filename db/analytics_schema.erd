@@ -1,0 +1,275 @@
+{
+  "canvas": {
+    "version": "2.2.12",
+    "width": 2400,
+    "height": 2200,
+    "scrollTop": 0,
+    "scrollLeft": 0,
+    "zoomLevel": 0.75,
+    "show": {
+      "tableComment": true,
+      "columnComment": false,
+      "columnDataType": true,
+      "columnDefault": false,
+      "columnAutoIncrement": false,
+      "columnPrimaryKey": true,
+      "columnUnique": false,
+      "columnNotNull": false,
+      "relationship": true
+    },
+    "database": "SQLite",
+    "databaseName": "website_analytics",
+    "canvasType": "ERD",
+    "language": "GQL",
+    "tableCase": "snakeCase",
+    "columnCase": "snakeCase",
+    "bracketType": "none"
+  },
+  "table": {
+    "tables": [
+      {
+        "id": "t-rbd",
+        "name": "raw_bitrix_deals",
+        "comment": "L1 · Raw source — all CSV columns",
+        "columns": [
+          { "id": "c-rbd-id",  "name": "ID",           "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": true,  "unique": false, "notNull": true  }, "ui": { "active": false, "pk": true,  "fk": false, "pfk": false, "widthName": 60,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-rbd-sb",  "name": "source_batch",  "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": true  }, "ui": { "active": false, "pk": false, "fk": true,  "pfk": false, "widthName": 100, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-rbd-ia",  "name": "ingested_at",   "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": true  }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } }
+        ],
+        "ui": { "active": false, "left": 60,  "top": 200, "zIndex": 1, "widthName": 140, "widthComment": 210 }
+      },
+      {
+        "id": "t-rsb",
+        "name": "raw_source_batches",
+        "comment": "L1 · Batch import lineage",
+        "columns": [
+          { "id": "c-rsb-sb",  "name": "source_batch", "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": true,  "unique": false, "notNull": true  }, "ui": { "active": false, "pk": true,  "fk": false, "pfk": false, "widthName": 100, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-rsb-st",  "name": "source_type",  "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": true  }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-rsb-sr",  "name": "source_ref",   "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 80,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-rsb-rc",  "name": "row_count",    "comment": "", "dataType": "INTEGER", "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 80,  "widthComment": 60, "widthDataType": 70, "widthDefault": 60 } },
+          { "id": "c-rsb-ca",  "name": "created_at",   "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": true  }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 80,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } }
+        ],
+        "ui": { "active": false, "left": 60,  "top": 580, "zIndex": 1, "widthName": 160, "widthComment": 210 }
+      },
+      {
+        "id": "t-scu",
+        "name": "stg_contacts_uid",
+        "comment": "L2 · Contact dedup: N contact_ids → 1 uid",
+        "columns": [
+          { "id": "c-scu-cu",  "name": "contact_uid",       "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": true,  "unique": false, "notNull": true  }, "ui": { "active": false, "pk": true,  "fk": false, "pfk": false, "widthName": 100, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-scu-ci",  "name": "contact_id",        "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": true,  "unique": false, "notNull": true  }, "ui": { "active": false, "pk": true,  "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-scu-an",  "name": "all_names",         "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 80,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-scu-ap",  "name": "all_phones",        "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 80,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-scu-ae",  "name": "all_emails",        "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 80,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-scu-cc",  "name": "contact_ids_count", "comment": "", "dataType": "INTEGER", "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 130, "widthComment": 60, "widthDataType": 70, "widthDefault": 60 } },
+          { "id": "c-scu-fd",  "name": "first_deal_date",   "comment": "ISO YYYY-MM-DD of earliest deal", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 110, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-scu-fte", "name": "first_touch_event", "comment": "event_class of earliest deal", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 130, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-scu-ae",  "name": "all_events",        "comment": "pipe-sep distinct event_class values", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } }
+        ],
+        "ui": { "active": false, "left": 460, "top": 60,  "zIndex": 1, "widthName": 140, "widthComment": 230 }
+      },
+      {
+        "id": "t-sys",
+        "name": "stg_yandex_stats",
+        "comment": "L1 · Yandex ad stats — raw CSV/API import",
+        "columns": [
+          { "id": "c-sys-m",   "name": "month",              "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 60,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-sys-nc",  "name": "Название_кампании",  "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 150, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-sys-nk",  "name": "№_Кампании",         "comment": "", "dataType": "REAL",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 100, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-sys-no",  "name": "№_Объявления",       "comment": "", "dataType": "REAL",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 110, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-sys-r",   "name": "Расход_руб",         "comment": "", "dataType": "REAL",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-sys-k",   "name": "Клики",              "comment": "", "dataType": "INTEGER", "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 60,  "widthComment": 60, "widthDataType": 70, "widthDefault": 60 } }
+        ],
+        "ui": { "active": false, "left": 60,  "top": 800, "zIndex": 1, "widthName": 140, "widthComment": 230 }
+      },
+      {
+        "id": "t-ses",
+        "name": "stg_email_sends",
+        "comment": "L1 · Email campaigns — raw Sendsay API import",
+        "columns": [
+          { "id": "c-ses-m",   "name": "month",           "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 60,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-ses-nv",  "name": "Название_выпуска","comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 130, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-ses-uc",  "name": "utm_campaign",    "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 100, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-ses-o",   "name": "Отправлено",      "comment": "", "dataType": "INTEGER", "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 70, "widthDefault": 60 } },
+          { "id": "c-ses-op",  "name": "Открытий",        "comment": "", "dataType": "INTEGER", "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 80,  "widthComment": 60, "widthDataType": 70, "widthDefault": 60 } }
+        ],
+        "ui": { "active": false, "left": 60,  "top": 1120,"zIndex": 1, "widthName": 130, "widthComment": 230 }
+      },
+      {
+        "id": "t-mde",
+        "name": "mart_deal_enrichments",
+        "comment": "L3 · Calculated cols only (FK→raw_bitrix_deals)",
+        "columns": [
+          { "id": "c-mde-di",   "name": "deal_id",                  "comment": "FK→raw_bitrix_deals.ID", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": true,  "unique": false, "notNull": true  }, "ui": { "active": false, "pk": true,  "fk": false, "pfk": false, "widthName": 70,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mde-m",    "name": "month",                    "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 60,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mde-pm",   "name": "pay_month",                "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mde-ra",   "name": "revenue_amount",           "comment": "", "dataType": "REAL",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 110, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mde-irv",  "name": "is_revenue_variant3",     "comment": "", "dataType": "INTEGER", "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 150, "widthComment": 60, "widthDataType": 70, "widthDefault": 60 } },
+          { "id": "c-mde-fg",   "name": "funnel_group",             "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mde-ec",   "name": "event_class",              "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mde-ccn",  "name": "course_code_norm",         "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 120, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mde-cs",   "name": "classification_source",    "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 160, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mde-cp",   "name": "classification_pattern",   "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 160, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mde-lqt",  "name": "lead_quality_types",       "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 130, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mde-resp", "name": "responsible",              "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } }
+        ],
+        "ui": { "active": false, "left": 910, "top": 300, "zIndex": 1, "widthName": 190, "widthComment": 250 }
+      },
+      {
+        "id": "t-mdes",
+        "name": "mart_deals_enriched",
+        "comment": "L4 · Pre-computed flat mart (API queries here)",
+        "columns": [
+          { "id": "c-mdes-id",  "name": "ID",                   "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 60,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mdes-kid", "name": "Контакт_ID",           "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 95,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mdes-ds",  "name": "Дата_создания",        "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 110, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mdes-m",   "name": "month",                "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 60,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mdes-v",   "name": "Воронка",              "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 80,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mdes-fg",  "name": "funnel_group",         "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mdes-s",   "name": "Сумма",                "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 60,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mdes-ra",  "name": "revenue_amount",       "comment": "", "dataType": "REAL",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 110, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mdes-irv", "name": "is_revenue_variant3",  "comment": "", "dataType": "INTEGER", "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 150, "widthComment": 60, "widthDataType": 70, "widthDefault": 60 } },
+          { "id": "c-mdes-ec",  "name": "event_class",          "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mdes-ccn", "name": "course_code_norm",     "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 120, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mdes-lqt", "name": "lead_quality_types",   "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 130, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mdes-otv", "name": "Ответственный",        "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 110, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } }
+        ],
+        "ui": { "active": false, "left": 1340, "top": 230, "zIndex": 1, "widthName": 160, "widthComment": 250 }
+      },
+      {
+        "id": "t-mec",
+        "name": "mart_event_contacts",
+        "comment": "L5 · Per-event contact counts (fixes Новых=0)",
+        "columns": [
+          { "id": "c-mec-ec",  "name": "event_class",    "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": true,  "unique": false, "notNull": true  }, "ui": { "active": false, "pk": true,  "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mec-m",   "name": "month",          "comment": "YYYY-MM or 'all'", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": true,  "unique": false, "notNull": true  }, "ui": { "active": false, "pk": true,  "fk": false, "pfk": false, "widthName": 60,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-mec-ct",  "name": "contacts_total", "comment": "", "dataType": "INTEGER", "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": true  }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 110, "widthComment": 60, "widthDataType": 70, "widthDefault": 60 } },
+          { "id": "c-mec-cn",  "name": "contacts_new",   "comment": "", "dataType": "INTEGER", "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": true  }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 100, "widthComment": 60, "widthDataType": 70, "widthDefault": 60 } }
+        ],
+        "ui": { "active": false, "left": 1780, "top": 100, "zIndex": 1, "widthName": 170, "widthComment": 260 }
+      },
+      {
+        "id": "t-myrp",
+        "name": "mart_yandex_revenue_projects",
+        "comment": "L5 · Yandex project revenue aggregates",
+        "columns": [
+          { "id": "c-myrp-pn",  "name": "project_name",   "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": true,  "unique": false, "notNull": true  }, "ui": { "active": false, "pk": true,  "fk": false, "pfk": false, "widthName": 100, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-myrp-ym",  "name": "yandex_month",   "comment": "", "dataType": "TEXT",    "default": "", "option": { "autoIncrement": false, "primaryKey": true,  "unique": false, "notNull": true  }, "ui": { "active": false, "pk": true,  "fk": false, "pfk": false, "widthName": 100, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-myrp-lr",  "name": "leads_raw",      "comment": "", "dataType": "INTEGER", "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 80,  "widthComment": 60, "widthDataType": 70, "widthDefault": 60 } },
+          { "id": "c-myrp-pdr", "name": "paid_deals_raw", "comment": "", "dataType": "INTEGER", "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 110, "widthComment": 60, "widthDataType": 70, "widthDefault": 60 } },
+          { "id": "c-myrp-rr",  "name": "revenue_raw",    "comment": "", "dataType": "REAL",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } },
+          { "id": "c-myrp-sp",  "name": "spend",          "comment": "", "dataType": "INTEGER", "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 60,  "widthComment": 60, "widthDataType": 70, "widthDefault": 60 } },
+          { "id": "c-myrp-ld",  "name": "leads_dedup",    "comment": "", "dataType": "INTEGER", "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 90,  "widthComment": 60, "widthDataType": 70, "widthDefault": 60 } },
+          { "id": "c-myrp-rd",  "name": "revenue_dedup",  "comment": "", "dataType": "REAL",    "default": "", "option": { "autoIncrement": false, "primaryKey": false, "unique": false, "notNull": false }, "ui": { "active": false, "pk": false, "fk": false, "pfk": false, "widthName": 100, "widthComment": 60, "widthDataType": 60, "widthDefault": 60 } }
+        ],
+        "ui": { "active": false, "left": 1780, "top": 540, "zIndex": 1, "widthName": 230, "widthComment": 260 }
+      }
+    ],
+    "indexes": []
+  },
+  "memo": {
+    "memos": [
+      {
+        "id": "memo-l1",
+        "value": "Layer 1\nRaw source\n─────────\nraw_bitrix_deals\nstg_yandex_stats\nstg_email_sends\nraw_source_batches",
+        "ui": { "active": false, "left": 40,   "top": 40,  "zIndex": 0, "width": 160, "height": 130, "color": "#F9E79F" }
+      },
+      {
+        "id": "memo-l2",
+        "value": "Layer 2\nStaging / Reference\n─────────────────\nContact dedup only:\nstg_contacts_uid.",
+        "ui": { "active": false, "left": 440,  "top": 40,  "zIndex": 0, "width": 160, "height": 130, "color": "#A9DFBF" }
+      },
+      {
+        "id": "memo-l3",
+        "value": "Layer 3\nDeal Enrichments\n────────────────\nCalculated cols only.\nNever raw data here.",
+        "ui": { "active": false, "left": 890,  "top": 40,  "zIndex": 0, "width": 160, "height": 130, "color": "#AED6F1" }
+      },
+      {
+        "id": "memo-l4",
+        "value": "Layer 4\nFlat Query Mart\n───────────────\nPre-computed JOIN\nof L1+L3.\nAPI queries here.",
+        "ui": { "active": false, "left": 1320, "top": 40,  "zIndex": 0, "width": 160, "height": 130, "color": "#F1948A" }
+      },
+      {
+        "id": "memo-l5",
+        "value": "Layer 5\nAggregate Facts\n───────────────\nPre-rolled metrics.\nPopulated by\nmaterialize step.",
+        "ui": { "active": false, "left": 1760, "top": 40,  "zIndex": 0, "width": 160, "height": 130, "color": "#C39BD3" }
+      }
+    ]
+  },
+  "relationship": {
+    "relationships": [
+      {
+        "id": "r-rbd-rsb",
+        "identification": false,
+        "relationshipType": "ZeroN",
+        "startRelationshipType": "Dash",
+        "start": { "tableId": "t-rbd",  "columnIds": ["c-rbd-sb"],  "x": 0, "y": 0, "direction": "bottom" },
+        "end":   { "tableId": "t-rsb",  "columnIds": ["c-rsb-sb"],  "x": 0, "y": 0, "direction": "top"    }
+      },
+      {
+        "id": "r-rbd-mde",
+        "identification": false,
+        "relationshipType": "ZeroOne",
+        "startRelationshipType": "Dash",
+        "start": { "tableId": "t-rbd",  "columnIds": ["c-rbd-id"],  "x": 0, "y": 0, "direction": "right" },
+        "end":   { "tableId": "t-mde",  "columnIds": ["c-mde-di"],  "x": 0, "y": 0, "direction": "left"  }
+      },
+      {
+        "id": "r-mde-mdes",
+        "identification": false,
+        "relationshipType": "ZeroOne",
+        "startRelationshipType": "Dash",
+        "start": { "tableId": "t-mde",  "columnIds": ["c-mde-di"],  "x": 0, "y": 0, "direction": "right" },
+        "end":   { "tableId": "t-mdes", "columnIds": ["c-mdes-id"], "x": 0, "y": 0, "direction": "left"  }
+      },
+      {
+        "id": "r-rbd-mdes",
+        "identification": false,
+        "relationshipType": "ZeroOne",
+        "startRelationshipType": "Dash",
+        "start": { "tableId": "t-rbd",  "columnIds": ["c-rbd-id"],  "x": 0, "y": 0, "direction": "right" },
+        "end":   { "tableId": "t-mdes", "columnIds": ["c-mdes-id"], "x": 0, "y": 0, "direction": "left"  }
+      },
+      {
+        "id": "r-scu-mdes",
+        "identification": false,
+        "relationshipType": "ZeroN",
+        "startRelationshipType": "Dash",
+        "start": { "tableId": "t-scu",  "columnIds": ["c-scu-ci"],  "x": 0, "y": 0, "direction": "right" },
+        "end":   { "tableId": "t-mdes", "columnIds": ["c-mdes-kid"],"x": 0, "y": 0, "direction": "left"  }
+      },
+      {
+        "id": "r-sys-mdes",
+        "identification": false,
+        "relationshipType": "ZeroN",
+        "startRelationshipType": "Dash",
+        "start": { "tableId": "t-sys",  "columnIds": ["c-sys-nc"],  "x": 0, "y": 0, "direction": "right" },
+        "end":   { "tableId": "t-mdes", "columnIds": ["c-mdes-id"], "x": 0, "y": 0, "direction": "left"  }
+      },
+      {
+        "id": "r-ses-mdes",
+        "identification": false,
+        "relationshipType": "ZeroN",
+        "startRelationshipType": "Dash",
+        "start": { "tableId": "t-ses",  "columnIds": ["c-ses-uc"],  "x": 0, "y": 0, "direction": "right" },
+        "end":   { "tableId": "t-mdes", "columnIds": ["c-mdes-id"], "x": 0, "y": 0, "direction": "left"  }
+      },
+      {
+        "id": "r-mdes-mec",
+        "identification": false,
+        "relationshipType": "ZeroN",
+        "startRelationshipType": "Dash",
+        "start": { "tableId": "t-mdes", "columnIds": ["c-mdes-ec"], "x": 0, "y": 0, "direction": "right" },
+        "end":   { "tableId": "t-mec",  "columnIds": ["c-mec-ec"],  "x": 0, "y": 0, "direction": "left"  }
+      },
+      {
+        "id": "r-sys-myrp",
+        "identification": false,
+        "relationshipType": "ZeroN",
+        "startRelationshipType": "Dash",
+        "start": { "tableId": "t-sys",  "columnIds": ["c-sys-nc"],  "x": 0, "y": 0, "direction": "right" },
+        "end":   { "tableId": "t-myrp", "columnIds": ["c-myrp-pn"], "x": 0, "y": 0, "direction": "left"  }
+      }
+    ]
+  }
+}
