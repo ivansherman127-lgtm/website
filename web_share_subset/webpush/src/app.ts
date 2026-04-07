@@ -568,9 +568,9 @@ const VIEW_META: Record<ViewKey, ViewMeta> = {
   managers_sales_month: { tab: "managers", label: "Продажи по месяцу", path: "data/manager_sales_by_month.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
   managers_firstline_course: { tab: "managers", label: "1-я линия по коду курса", path: "data/manager_firstline_by_course.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
   managers_firstline_month: { tab: "managers", label: "1-я линия по месяцу", path: "data/manager_firstline_by_month.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
-  leads_by_course: { tab: "leads", label: "По коду курса", path: "/api/leads-breakdown?dim=course", rowsLabel: "Кодов", title: "Отчеты по лидам" },
-  leads_by_project: { tab: "leads", label: "По проекту", path: "/api/leads-breakdown?dim=project", rowsLabel: "Проектов", title: "Отчеты по лидам" },
-  leads_by_medium: { tab: "leads", label: "По UTM Medium", path: "/api/leads-breakdown?dim=medium", rowsLabel: "Каналов", title: "Отчеты по лидам" },
+  leads_by_course: { tab: "leads", label: "По коду курса", path: "/api/leads-breakdown?dim=course", rowsLabel: "Кодов", title: "Отчеты по источникам" },
+  leads_by_project: { tab: "leads", label: "По проекту", path: "/api/leads-breakdown?dim=project", rowsLabel: "Проектов", title: "Отчеты по источникам" },
+  leads_by_medium: { tab: "leads", label: "По UTM Medium", path: "/api/leads-breakdown?dim=medium", rowsLabel: "Каналов", title: "Отчеты по источникам" },
   contacts_unique: { tab: "contacts", label: "Уникальные контакты", path: "data/bitrix_contacts_uid.json", rowsLabel: "Контактов", title: "Уникальные контакты" },
   year_total: { tab: "year", label: "Итоги по годам", path: "data/bitrix_month_total_full.json", rowsLabel: "Лет", title: "Отчет за год" },
   qa_dedup_check: { tab: "qa", label: "Дедупликация: итог", path: "data/qa/dedup_check.json", rowsLabel: "Строк", title: "Контроль качества" },
@@ -2258,7 +2258,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         <button class="tab-btn ${tab === "yandex" ? "active" : ""}" data-tab="yandex">Yandex</button>
         <button class="tab-btn ${tab === "budget" ? "active" : ""}" data-tab="budget">Бюджет</button>
         <button class="tab-btn ${tab === "managers" ? "active" : ""}" data-tab="managers">По менеджерам</button>
-        <button class="tab-btn ${tab === "leads" ? "active" : ""}" data-tab="leads">По лидам</button>
+        <button class="tab-btn ${tab === "leads" ? "active" : ""}" data-tab="leads">По источникам</button>
         <button class="tab-btn ${tab === "contacts" ? "active" : ""}" data-tab="contacts">Уникальные контакты</button>
         <button class="tab-btn ${tab === "qa" ? "active" : ""}" data-tab="qa">Контроль качества</button>
         <button class="tab-btn ${tab === "year" ? "active" : ""}" data-tab="year">Отчет за год</button>

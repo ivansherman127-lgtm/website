@@ -627,6 +627,14 @@ th:hover {
   background: #e8f0fe;
 }
 
+/* Narrow "Код курса" column so long codes wrap instead of expanding the table */
+th[data-col="Код курса"],
+td[data-col="Код курса"] {
+  max-width: 7rem;
+  white-space: normal;
+  word-break: break-all;
+}
+
 .inline-col-editor {
   width: 100%;
   min-width: 120px;

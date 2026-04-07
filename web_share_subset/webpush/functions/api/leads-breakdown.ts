@@ -99,12 +99,14 @@ export async function onRequestGet(context: { request: Request; env: Env }): Pro
     .bind(fromMonth, toMonth)
     .all<{ funnel: string; cnt: number }>();
 
-  const funnels = (funnelRes.results ?? []).map((r) => r.funnel);
+  const ALLOWED_FUNNELS = ["Горячая", "Холодная", "B2C", "B2B", "Реактивация"];
+  const allFunnels = (funnelRes.results ?? []).map((r) => r.funnel);
+  const funnels = ALLOWED_FUNNELS.filter((f) => allFunnels.includes(f));
 
   const funnelPivotSql = funnels
     .map((f) => {
       const matchExpr = `funnel_name = ${sqlQuote(f)}`;
-      return `SUM(CASE WHEN ${matchExpr} THEN 1 ELSE 0 END) AS ${sqlIdent("Лиды: " + f)}`;
+      return `SUM(CASE WHEN ${matchExpr} THEN 1 ELSE 0 END) AS ${sqlIdent(f)}`;
     })
     .join(",\n       ");
 
