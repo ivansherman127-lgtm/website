@@ -1,5 +1,5 @@
 """db/yandex_direct_scraper.py
-Yandex Direct reports wizard → stg_yandex_stats (Playwright web scraper).
+Yandex Direct reports wizard -> stg_yandex_stats (Playwright web scraper).
 
 Logs into Yandex, navigates to the pre-configured reports wizard, sets the date
 range, downloads the CSV, and ingests it via upsert_yandex_from_csv.
@@ -148,7 +148,7 @@ def trigger_analytics_rebuild(port: int = 3000) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Remote push helpers (Mac-local scraper → server ingest)
+# Remote push helpers (Mac-local scraper -> server ingest)
 # ---------------------------------------------------------------------------
 
 def _get_local_last_sync() -> Optional[str]:
@@ -283,7 +283,7 @@ def _do_login(page, login: str, password: str) -> bool:
                 return False
 
     print("  [login] Filling login field…")
-    # Yandex passport login: two-step form (login → Next → password → Sign in)
+    # Yandex passport login: two-step form (login -> Next -> password -> Sign in)
     try:
         page.wait_for_selector(
             "#passp-field-login, input[autocomplete='username'], input[name='login']",
@@ -428,86 +428,160 @@ def _set_date_range_ui(page, date_from: str, date_to: str) -> bool:
             print(f"  [date] Preset click failed: {e}")
 
     # Custom date range — click the date display to open picker
-    print(f"  [date] Setting custom date range {date_from} → {date_to}…")
+    print(f"  [date] Setting custom date range {date_from} -> {date_to}…")
     try:
+        import re as _re
         # Wait for wizard to load first
         page.wait_for_selector("button:has-text('Скачать')", state="visible", timeout=180000)
 
-        # Click the date range display button via JS (CSS selectors unreliable due to overlapping elements).
-        # The date display contains Russian month text like "апр 2026" — find it by text content,
-        # skipping checkboxes and the "IncludeToday" label.
-        RU_MONTHS = ["янв", "фев", "мар", "апр", "май", "июн",
-                     "июл", "авг", "сен", "окт", "ноя", "дек"]
-        js_months = str(RU_MONTHS).replace("'", '"')
-        clicked = page.evaluate(f"""() => {{
-            const months = {js_months};
-            // Walk all elements that have 'DateRange' in their class
-            const candidates = [...document.querySelectorAll('[class*="DateRange"]')];
-            for (const el of candidates) {{
-                const tag = el.tagName.toLowerCase();
-                const testId = el.getAttribute('data-testid') || '';
-                // Skip labels (checkboxes), inputs, and the IncludeToday element
-                if (tag === 'label' || tag === 'input' || testId.includes('IncludeToday')) continue;
-                const text = (el.innerText || '').trim();
-                // The date display shows month names + 4-digit year
-                if (months.some(m => text.toLowerCase().includes(m)) && /\\d{{4}}/.test(text)) {{
-                    el.click();
-                    return 'found:' + testId + '|' + tag;
-                }}
-            }}
-            // Fallback: look for any non-label element with class containing DateRange
-            for (const el of candidates) {{
-                const tag = el.tagName.toLowerCase();
-                if (tag === 'label' || tag === 'input') continue;
-                if (el.getAttribute('data-testid')?.includes('IncludeToday')) continue;
-                el.click();
-                return 'fallback:' + (el.getAttribute('data-testid') || '') + '|' + tag;
-            }}
-            return 'not_found';
-        }}""")
-        print(f"  [date] Date display click result: {clicked}")
-        page.wait_for_timeout(800)
+        date_from_dmy = date_from[8:10] + "." + date_from[5:7] + "." + date_from[:4]
+        date_to_dmy   = date_to[8:10]   + "." + date_to[5:7]   + "." + date_to[:4]
 
-        # Take screenshot to debug what opened
-        page.screenshot(path="/tmp/yd_after_date_click.png")
+        # STEP 1: Dismiss any modal overlays (e.g. "Новости Директа" news popup).
+        try:
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(300)
+        except Exception:
+            pass
 
-        # Enter start date — try multiple selectors for the input fields
-        date_from_dd_mm_yyyy = date_from[8:10] + "." + date_from[5:7] + "." + date_from[:4]
-        date_to_dd_mm_yyyy   = date_to[8:10]   + "." + date_to[5:7]   + "." + date_to[:4]
+        # STEP 2: Open the calendar popup using JS (bypasses overlay/actionability restrictions).
+        opened = False
+        for _attempt in range(3):
+            r = page.evaluate("""() => {
+                const dp = /\\d{1,2}\\s*[\\u2013\\-]\\s*\\d{1,2}\\s+[\\u0430-\\u044f\\u0410-\\u042f\\u0451\\u0401]{3,}/;
+                for (const el of document.querySelectorAll('button,[role="button"]')) {
+                    const tid = el.getAttribute('data-testid') || '';
+                    if (tid.includes('IncludeToday') || tid.includes('Preset')) continue;
+                    const t = (el.innerText || '').trim();
+                    if (dp.test(t) && t.length < 45) {
+                        el.scrollIntoView({block:'nearest'});
+                        el.click();
+                        return 'ok:' + tid + ':' + t.substr(0, 20);
+                    }
+                }
+                return 'not_found';
+            }""")
+            print(f"  [date] JS click [{_attempt+1}]: {r}")
+            if r.startswith("not_found"):
+                page.wait_for_timeout(1000)
+                continue
+            # Confirm popup appeared
+            try:
+                page.wait_for_selector('[data-testid="Popup"]', timeout=2000)
+                opened = True
+                print("  [date] Popup confirmed")
+                break
+            except Exception:
+                print("  [date] Popup not confirmed, retrying…")
+                page.wait_for_timeout(800)
 
-        start_inp = (
-            page.query_selector("input[data-testid*='DateRange'][data-testid*='from']") or
-            page.query_selector("input[data-testid*='DateRange'][data-testid*='start']") or
-            page.query_selector("input[placeholder*='От']") or
-            page.query_selector("input[placeholder*='от']") or
-            page.query_selector("input[placeholder*='начал']")
-        )
-        end_inp = (
-            page.query_selector("input[data-testid*='DateRange'][data-testid*='to']") or
-            page.query_selector("input[data-testid*='DateRange'][data-testid*='end']") or
-            page.query_selector("input[placeholder*='До']") or
-            page.query_selector("input[placeholder*='до']") or
-            page.query_selector("input[placeholder*='конец']")
-        )
+        if not opened:
+            print("  [date] Could not open calendar popup — using wizard default.")
+            return False
 
-        if start_inp:
-            start_inp.triple_click()
-            start_inp.type(date_from_dd_mm_yyyy)
-            print(f"  [date] Start date typed: {date_from_dd_mm_yyyy}")
-        if end_inp:
-            end_inp.triple_click()
-            end_inp.type(date_to_dd_mm_yyyy)
-            print(f"  [date] End date typed: {date_to_dd_mm_yyyy}")
+        page.wait_for_timeout(400)
 
-        if start_inp or end_inp:
-            page.keyboard.press("Enter")
-            page.wait_for_timeout(2500)
-            page.screenshot(path="/tmp/yd_after_date_set.png")
-            return True
-        else:
-            # No input fields found — the calendar may not have opened
-            print("  [date] No date input fields found after click.")
-            page.screenshot(path="/tmp/yd_no_inputs.png")
+        page.wait_for_timeout(500)
+
+        # Use page.locator().all() — returns Locator objects that support triple_click/fill.
+        # Match inputs by: date-value format  OR  placeholder text indicating "from/to" date fields.
+        _from_ph = ("от", "с", "начало", "from", "дд.мм.гггг", "dd.mm.yyyy")
+        _to_ph   = ("до", "по", "конец", "to", "дд.мм.гггг", "dd.mm.yyyy")
+        all_locs = page.locator("input").all()
+
+        date_locs: list = []
+        from_loc = None
+        to_loc = None
+        for loc in all_locs:
+            val = loc.input_value() or ""
+            ph  = (loc.get_attribute("placeholder") or "").lower().strip()
+            is_date_val = bool(_re.match(r"^\d{1,2}\.\d{1,2}\.\d{4}$", val))
+            is_from_ph  = ph in _from_ph
+            is_to_ph    = ph in _to_ph
+            if is_date_val or is_from_ph:
+                if from_loc is None:
+                    from_loc = loc
+                elif to_loc is None:
+                    to_loc = loc
+            elif is_to_ph and to_loc is None:
+                to_loc = loc
+
+        if from_loc:
+            date_locs.append(from_loc)
+        if to_loc:
+            date_locs.append(to_loc)
+        # Fallback: if still nothing found but there are exactly 2 date-value inputs
+        if not date_locs:
+            by_val = [
+                loc for loc in all_locs
+                if _re.match(r"^\d{1,2}\.\d{1,2}\.\d{4}$", loc.input_value() or "")
+            ]
+            date_locs = by_val[:2]
+
+        print(f"  [date] Date-format inputs found: {len(date_locs)}")
+
+        if len(date_locs) >= 2:
+            # filling the start input closes the popup; then reopen and fill end input.
+            start_loc = page.locator(
+                "[data-testid='DateRangeSelect.RangeCalendarWithButton.RangeCalendar.StartInput']"
+            )
+            end_loc = page.locator(
+                "[data-testid='DateRangeSelect.RangeCalendarWithButton.RangeCalendar.EndInput']"
+            )
+
+            # Fill both inputs in quick succession (avoid any wait that lets popup close).
+            start_loc.fill(date_from_dmy, timeout=10000)
+            print(f"  [date] Start filled: {date_from_dmy}")
+            # Immediately fill end (no wait) so popup doesn't close between fills
+            try:
+                end_loc.fill(date_to_dmy, timeout=5000)
+                print(f"  [date] End filled:   {date_to_dmy}")
+                page.keyboard.press("Enter")
+                page.wait_for_timeout(2500)
+                page.screenshot(path="/tmp/yd_after_date_set.png")
+                return True
+            except Exception as _e:
+                print(f"  [date] End immediate fill failed: {_e}, trying with reopen")
+
+            # Fallback: wait, reopen popup, fill end date
+            page.wait_for_timeout(600)
+            for _try in range(3):
+                page.evaluate(
+                    """() => { const el = document.querySelector(
+                        '[data-testid="DateRangeSelect.RangeCalendarWithButton.Calendar"]');
+                       if (el) el.click(); }"""
+                )
+                reopen_ok = False
+                try:
+                    page.wait_for_selector('[data-testid="Popup"]', timeout=2000)
+                    reopen_ok = True
+                except Exception:
+                    pass
+                if reopen_ok:
+                    try:
+                        end_loc.fill(date_to_dmy, timeout=5000)
+                        print(f"  [date] End filled after reopen: {date_to_dmy}")
+                        page.keyboard.press("Enter")
+                        page.wait_for_timeout(2500)
+                        page.screenshot(path="/tmp/yd_after_date_set.png")
+                        return True
+                    except Exception as _e2:
+                        print(f"  [date] End fill try {_try+1} failed: {_e2}")
+                page.wait_for_timeout(700)
+            print("  [date] Could not fill end date after 3 attempts.")
+        elif len(date_locs) == 1:
+            start_loc = page.locator(
+                "[data-testid='DateRangeSelect.RangeCalendarWithButton.RangeCalendar.StartInput']"
+            )
+            start_loc.click()
+            page.keyboard.press("Control+a")
+            page.keyboard.type(date_from_dmy)
+            start_loc.press("Enter")
+            print(f"  [date] Only 1 date input found, typed start date: {date_from_dmy}")
+
+        # No date inputs found — dump screenshot for debugging
+        print("  [date] No date-format inputs found after calendar open.")
+        page.screenshot(path="/tmp/yd_no_inputs.png")
         return False
     except Exception as e:
         print(f"  [date] Custom date picker failed: {e} — using wizard default range.")
@@ -519,7 +593,7 @@ def _wait_for_data_and_download(page, download_dir: Path) -> Optional[Path]:
     """
     On the reports wizard page: wait for the 'Скачать' button to appear (the
     definitive signal that the wizard has loaded and data is ready), then trigger
-    the 2-step download: click 'Скачать' (opens format dropdown) → 'Скачать CSV'.
+    the 2-step download: click 'Скачать' (opens format dropdown) -> 'Скачать CSV'.
     """
     print("  [report] Waiting for wizard to finish loading…")
 
@@ -677,7 +751,7 @@ def run_once(
     ingest_url: Optional[str] = None,
 ) -> bool:
     """
-    One sync cycle: login → navigate to report → set dates → download CSV → ingest.
+    One sync cycle: login -> navigate to report -> set dates -> download CSV -> ingest.
     Returns True on success.
 
     ingest_url: if set, POST CSV to this URL (server push mode) instead of local ingest.
@@ -708,7 +782,7 @@ def run_once(
                 date_from = (date.today() - timedelta(days=DEFAULT_LOOKBACK_DAYS)).isoformat()
 
     print(f"── Yandex Direct scraper ────────────────────────────────")
-    print(f"  Date range : {date_from} → {date_to}")
+    print(f"  Date range : {date_from} -> {date_to}")
     if ingest_url:
         print(f"  Mode       : push to server ({ingest_url})")
 
@@ -830,7 +904,7 @@ def run_batch_months(
     """
     Single-session batch: download one CSV per month in one browser session.
     Keeps the browser open between months to avoid repeated login overhead.
-    Each month uses its own date range (YYYY-MM-01 → YYYY-MM-last).
+    Each month uses its own date range (YYYY-MM-01 -> YYYY-MM-last).
 
     batch_months: list of 'YYYY-MM' strings in ascending order.
     ingest_url:   if set, each CSV is POSTed to the server (push mode).
@@ -841,7 +915,7 @@ def run_batch_months(
     secret = os.environ.get("ANALYTICS_REBUILD_SECRET", _read_env_file().get("ANALYTICS_REBUILD_SECRET", ""))
 
     print("── Yandex batch-months ingest ───────────────────────────────")
-    print(f"  Months : {batch_months[0]} → {batch_months[-1]} ({len(batch_months)} months)")
+    print(f"  Months : {batch_months[0]} -> {batch_months[-1]} ({len(batch_months)} months)")
     if ingest_url:
         print(f"  Mode   : push to server ({ingest_url})")
     else:
@@ -876,7 +950,7 @@ def run_batch_months(
             last_day = monthrange(y, m)[1]
             date_to = f"{y:04d}-{m:02d}-{last_day:02d}"
 
-            print(f"\n── {month} ─── ({date_from} → {date_to}) ──────")
+            print(f"\n── {month} ─── ({date_from} -> {date_to}) ──────")
 
             # Navigate to wizard (fresh page load per month)
             try:
@@ -930,7 +1004,7 @@ def run_batch_months(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Yandex Direct reports wizard → stg_yandex_stats (Playwright scraper)"
+        description="Yandex Direct reports wizard -> stg_yandex_stats (Playwright scraper)"
     )
     parser.add_argument(
         "--login",
