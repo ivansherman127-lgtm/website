@@ -828,6 +828,47 @@ tbody tr:hover {
   word-break: break-all;
 }
 
+.weekly-summary {
+  margin: 1.25rem 0;
+}
+
+.weekly-summary h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.6rem;
+}
+
+.ws-table {
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  width: auto;
+  min-width: 280px;
+}
+
+.ws-table tr:not(:last-child) td {
+  border-bottom: 1px solid var(--border);
+}
+
+.ws-table td {
+  padding: 0.45rem 1rem 0.45rem 0;
+  vertical-align: middle;
+}
+
+.ws-label {
+  color: var(--muted);
+  white-space: nowrap;
+  padding-right: 1.5rem !important;
+}
+
+.ws-value {
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
 @media (max-width: 900px) {
   .charts-page {
     grid-template-columns: 1fr;

@@ -2996,14 +2996,59 @@ async function boot(): Promise<void> {
   }
 }
 
+function renderWeeklySummaryTable(s: Record<string, unknown>): string {
+  const mon = String(s["week_mon"] ?? "").trim();
+  const sun = String(s["week_sun"] ?? "").trim();
+  const fmt = (d: string) => d ? d.split("-").reverse().join(".") : "—";
+  const fmtNum = (v: unknown) => v != null && v !== "" ? Number(v).toLocaleString("ru-RU") : "—";
+  const fmtMoney = (v: unknown) => v != null && v !== "" ? "р." + Math.round(Number(v)).toLocaleString("ru-RU") : "—";
+  const fmtPct = (v: unknown) => v != null && v !== "" ? Number(v).toLocaleString("ru-RU") + "%" : "—";
+
+  const rows: [string, string][] = [
+    ["Всего заявок",                fmtNum(s["Всего заявок"])],
+    ["Конверсия сайта",             "—"],
+    ["Кол-во квал лидов",           fmtNum(s["Квал лидов"])],
+    ["Конверсия в квал. лиды",      fmtPct(s["Конверсия в квал %"])],
+    ["Кол-во оплат",                fmtNum(s["Оплат"])],
+    ["Конверсия в оплату из квал",  fmtPct(s["Конверсия в оплату из квал %"])],
+    ["Выручка",                     fmtMoney(s["Выручка"])],
+    ["Средний чек",                 fmtMoney(s["Средний чек"])],
+    ["Бюджет на рекламу",           fmtMoney(s["Бюджет на рекламу"])],
+    ["Лидов с рекламы",             fmtNum(s["Лидов с рекламы"])],
+    ["Стоимость лида",              fmtMoney(s["Стоимость лида"])],
+    ["Рассылок",                    fmtNum(s["Рассылок"])],
+    ["Открытий email",              fmtNum(s["Открытий email"])],
+    ["Заявок email",                fmtNum(s["Заявок email"])],
+    ["Рег на ПБХ",                  fmtNum(s["Рег на ПБХ"])],
+    ["Рег на Старт в ИБ",           fmtNum(s["Рег на Старт в ИБ"])],
+  ];
+
+  const rowsHtml = rows.map(([label, value]) =>
+    `<tr><td class="ws-label">${escapeHtml(label)}</td><td class="ws-value">${escapeHtml(value)}</td></tr>`
+  ).join("");
+
+  const title = mon && sun
+    ? `Неделя ${fmt(mon)} — ${fmt(sun)}`
+    : "Последняя завершённая неделя";
+
+  return `<section class="weekly-summary">
+    <h2>${escapeHtml(title)}</h2>
+    <table class="ws-table">
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  </section>`;
+}
+
 async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
   writeUrlState("dashboard");
-  const [contacts, bitrixWeekFunnel, yandexWeekCampaign, contactsTotals] = await Promise.all([
+  const [contacts, bitrixWeekFunnel, yandexWeekCampaign, contactsTotals, weeklySummaryArr] = await Promise.all([
     fetchJson<Record<string, unknown>[]>("data/bitrix_contacts_uid.json").catch(() => []),
     fetchJson<Record<string, unknown>[]>("data/bitrix_week_funnel_total.json").catch(() => []),
     fetchJson<Record<string, unknown>[]>("data/yandex_week_campaign_total.json").catch(() => []),
     fetchJson<Record<string, unknown>[]>("data/dashboard_contacts_total.json").catch(() => []),
+    fetchJson<Record<string, unknown>[]>("data/weekly_summary.json").catch(() => []),
   ]);
+  const weeklySummary = weeklySummaryArr[0] ?? {};
 
   const expandedWeeks = new Set<string>();
   const expandedYandexWeeks = new Set<string>();
@@ -3052,6 +3097,7 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
           <div class="kpi"><div class="label">Последняя запись Bitrix</div><div class="value">${escapeHtml(latestBitrixRecordDate)}</div></div>
           <div class="kpi"><div class="label">Последняя запись Yandex</div><div class="value">${escapeHtml(latestYandexRecordDate)}</div></div>
         </div>
+        ${renderWeeklySummaryTable(weeklySummary)}
         ${renderWeeklyBitrixExpandableTable(bitrixWeekFunnel, expandedWeeks)}
         ${renderWeeklyYandexExpandableTable(yandexWeekFiltered, expandedYandexWeeks)}
       </main>
