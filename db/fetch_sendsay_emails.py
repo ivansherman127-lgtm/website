@@ -205,7 +205,7 @@ def transform_to_schema(df: pd.DataFrame) -> pd.DataFrame:
     })
 
     # Add month column expected by the run_all_slices pipeline
-    dt = pd.to_datetime(out["Дата отправки"], dayfirst=True, errors="coerce")
+    dt = pd.to_datetime(out["Дата отправки"], dayfirst=False, errors="coerce")
     out["month"] = dt.dt.strftime("%Y-%m")
 
     return out
