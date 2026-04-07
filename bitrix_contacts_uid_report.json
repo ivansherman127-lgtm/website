@@ -1,0 +1,154 @@
+{
+  "qa": {
+    "input_rows": 68796,
+    "unique_contact_uid": 48864,
+    "rows_without_phone_and_email": 1884,
+    "rows_without_phone_and_email_pct": 2.74,
+    "columns_contact_total": 154,
+    "columns_phone_total": 5,
+    "columns_email_total": 5,
+    "dropped_placeholder_or_invalid_phones": 1360
+  },
+  "top_groups_preview": [
+    {
+      "contact_uid": "C009696",
+      "deals_count": 95,
+      "all_names": "Герасимова | Герасимова Дарья | Дарья | Дарья Герасимова",
+      "all_phones": "74953157656",
+      "all_emails": "gerasimovade@cbr.ru"
+    },
+    {
+      "contact_uid": "C031451",
+      "deals_count": 73,
+      "all_names": "Peter Sherman",
+      "all_phones": "234234234242 | 234234242424 | 263053235650 | 263234234242 | 263342342424 | 263972532356 | 323423424242 | 70532356504 | 71231341414 | 71242342342 | 72342345242 | 72342424242 | 73242424242 | 78184814818 | 78238283234 | 9720532356504 | 972532356504 | 972535005263",
+      "all_emails": "ainaggets@gmail.com | iuy37834@laoia.com | pete_o@telegram.chatapp.online | petr.ozerov@gmail.com | test666@gmail.com"
+    },
+    {
+      "contact_uid": "C029021",
+      "deals_count": 55,
+      "all_names": "Андрей",
+      "all_phones": "79164124224 | 79167461017 | 79262855743 | 79773046170 | 79998007643 | 79999690231",
+      "all_emails": "andrey555@gmail.com | andreymebel77@gmail.com | cherkasha@mail.ru | farida@gmail.com | idronovamail@gmail.com | rusfarmousgl@gmail.com | vikkushka.asmr@gmail.com | vopilinvladislav@yandex.ru"
+    },
+    {
+      "contact_uid": "C038274",
+      "deals_count": 47,
+      "all_names": "Контур.Диадок",
+      "all_phones": "",
+      "all_emails": "diadoc-notifications@kontur.ru"
+    },
+    {
+      "contact_uid": "C023658",
+      "deals_count": 46,
+      "all_names": "Колотилов | Колотилов Сергей Николаевич | Николаевич | Сергей | Сергей Колотилов",
+      "all_phones": "79082568678",
+      "all_emails": "kolotilov.sn@gmail.com | tinx59@telegram.chatapp.online"
+    },
+    {
+      "contact_uid": "C000102",
+      "deals_count": 40,
+      "all_names": "Аркадьева | Аркадьева Оксана Владимировна | Владимировна | Оксана | Оксана Аркадьева",
+      "all_phones": "79857594520",
+      "all_emails": "arkadeva.ov@gazprom-neft.ru"
+    },
+    {
+      "contact_uid": "C042614",
+      "deals_count": 37,
+      "all_names": "tatyana.potapenko | tatyana.potapenko Потапенко | Потапенко | Потапенко tatyana.potapenko | тест тестович | тест тестович тестович | тестович | тестович тест тестович",
+      "all_phones": "375447945324 | 79981156322 | 79991112223 | 79997059710",
+      "all_emails": "ollysher@telegram.chatapp.online | sheridann@inbox.ru | t.potapenko@cyber-ed.ru"
+    },
+    {
+      "contact_uid": "C000215",
+      "deals_count": 36,
+      "all_names": "Даниил Савин | Даниил Савин Савин | Савин | Савин Даниил Савин",
+      "all_phones": "79300744117",
+      "all_emails": "nezoxoff@gmail.com | savindaniil@telegram.chatapp.online | savindaniiltsu@gmail.com | unwaiter9@gmail.com"
+    },
+    {
+      "contact_uid": "C000966",
+      "deals_count": 32,
+      "all_names": "Анна | Анна Роговцева | Роговцева | Роговцева Анна",
+      "all_phones": "74954117601 | 79175784100",
+      "all_emails": "av.rogovtseva@jet.su"
+    },
+    {
+      "contact_uid": "C025265",
+      "deals_count": 32,
+      "all_names": "Twin | Twin Александр | Александр | Александр Twin",
+      "all_phones": "79857625957",
+      "all_emails": "alexander_chupin@telegram.chatapp.online"
+    },
+    {
+      "contact_uid": "C023918",
+      "deals_count": 29,
+      "all_names": "Баженов | Баженов Константин Владимирович | Владимирович | Константин | Константин Баженов",
+      "all_phones": "79524100413 | 79855266093",
+      "all_emails": "ka.0508@ya.ru | propatchru@telegram.chatapp.online"
+    },
+    {
+      "contact_uid": "C000132",
+      "deals_count": 28,
+      "all_names": "Андрей | Андрей Бобров | Бобров | Бобров Андрей Валерьевич | Валерьевич",
+      "all_phones": "79269270481",
+      "all_emails": "net_defender@telegram.chatapp.online | reg@net-ib.net"
+    },
+    {
+      "contact_uid": "C011283",
+      "deals_count": 26,
+      "all_names": "Николаевич | Осипов | Осипов Сергей Николаевич | Сергей | Сергей Осипов",
+      "all_phones": "79050876571",
+      "all_emails": "ito_krs@mail.ru"
+    },
+    {
+      "contact_uid": "C000574",
+      "deals_count": 25,
+      "all_names": "Александра | Александра Гаврюшина | Гаврюшина | Гаврюшина Александра",
+      "all_phones": "79653418722",
+      "all_emails": "alg@bi.zone"
+    },
+    {
+      "contact_uid": "C005235",
+      "deals_count": 25,
+      "all_names": "Viktor Gubarev | Viktor Gubarev Губарев | Губарев | Губарев Viktor Gubarev Игоревич | Игоревич",
+      "all_phones": "4915774041355 | 79217772276",
+      "all_emails": "gubarev.victor@gmail.com | viktor_w123@telegram.chatapp.online"
+    },
+    {
+      "contact_uid": "C007802",
+      "deals_count": 25,
+      "all_names": "Андрей | Андрей Бучинский | Бучинский | Бучинский Андрей",
+      "all_phones": "79005071405",
+      "all_emails": "acuteblade@gmail.com"
+    },
+    {
+      "contact_uid": "C000480",
+      "deals_count": 24,
+      "all_names": "Зыков | Зыков Николай | Николай | Николай Зыков",
+      "all_phones": "79152491506",
+      "all_emails": "nikolay.zykov@citi.com | zykov63268@yandex.ru"
+    },
+    {
+      "contact_uid": "C042786",
+      "deals_count": 24,
+      "all_names": "!!ТЕСТ!! Дмитрий Ющенко | !!ТЕСТ!! Дмитрий Ющенко Yuschenko | Yuschenko | Yuschenko !!ТЕСТ!! Дмитрий Ющенко",
+      "all_phones": "78968061546 | 79680615463 | 79958840519",
+      "all_emails": "d.yushenko@cyberus.com | dima.rakot@gmail.com | dima@cyberfy.ru | drive-shares-dm-noreply@google.com"
+    },
+    {
+      "contact_uid": "C007657",
+      "deals_count": 22,
+      "all_names": "Анатольевич | Дмитрий | Дмитрий Зубов | Зубов | Зубов Дмитрий Анатольевич",
+      "all_phones": "996507217321",
+      "all_emails": "dimitarzaboski@telegram.chatapp.online | dzubovcs@gmail.com | nata6ka1984@mail.ru"
+    },
+    {
+      "contact_uid": "C025094",
+      "deals_count": 22,
+      "all_names": "Александр | Александр Букин | Букин | Букин Александр Михайлович | Михайлович",
+      "all_phones": "79645400455",
+      "all_emails": "gyutxx@telegram.chatapp.online | itso.oik.1@gmail.com"
+    }
+  ]
+}

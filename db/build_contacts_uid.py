@@ -19,11 +19,11 @@ from typing import Dict, Iterable, List, Set
 
 import pandas as pd
 
+from bitrix_union_io import load_bitrix_deals_union
 from event_classifier import classify_event_from_row
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_INPUT = PROJECT_ROOT / "DEAL_20260315_aa9ba8d2_69b70d4041fcb.csv"
 DEFAULT_OUTPUT = PROJECT_ROOT / "bitrix_contacts_uid.csv"
 DEFAULT_REPORT = PROJECT_ROOT / "bitrix_contacts_uid_report.json"
 
@@ -336,14 +336,8 @@ def build_contacts_uid_table(df: pd.DataFrame) -> tuple[pd.DataFrame, Dict[str, 
     return out, qa
 
 
-def run(input_csv: Path, output_csv: Path, report_json: Path) -> None:
-    df = pd.read_csv(
-        input_csv,
-        sep=";",
-        encoding="utf-8",
-        low_memory=False,
-        dtype={"ID": str},
-    )
+def run(output_csv: Path, report_json: Path) -> None:
+    df = load_bitrix_deals_union()
     out, qa = build_contacts_uid_table(df)
     out.to_csv(output_csv, index=False, encoding="utf-8")
 
@@ -357,8 +351,7 @@ def run(input_csv: Path, output_csv: Path, report_json: Path) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Build contact_uid table from Bitrix CSV export.")
-    p.add_argument("--input", type=Path, default=DEFAULT_INPUT)
+    p = argparse.ArgumentParser(description="Build contact_uid table from Bitrix CSV union.")
     p.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     p.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     return p.parse_args()
@@ -366,4 +359,4 @@ def parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = parse_args()
-    run(args.input, args.output, args.report)
+    run(args.output, args.report)
