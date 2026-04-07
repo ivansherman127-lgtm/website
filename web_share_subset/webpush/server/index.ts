@@ -1,9 +1,8 @@
 /**
- * Standalone Node.js HTTP server for the UTM tool.
+ * Standalone Node.js HTTP server for the analytics dashboard.
  *
- * Replaces the Cloudflare Worker on a plain Ubuntu server.
- * - GET/POST /api/utm  → utm.ts handler (unchanged) via D1 compat adapter
- * - GET /              → serves dist-utm/ (SPA fallback to index.html)
+ * - GET /analytics/*  → serves dist-analytics/ (SPA)
+ * - All API routes    → analytics handlers
  *
  * Run with:  node --import tsx/esm server/index.ts
  * Or via PM2: pm2 start server/index.ts --interpreter tsx
@@ -18,10 +17,6 @@ import { execFile } from "node:child_process";
 import Database from "better-sqlite3";
 
 import { createD1Compat } from "./d1-compat.js";
-import {
-  onRequestGet as utmGet,
-  onRequestPost as utmPost,
-} from "../functions/api/utm.js";
 import {
   onRequestGet as dataGet,
 } from "../functions/api/data.js";
@@ -41,9 +36,6 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
-const DB_PATH = process.env.UTM_DB_PATH ?? join(process.cwd(), "utm.db");
-const DIST_DIR = process.env.DIST_DIR ?? join(process.cwd(), "dist-utm");
-const SCHEMA_PATH = join(process.cwd(), "server", "utm-schema.sql");
 
 // Analytics DB and SPA dist dir (website.db + dist-analytics/)
 const WEBSITE_DB_PATH = process.env.WEBSITE_DB_PATH ?? join(process.cwd(), "website.db");
@@ -62,9 +54,7 @@ try {
   const secretsPath = join(process.cwd(), ".env.server.json");
   _serverSecrets = JSON.parse(readFileSync(secretsPath, "utf8"));
 } catch { /* file optional */ }
-const UTM_PASSWORD: string = _serverSecrets["UTM_PASSWORD"] ?? process.env.UTM_PASSWORD ?? "";
-console.log(`[auth] UTM_PASSWORD set: ${UTM_PASSWORD ? "yes" : "NO - open access"}`);
-const ANALYTICS_PASSWORD: string = _serverSecrets["ANALYTICS_PASSWORD"] ?? process.env.ANALYTICS_PASSWORD ?? UTM_PASSWORD;
+const ANALYTICS_PASSWORD: string = _serverSecrets["ANALYTICS_PASSWORD"] ?? process.env.ANALYTICS_PASSWORD ?? "";
 const _analyticsRebuildSecret: string = _serverSecrets["ANALYTICS_REBUILD_SECRET"] ?? ANALYTICS_REBUILD_SECRET;
 
 // In-memory cache for dataset_json API responses (path → JSON body string).
@@ -73,12 +63,7 @@ const _analyticsRebuildSecret: string = _serverSecrets["ANALYTICS_REBUILD_SECRET
 const datasetCache = new Map<string, string>();
 
 // Auth helpers
-const COOKIE_NAME = "utm_auth";
 const ANALYTICS_COOKIE_NAME = "analytics_auth";
-
-function cookieToken(): string {
-  return createHash("sha256").update("utm:" + UTM_PASSWORD).digest("hex");
-}
 
 function analyticsCookieToken(): string {
   return createHash("sha256").update("analytics:" + ANALYTICS_PASSWORD).digest("hex");
@@ -95,48 +80,11 @@ function parseCookies(req: IncomingMessage): Record<string, string> {
   );
 }
 
-function isAuthenticated(req: IncomingMessage): boolean {
-  if (!UTM_PASSWORD) return true; // no password configured → open
-  return parseCookies(req)[COOKIE_NAME] === cookieToken();
-}
-
 function isAnalyticsAuthenticated(req: IncomingMessage): boolean {
   if (!ANALYTICS_PASSWORD) return true;
   const cookies = parseCookies(req);
-  return (
-    cookies[ANALYTICS_COOKIE_NAME] === analyticsCookieToken() ||
-    // Also accept utm_auth cookie so users already logged into the UTM tool
-    // don't need to log in again for analytics.
-    cookies[COOKIE_NAME] === cookieToken()
-  );
+  return cookies[ANALYTICS_COOKIE_NAME] === analyticsCookieToken();
 }
-
-const LOGIN_HTML = (error: boolean) => `<!DOCTYPE html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>UTM Builder — вход</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f5f7fa; }
-    form { background: #fff; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,.1); display: flex; flex-direction: column; gap: 1rem; width: 300px; }
-    h2 { margin: 0; font-size: 1.25rem; color: #111; }
-    input[type=password] { padding: .65rem .85rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; outline: none; }
-    input[type=password]:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.2); }
-    button { padding: .65rem; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600; }
-    button:hover { background: #1d4ed8; }
-    .err { color: #dc2626; font-size: .875rem; margin: 0; }
-  </style>
-</head>
-<body>
-  <form method="POST" action="/utm/login">
-    <h2>UTM Builder</h2>
-    ${error ? "<p class=\"err\">Неверный пароль</p>" : ""}
-    <input type="password" name="password" placeholder="Пароль" autofocus required />
-    <button type="submit">Войти</button>
-  </form>
-</body>
-</html>`;
 
 const ANALYTICS_LOGIN_HTML = (error: boolean) => `<!DOCTYPE html>
 <head>
@@ -164,23 +112,6 @@ const ANALYTICS_LOGIN_HTML = (error: boolean) => `<!DOCTYPE html>
   </form>
 </body>
 </html>`;
-
-// Initialise database and apply schema if present
-const db = new Database(DB_PATH);
-db.pragma("journal_mode = WAL");
-if (existsSync(SCHEMA_PATH)) {
-  db.exec(readFileSync(SCHEMA_PATH, "utf8"));
-}
-
-// Apply incremental column additions (idempotent — ignore "duplicate column" errors)
-const COLUMN_MIGRATIONS: string[] = [
-  "ALTER TABLE utm_tags ADD COLUMN created_by TEXT NOT NULL DEFAULT ''",
-];
-for (const stmt of COLUMN_MIGRATIONS) {
-  try { db.prepare(stmt).run(); } catch { /* column already exists */ }
-}
-
-const UTM = createD1Compat(db);
 
 // Analytics DB (website.db) — opened read-write for rebuild endpoint, WAL for concurrency.
 let websiteDb: Database.Database | null = null;
@@ -229,27 +160,6 @@ function jsonRes(res: ServerResponse, status: number, body: unknown): void {
   const data = JSON.stringify(body);
   res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
   res.end(data);
-}
-
-function serveStatic(res: ServerResponse, urlPath: string): void {
-  // Strip the /utm prefix so we can look up files in dist-utm/
-  const stripped = urlPath.replace(/^\/utm(\/|$)/, "/") || "/";
-  const cleanPath = stripped.split("?")[0] ?? "/";
-  let filePath = join(DIST_DIR, cleanPath);
-
-  if (!existsSync(filePath) || filePath.endsWith("/")) {
-    filePath = join(DIST_DIR, "index.html");
-  }
-
-  if (!existsSync(filePath)) {
-    res.writeHead(404);
-    res.end("Not Found");
-    return;
-  }
-
-  const mime = MIME[extname(filePath)] ?? "application/octet-stream";
-  res.writeHead(200, { "content-type": mime });
-  createReadStream(filePath).pipe(res);
 }
 
 function serveAnalytics(res: ServerResponse, urlPath: string): void {
@@ -511,73 +421,13 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       return;
     }
 
-    // Login endpoints — always accessible
-    if (pathname === "/utm/login") {
-      if (req.method === "GET") {
-        res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-        res.end(LOGIN_HTML(false));
-      } else if (req.method === "POST") {
-        const body = await readBody(req);
-        const params = new URLSearchParams(body.toString());
-        const submitted = params.get("password") ?? "";
-        if (UTM_PASSWORD && submitted === UTM_PASSWORD) {
-          const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString();
-          res.writeHead(302, {
-            "set-cookie": `${COOKIE_NAME}=${cookieToken()}; HttpOnly; SameSite=Lax; Path=/; Expires=${expires}`,
-            "location": "/utm/",
-          });
-          res.end();
-        } else {
-          res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-          res.end(LOGIN_HTML(true));
-        }
-      } else {
-        res.writeHead(405); res.end();
-      }
-      return;
-    }
-
-    // Auth gate — redirect unauthenticated requests to login
-    if (!isAuthenticated(req)) {
-      if (pathname.startsWith("/api/")) {
-        jsonRes(res, 401, { ok: false, error: "unauthorized" });
-      } else {
-        res.writeHead(302, { "location": "/utm/login" });
-        res.end();
-      }
-      return;
-    }
-
-    if (pathname === "/api/utm") {
-      if (req.method === "GET") {
-        const webReq = toWebRequest(req);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const webRes = await utmGet({ request: webReq, env: { UTM } as any });
-        await sendWebResponse(webRes, res);
-      } else if (req.method === "POST") {
-        const body = await readBody(req);
-        const webReq = toWebRequest(req, body);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const webRes = await utmPost({ request: webReq, env: { UTM } as any });
-        await sendWebResponse(webRes, res);
-      } else {
-        jsonRes(res, 405, { ok: false, error: "method_not_allowed" });
-      }
-      return;
-    }
-
     if (pathname.startsWith("/api/")) {
       jsonRes(res, 404, { ok: false, error: "not_found" });
       return;
     }
 
-    if (!pathname.startsWith("/utm/") && pathname !== "/utm") {
-      res.writeHead(404);
-      res.end("Not Found");
-      return;
-    }
-
-    serveStatic(res, pathname);
+    res.writeHead(404);
+    res.end("Not Found");
   } catch (err) {
     console.error("Request error:", err);
     jsonRes(res, 500, { ok: false, error: "internal_server_error" });
@@ -585,9 +435,9 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
 });
 
 server.listen(PORT, () => {
-  console.log(`UTM server listening on port ${PORT}`);
-  console.log(`  DB:   ${DB_PATH}`);
-  console.log(`  Dist: ${DIST_DIR}`);
+  console.log(`Analytics server listening on port ${PORT}`);
+  console.log(`  DB:   ${WEBSITE_DB_PATH}`);
+  console.log(`  Dist: ${ANALYTICS_DIST_DIR}`);
   console.log(`  cwd:  ${process.cwd()}`);
 
   // Pre-warm the assoc-revenue cache after startup so the first user request
@@ -616,7 +466,6 @@ server.listen(PORT, () => {
 
 function shutdown() {
   server.close(() => {
-    db.close();
     try { websiteDb?.close(); } catch { /* ignore */ }
     process.exit(0);
   });
