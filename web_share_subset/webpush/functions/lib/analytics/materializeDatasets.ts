@@ -1647,6 +1647,27 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     if (pn) assocRevenueByProject.set(pn, Number(r.assoc_revenue ?? 0) || 0);
   }
 
+  // Build month-level assoc revenue by proportionally distributing per-project assoc revenue
+  // based on each project's revenue_raw share in each month (using mart_yandex_revenue_projects).
+  const projectTotalRevenue = new Map<string, number>();
+  for (const r of r_q9.results ?? []) {
+    const proj = toKnownGroup(r.project_name);
+    if (!proj) continue;
+    const rev = Number(r.revenue_raw ?? 0) || 0;
+    projectTotalRevenue.set(proj, (projectTotalRevenue.get(proj) ?? 0) + rev);
+  }
+  const assocRevenueByMonth = new Map<string, number>();
+  for (const r of r_q9.results ?? []) {
+    const proj = toKnownGroup(r.project_name);
+    const month = String(r.month ?? "").trim();
+    if (!proj || !month) continue;
+    const rev = Number(r.revenue_raw ?? 0) || 0;
+    const totalRev = projectTotalRevenue.get(proj) ?? 0;
+    const projAssocRev = assocRevenueByProject.get(proj) ?? 0;
+    const share = totalRev > 0 ? rev / totalRev : 0;
+    assocRevenueByMonth.set(month, (assocRevenueByMonth.get(month) ?? 0) + projAssocRev * share);
+  }
+
   // Materialize the per-project QA dataset.
   const qaProjectRows = assocQaRows.map((r) => ({
     "Проект": String(r.project_name ?? "").trim(),
@@ -1701,7 +1722,14 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     upsertDataset(db, "cohorts/attacking_january/cohort_assoc_event_course.json", rowsToJson(r_q7.results ?? [])),
     upsertDataset(db, "global/yandex_dedup_summary.json", rowsToJson(r_q8.results ?? [])),
     upsertDataset(db, "global/yandex_projects_revenue_raw_vs_dedup.json", rowsToJson(r_q9.results ?? [])),
-    upsertDataset(db, "global/yandex_projects_revenue_by_month.json", rowsToJson(r_q10.results ?? [])),
+    upsertDataset(db, "global/yandex_projects_revenue_by_month.json", rowsToJson(
+      (r_q10.results ?? []).map((r) => {
+        const month = String(r.month ?? "").trim();
+        const directRev = Number(r.revenue_raw ?? 0) || 0;
+        const assocRev = assocRevenueByMonth.get(month) ?? 0;
+        return { ...r, assoc_revenue: Math.max(assocRev, directRev) };
+      }),
+    )),
     upsertDataset(db, "qa/yandex_assoc_revenue_qa.json", rowsToJson(qaRows)),
     upsertDataset(db, "global/yandex_projects_revenue_no_month.json", rowsToJson(groupedWithDetails)),
     upsertDataset(db, "qa/other_share_global.json", rowsToJson(r_qa1.results ?? [])),

@@ -1196,6 +1196,46 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
     });
   }
   if (view === "media_yandex") {
+    const buildYandexTotalRow = (projectRows: Record<string, unknown>[]): Record<string, unknown> => {
+      const leads = projectRows.reduce((s, r) => s + num(r["Лиды"]), 0);
+      const qual = projectRows.reduce((s, r) => s + num(r["Квал"]), 0);
+      const unqual = projectRows.reduce((s, r) => s + num(r["Неквал"]), 0);
+      const unknown = projectRows.reduce((s, r) => s + num(r["Неизвестно"]), 0);
+      const refusal = projectRows.reduce((s, r) => s + num(r["Отказы"]), 0);
+      const clicks = projectRows.reduce((s, r) => s + num(r["Клики"]), 0);
+      const spend = projectRows.reduce((s, r) => s + num(r["Расход, ₽"]), 0);
+      const paid = projectRows.reduce((s, r) => s + num(r["Оплаты"]), 0);
+      const revenue = projectRows.reduce((s, r) => s + num(r["Выручка"]), 0);
+      const assocRevenue = projectRows.reduce((s, r) => s + num(r["Ассоц. Выручка"]), 0);
+      return {
+        "Yandex кампания": "Итого",
+        "Yandex объявление": "",
+        "Заголовок": "",
+        "Первый месяц": "",
+        "Последний месяц": "",
+        "Лиды": leads,
+        "Квал": qual,
+        "Конверсия в Квал": leads > 0 ? qual / leads : 0,
+        "Неквал": unqual,
+        "Конверсия в Неквал": leads > 0 ? unqual / leads : 0,
+        "Неизвестно": unknown,
+        "Отказы": refusal,
+        "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
+        "Клики": clicks,
+        "Расход, ₽": spend,
+        "Оплаты": paid,
+        "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
+        "Выручка": revenue,
+        "Прибыль": revenue - spend,
+        "Ассоц. Выручка": assocRevenue,
+        "Ассоц. Прибыль": assocRevenue - spend,
+        __yandex_project_detail: 0,
+        __yandex_project_has_details: 0,
+        __yandex_project_ctx: "",
+        __yandex_total_row: 1,
+      };
+    };
+
     const hasHierarchyRows = clean.some((r) => String(r["Level"] ?? "").trim() === "Project" || num(r["__yandex_project_detail"]) > 0);
     if (hasHierarchyRows) {
       const out: Record<string, unknown>[] = [];
@@ -1229,7 +1269,8 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
           __yandex_project_has_details: 0,
         });
       }
-      return out;
+      const projectRows = out.filter((r) => num(r["__yandex_project_detail"]) === 0);
+      return [buildYandexTotalRow(projectRows), ...out];
     }
 
     const rowsByProject = new Map<string, Record<string, unknown>>();
@@ -1245,7 +1286,8 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
       rowsByProject.set(project, buildMediaYandexProjectRow(project, { spend: m.spend }));
     }
 
-    return Array.from(rowsByProject.values());
+    const projectRows = Array.from(rowsByProject.values());
+    return [buildYandexTotalRow(projectRows), ...projectRows];
   }
   if (view === "media_yandex_month") {
     return clean.map((r) => {
@@ -1260,6 +1302,7 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
       const revenue = num(r["revenue_raw"]);
       const spend = m.spend > 0 ? m.spend : num(r["spend"]);
       const profit = revenue - spend;
+      const assocRevenue = Math.max(num(r["assoc_revenue"]), revenue);
       return {
         "Период": month,
         "Лиды": leads,
@@ -1276,6 +1319,8 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
         "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
         "Выручка": revenue,
         "Прибыль": profit,
+        "Ассоц. Выручка": assocRevenue,
+        "Ассоц. Прибыль": assocRevenue - spend,
       };
     });
   }
@@ -1880,9 +1925,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         : isAssocYandexHierarchy
           ? kpiBaseRows.filter((r) => num(r["__assoc_yandex_detail"]) === 0)
         : isYandexProjectHierarchy
-          ? kpiBaseRows.filter((r) => num(r["__yandex_project_detail"]) === 0)
+          ? kpiBaseRows.filter((r) => num(r["__yandex_project_detail"]) === 0 && !r["__yandex_total_row"])
         : isBudgetHierarchy
           ? kpiBaseRows.filter((r) => String(r["Level"] ?? "").trim() === "Month")
+        : view === "media_yandex"
+          ? kpiBaseRows.filter((r) => !r["__yandex_total_row"])
           : kpiBaseRows;
 
     const topCountEl = app.querySelector<HTMLElement>(".kpi-grid .kpi:first-child .value");
@@ -2235,9 +2282,11 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
           : isAssocYandexHierarchy
             ? viewRows.filter((r) => num(r["__assoc_yandex_detail"]) === 0)
           : isYandexProjectHierarchy
-            ? viewRows.filter((r) => num(r["__yandex_project_detail"]) === 0)
+            ? viewRows.filter((r) => num(r["__yandex_project_detail"]) === 0 && !r["__yandex_total_row"])
             : isBudgetHierarchy
               ? viewRows.filter((r) => String(r["Level"] ?? "").trim() === "Month")
+            : view === "media_yandex"
+              ? viewRows.filter((r) => !r["__yandex_total_row"])
               : viewRows;
   const totalRevenue = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Выручка", "выручка"]), 0);
   const deals = kpiRows.reduce((acc, r) => acc + pickNum(r, ["Сделок_с_выручкой", "Сделок с выручкой"]), 0);
