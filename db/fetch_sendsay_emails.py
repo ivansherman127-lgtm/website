@@ -211,6 +211,29 @@ def transform_to_schema(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def _ensure_unique_index(engine) -> None:
+    """Create a unique index on ID if it doesn't exist yet."""
+    with engine.connect() as conn:
+        conn.execute(
+            __import__("sqlalchemy").text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS stg_email_sends_id_uq ON stg_email_sends (\"ID\")"
+            )
+        )
+        conn.commit()
+
+
+def _existing_ids(engine) -> set:
+    """Return the set of issue IDs already in stg_email_sends."""
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                __import__("sqlalchemy").text('SELECT "ID" FROM stg_email_sends')
+            ).fetchall()
+        return {str(r[0]) for r in rows if r[0] is not None}
+    except Exception:
+        return set()
+
+
 def fetch_and_write(
     login: str,
     password: str,
@@ -225,7 +248,7 @@ def fetch_and_write(
     Main pipeline:
       1. Authenticate and pull stat.uni from Sendsay.
       2. Transform to legacy schema.
-      3. Write to SQLite (and optionally to CSV).
+      3. Write only new rows (by ID) to SQLite — no duplicates.
 
     Returns the number of rows written.
     """
@@ -240,7 +263,7 @@ def fetch_and_write(
         return 0
 
     df = transform_to_schema(raw_df)
-    print(f"  {len(df)} email campaigns received.")
+    print(f"  {len(df)} email campaigns received from API.")
 
     if dry_run:
         print("Dry run – skipping database write.")
@@ -249,15 +272,31 @@ def fetch_and_write(
         return len(df)
 
     engine = get_engine(db_path or DEFAULT_DB_PATH)
-    df.to_sql("stg_email_sends", engine, if_exists=if_exists, index=False)
-    print(f"  Written {len(df)} rows → stg_email_sends (if_exists={if_exists!r})")
+
+    if if_exists == "replace":
+        # Full replace: wipe table and reload all records.
+        df.to_sql("stg_email_sends", engine, if_exists="replace", index=False)
+        _ensure_unique_index(engine)
+        print(f"  Written {len(df)} rows → stg_email_sends (full replace)")
+        n_written = len(df)
+    else:
+        # Incremental: only insert rows whose ID is not already in the table.
+        _ensure_unique_index(engine)
+        existing = _existing_ids(engine)
+        new_df = df[~df["ID"].astype(str).isin(existing)]
+        n_written = len(new_df)
+        if new_df.empty:
+            print(f"  No new campaigns (all {len(df)} already in DB).")
+        else:
+            new_df.to_sql("stg_email_sends", engine, if_exists="append", index=False)
+            print(f"  Inserted {n_written} new rows (skipped {len(df) - n_written} existing) → stg_email_sends")
 
     if save_csv:
         CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(CSV_PATH, index=False, encoding="utf-8")
         print(f"  Saved CSV → {CSV_PATH.relative_to(ROOT)}")
 
-    return len(df)
+    return n_written
 
 
 def main() -> None:

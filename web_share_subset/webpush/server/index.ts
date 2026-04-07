@@ -420,7 +420,8 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       }
       const urlObj = new URL(req.url || "/", "http://localhost");
       const dateFrom = urlObj.searchParams.get("from");
-      const ifExists = urlObj.searchParams.get("if_exists") === "append" ? "append" : "replace";
+      // Default to "append" (incremental, deduplicates by ID) unless ?if_exists=replace is passed
+      const ifExists = urlObj.searchParams.get("if_exists") === "replace" ? "replace" : "append";
       const extraArgs: string[] = ["--if-exists", ifExists];
       if (dateFrom) extraArgs.push("--from", dateFrom);
       try {
