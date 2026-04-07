@@ -220,6 +220,12 @@ def build_marts(engine) -> dict:
         course_raw = course_raw.mask(course_raw.astype(str).str.strip().eq(""), bitrix["Код курса"].fillna(""))
     bitrix["course_code_norm"] = course_raw.map(normalize_course_code)
 
+    bitrix["is_attacking_january"] = (bitrix["event_class"] == "Attacking January").astype(int)
+    if "Типы некачественного лида" not in bitrix.columns:
+        bitrix["Типы некачественного лида"] = ""
+    if "Ответственный" not in bitrix.columns:
+        bitrix["Ответственный"] = ""
+
     staging = _staging_deals_analytics_df(bitrix)
     staging.to_sql(
         "stg_deals_analytics",
@@ -262,6 +268,9 @@ def build_marts(engine) -> dict:
         "classification_source",
         "classification_pattern",
         "classification_confidence",
+        "is_attacking_january",
+        "Типы некачественного лида",
+        "Ответственный",
     ]
     bitrix[mart_cols].to_sql(
         "mart_deals_enriched",
