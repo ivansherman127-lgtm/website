@@ -448,18 +448,24 @@ def _set_date_range_ui(page, date_from: str, date_to: str) -> bool:
         opened = False
         for _attempt in range(3):
             r = page.evaluate("""() => {
-                const dp = /\\d{1,2}\\s*[\\u2013\\-]\\s*\\d{1,2}\\s+[\\u0430-\\u044f\\u0410-\\u042f\\u0451\\u0401]{3,}/;
-                for (const el of document.querySelectorAll('button,[role="button"]')) {
-                    const tid = el.getAttribute('data-testid') || '';
-                    if (tid.includes('IncludeToday') || tid.includes('Preset')) continue;
-                    const t = (el.innerText || '').trim();
-                    if (dp.test(t) && t.length < 45) {
-                        el.scrollIntoView({block:'nearest'});
-                        el.click();
-                        return 'ok:' + tid + ':' + t.substr(0, 20);
+                // Try exact test-id first (most reliable)
+                let el = document.querySelector(
+                    '[data-testid="DateRangeSelect.RangeCalendarWithButton.Calendar"]');
+                if (!el) {
+                    // Fallback: find button with Cyrillic date range text
+                    const dp = /\\d{1,2}\\s*[\\u2013\\-]\\s*\\d{1,2}\\s+[\\u0430-\\u044f\\u0410-\\u042f\\u0451\\u0401]{3,}/;
+                    for (const b of document.querySelectorAll('button,[role="button"]')) {
+                        const tid = b.getAttribute('data-testid') || '';
+                        if (tid.includes('IncludeToday') || tid.includes('Preset')) continue;
+                        const t = (b.innerText || '').trim();
+                        if (dp.test(t) && t.length < 45) { el = b; break; }
                     }
                 }
-                return 'not_found';
+                if (!el) return 'not_found';
+                el.scrollIntoView({block:'nearest'});
+                el.click();
+                const tid = el.getAttribute('data-testid') || '';
+                return 'ok:' + tid + ':' + (el.innerText||'').trim().substr(0, 20);
             }""")
             print(f"  [date] JS click [{_attempt+1}]: {r}")
             if r.startswith("not_found"):
@@ -521,7 +527,6 @@ def _set_date_range_ui(page, date_from: str, date_to: str) -> bool:
         print(f"  [date] Date-format inputs found: {len(date_locs)}")
 
         if len(date_locs) >= 2:
-            # filling the start input closes the popup; then reopen and fill end input.
             start_loc = page.locator(
                 "[data-testid='DateRangeSelect.RangeCalendarWithButton.RangeCalendar.StartInput']"
             )
@@ -529,46 +534,77 @@ def _set_date_range_ui(page, date_from: str, date_to: str) -> bool:
                 "[data-testid='DateRangeSelect.RangeCalendarWithButton.RangeCalendar.EndInput']"
             )
 
-            # Fill both inputs in quick succession (avoid any wait that lets popup close).
-            start_loc.fill(date_from_dmy, timeout=10000)
-            print(f"  [date] Start filled: {date_from_dmy}")
-            # Immediately fill end (no wait) so popup doesn't close between fills
-            try:
-                end_loc.fill(date_to_dmy, timeout=5000)
-                print(f"  [date] End filled:   {date_to_dmy}")
-                page.keyboard.press("Enter")
-                page.wait_for_timeout(2500)
+            def _toolbar_matches():
+                txt = page.evaluate("""() => {
+                    const b = document.querySelector(
+                        '[data-testid="DateRangeSelect.RangeCalendarWithButton.Calendar"]');
+                    return b ? (b.innerText||'').trim() : '';
+                }""")
+                print(f"  [date] Toolbar: {txt}")
+                return (date_from_dmy[:2] in txt and date_from_dmy[6:] in txt)
+
+            # Method 1: JS atomic native value setter (avoids React auto-reset of end=start)
+            js_set = page.evaluate("""([from_d, to_d]) => {
+                const startIn = document.querySelector(
+                    '[data-testid="DateRangeSelect.RangeCalendarWithButton.RangeCalendar.StartInput"]');
+                const endIn = document.querySelector(
+                    '[data-testid="DateRangeSelect.RangeCalendarWithButton.RangeCalendar.EndInput"]');
+                if (!startIn || !endIn) return 'not-found';
+                const nset = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+                startIn.focus();
+                nset.call(startIn, from_d);
+                startIn.dispatchEvent(new InputEvent('input', {bubbles: true, data: from_d}));
+                endIn.focus();
+                nset.call(endIn, to_d);
+                endIn.dispatchEvent(new InputEvent('input', {bubbles: true, data: to_d}));
+                endIn.dispatchEvent(new KeyboardEvent('keydown',
+                    {key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true}));
+                endIn.dispatchEvent(new KeyboardEvent('keyup',
+                    {key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true}));
+                return startIn.value + '/' + endIn.value;
+            }""", [date_from_dmy, date_to_dmy])
+            print(f"  [date] JS atomic set: {js_set}")
+            page.wait_for_timeout(1200)
+            if _toolbar_matches():
                 page.screenshot(path="/tmp/yd_after_date_set.png")
                 return True
-            except Exception as _e:
-                print(f"  [date] End immediate fill failed: {_e}, trying with reopen")
 
-            # Fallback: wait, reopen popup, fill end date
-            page.wait_for_timeout(600)
-            for _try in range(3):
-                page.evaluate(
-                    """() => { const el = document.querySelector(
-                        '[data-testid="DateRangeSelect.RangeCalendarWithButton.Calendar"]');
-                       if (el) el.click(); }"""
+            # Method 2: keyboard typing (up to 3 retries, reopens popup if needed)
+            print("  [date] JS set not confirmed, trying keyboard input...")
+            for _attempt in range(3):
+                popup_visible = page.evaluate(
+                    """() => { const p = document.querySelector('[data-testid="Popup"]');
+                               return p !== null && p.offsetParent !== null; }"""
                 )
-                reopen_ok = False
-                try:
-                    page.wait_for_selector('[data-testid="Popup"]', timeout=2000)
-                    reopen_ok = True
-                except Exception:
-                    pass
-                if reopen_ok:
+                if not popup_visible:
+                    page.evaluate(
+                        """() => { const el = document.querySelector(
+                            '[data-testid="DateRangeSelect.RangeCalendarWithButton.Calendar"]');
+                           if (el) el.click(); }"""
+                    )
                     try:
-                        end_loc.fill(date_to_dmy, timeout=5000)
-                        print(f"  [date] End filled after reopen: {date_to_dmy}")
-                        page.keyboard.press("Enter")
-                        page.wait_for_timeout(2500)
+                        page.wait_for_selector('[data-testid="Popup"]', timeout=2000)
+                    except Exception:
+                        pass
+                    page.wait_for_timeout(300)
+                try:
+                    start_loc.click(force=True)
+                    page.keyboard.press("Control+a")
+                    page.keyboard.type(date_from_dmy, delay=0)
+                    page.wait_for_timeout(50)
+                    end_loc.click(force=True)
+                    page.keyboard.press("Control+a")
+                    page.keyboard.type(date_to_dmy, delay=0)
+                    page.keyboard.press("Enter")
+                    page.wait_for_timeout(1200)
+                    print(f"  [date] Keyboard attempt {_attempt + 1}: {date_from_dmy}/{date_to_dmy}")
+                    if _toolbar_matches():
                         page.screenshot(path="/tmp/yd_after_date_set.png")
                         return True
-                    except Exception as _e2:
-                        print(f"  [date] End fill try {_try+1} failed: {_e2}")
-                page.wait_for_timeout(700)
-            print("  [date] Could not fill end date after 3 attempts.")
+                except Exception as _ek:
+                    print(f"  [date] Keyboard attempt {_attempt + 1} error: {_ek}")
+                page.wait_for_timeout(500)
+            print("  [date] Could not confirm dates in toolbar after all attempts.")
         elif len(date_locs) == 1:
             start_loc = page.locator(
                 "[data-testid='DateRangeSelect.RangeCalendarWithButton.RangeCalendar.StartInput']"
