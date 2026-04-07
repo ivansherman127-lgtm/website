@@ -1,6 +1,7 @@
 import { onRequestGet as assocRevenueGet } from "./functions/api/assoc-revenue";
 import { onRequestGet as dataGet } from "./functions/api/data";
 import { onRequestGet as cohortDealsGet } from "./functions/api/cohort-deals";
+import { onRequestGet as leadsBreakdownGet } from "./functions/api/leads-breakdown";
 import { onRequestGet as protectedTableGet } from "./functions/api/protected-table";
 import { onRequestGet as utmGet, onRequestPost as utmPost } from "./functions/api/utm";
 import { onRequestPost as analyticsRebuildPost } from "./functions/api/analytics/rebuild";
@@ -39,6 +40,11 @@ export default {
     if (pathname === "/api/assoc-revenue") {
       if (request.method !== "GET") return methodNotAllowed();
       return assocRevenueGet({ request, env });
+    }
+
+    if (pathname === "/api/leads-breakdown") {
+      if (request.method !== "GET") return methodNotAllowed();
+      return leadsBreakdownGet({ request, env });
     }
 
     if (pathname === "/api/data") {

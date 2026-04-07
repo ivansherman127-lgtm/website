@@ -521,7 +521,7 @@ function renderWeeklyYandexExpandableTable(rows: Record<string, unknown>[], expa
   `;
 }
 
-type TabKey = "assoc_builder" | "email" | "yandex" | "budget" | "months" | "managers" | "funnels" | "contacts" | "year" | "qa";
+type TabKey = "assoc_builder" | "email" | "yandex" | "budget" | "months" | "managers" | "leads" | "contacts" | "year" | "qa";
 type ViewKey =
   | "assoc_dynamic"
   | "media_email"
@@ -533,7 +533,9 @@ type ViewKey =
   | "managers_sales_month"
   | "managers_firstline_course"
   | "managers_firstline_month"
-  | "funnels_hierarchy"
+  | "leads_by_course"
+  | "leads_by_project"
+  | "leads_by_medium"
   | "contacts_unique"
   | "year_total"
   | "email_ops_summary"
@@ -566,7 +568,9 @@ const VIEW_META: Record<ViewKey, ViewMeta> = {
   managers_sales_month: { tab: "managers", label: "Продажи по месяцу", path: "data/manager_sales_by_month.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
   managers_firstline_course: { tab: "managers", label: "1-я линия по коду курса", path: "data/manager_firstline_by_course.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
   managers_firstline_month: { tab: "managers", label: "1-я линия по месяцу", path: "data/manager_firstline_by_month.json", rowsLabel: "Строк", title: "Отчеты по менеджерам" },
-  funnels_hierarchy: { tab: "funnels", label: "Воронка → Месяц → Код курса", path: "data/bitrix_funnel_month_code_full.json", rowsLabel: "Строк", title: "Отчеты по воронкам" },
+  leads_by_course: { tab: "leads", label: "По коду курса", path: "/api/leads-breakdown?dim=course", rowsLabel: "Кодов", title: "Отчеты по лидам" },
+  leads_by_project: { tab: "leads", label: "По проекту", path: "/api/leads-breakdown?dim=project", rowsLabel: "Проектов", title: "Отчеты по лидам" },
+  leads_by_medium: { tab: "leads", label: "По UTM Medium", path: "/api/leads-breakdown?dim=medium", rowsLabel: "Каналов", title: "Отчеты по лидам" },
   contacts_unique: { tab: "contacts", label: "Уникальные контакты", path: "data/bitrix_contacts_uid.json", rowsLabel: "Контактов", title: "Уникальные контакты" },
   year_total: { tab: "year", label: "Итоги по годам", path: "data/bitrix_month_total_full.json", rowsLabel: "Лет", title: "Отчет за год" },
   qa_dedup_check: { tab: "qa", label: "Дедупликация: итог", path: "data/qa/dedup_check.json", rowsLabel: "Строк", title: "Контроль качества" },
@@ -583,11 +587,10 @@ type MenuMode = "dashboard" | "reports" | "charts";
 const PNL_PATH_BY_VIEW: Partial<Record<ViewKey, string>> = {
   managers_sales_month: "data/manager_sales_by_month_pnl.json",
   managers_firstline_month: "data/manager_firstline_by_month_pnl.json",
-  funnels_hierarchy: "data/bitrix_funnel_month_code_full_pnl.json",
 };
 
 function supportsPnlMode(view: ViewKey): boolean {
-  return view === "assoc_dynamic" || view === "funnels_hierarchy" || view.startsWith("managers_");
+  return view === "assoc_dynamic" || view.startsWith("managers_");
 }
 
 function isViewKey(v: string): v is ViewKey {
@@ -610,6 +613,12 @@ function writeUrlState(menu: MenuMode, view?: ViewKey): void {
   window.history.replaceState({}, "", url.toString());
 }
 
+const LEADS_BREAKDOWN_DIM: Partial<Record<ViewKey, string>> = {
+  leads_by_course: "course",
+  leads_by_project: "project",
+  leads_by_medium: "medium",
+};
+
 function viewPath(view: ViewKey, options?: { pnlMode?: PnlMode; dateFrom?: string; dateTo?: string }): string {
   if (view === "assoc_dynamic") {
     const params = new URLSearchParams({ dims: "event" });
@@ -618,6 +627,13 @@ function viewPath(view: ViewKey, options?: { pnlMode?: PnlMode; dateFrom?: strin
     if (options?.dateTo) params.set("to", options.dateTo.slice(0, 7));
     if (options?.pnlMode) params.set("pnlmode", options.pnlMode);
     return `/api/assoc-revenue?${params.toString()}`;
+  }
+  const leadsBreakdownDim = LEADS_BREAKDOWN_DIM[view];
+  if (leadsBreakdownDim) {
+    const params = new URLSearchParams({ dim: leadsBreakdownDim });
+    if (options?.dateFrom) params.set("from", options.dateFrom.slice(0, 7));
+    if (options?.dateTo) params.set("to", options.dateTo.slice(0, 7));
+    return `/api/leads-breakdown?${params.toString()}`;
   }
   if (options?.pnlMode === "pnl" && PNL_PATH_BY_VIEW[view]) return PNL_PATH_BY_VIEW[view] as string;
   return VIEW_META[view].path;
@@ -1263,75 +1279,6 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
       };
     });
   }
-  if (view === "funnels_hierarchy") {
-    const out: Record<string, unknown>[] = [];
-    const funnelGroups = new Map<string, Record<string, unknown>[]>();
-    for (const r of clean) {
-      const k = String(r["Воронка"] ?? "").trim();
-      if (!funnelGroups.has(k)) funnelGroups.set(k, []);
-      funnelGroups.get(k)!.push(r);
-    }
-    for (const [funnel, funnelItems] of funnelGroups.entries()) {
-      let funnelRow: Record<string, unknown> = {
-        Level: "Воронка",
-        "Воронка": funnel,
-        "Месяц": "-",
-        "Код_курса_норм": "-",
-        "__node": "funnel",
-        "__funnel": funnel,
-      };
-      funnelRow["Лиды"] = funnelItems.reduce((acc, x) => acc + num(x["Лиды"]), 0);
-      funnelRow["Квал"] = funnelItems.reduce((acc, x) => acc + num(x["Квал"]), 0);
-      funnelRow["Неквал"] = funnelItems.reduce((acc, x) => acc + num(x["Неквал"]), 0);
-      funnelRow["Неизвестно"] = funnelItems.reduce((acc, x) => acc + num(x["Неизвестно"]), 0);
-      funnelRow["Отказы"] = funnelItems.reduce((acc, x) => acc + num(x["Отказы"]), 0);
-      funnelRow["В работе"] = funnelItems.reduce((acc, x) => acc + num(x["В работе"]), 0);
-      funnelRow["Невалидные_лиды"] = funnelItems.reduce((acc, x) => acc + num(x["Невалидные_лиды"]), 0);
-      funnelRow["Сделок_с_выручкой"] = funnelItems.reduce((acc, x) => acc + num(x["Сделок_с_выручкой"]), 0);
-      funnelRow["Выручка"] = funnelItems.reduce((acc, x) => acc + num(x["Выручка"]), 0);
-      funnelRow = addKpi(funnelRow);
-      out.push(funnelRow);
-
-      const monthGroups = new Map<string, Record<string, unknown>[]>();
-      for (const r of funnelItems) {
-        const m = String(r["Месяц"] ?? "").trim();
-        if (!monthGroups.has(m)) monthGroups.set(m, []);
-        monthGroups.get(m)!.push(r);
-      }
-      for (const [month, monthItems] of monthGroups.entries()) {
-        let monthRow: Record<string, unknown> = {
-          Level: "Месяц",
-          "Воронка": funnel,
-          "Месяц": month,
-          "Код_курса_норм": "-",
-          "__node": "month",
-          "__funnel": funnel,
-          "__month": month,
-        };
-        monthRow["Лиды"] = monthItems.reduce((acc, x) => acc + num(x["Лиды"]), 0);
-        monthRow["Квал"] = monthItems.reduce((acc, x) => acc + num(x["Квал"]), 0);
-        monthRow["Неквал"] = monthItems.reduce((acc, x) => acc + num(x["Неквал"]), 0);
-        monthRow["Неизвестно"] = monthItems.reduce((acc, x) => acc + num(x["Неизвестно"]), 0);
-        monthRow["Отказы"] = monthItems.reduce((acc, x) => acc + num(x["Отказы"]), 0);
-        monthRow["В работе"] = monthItems.reduce((acc, x) => acc + num(x["В работе"]), 0);
-        monthRow["Невалидные_лиды"] = monthItems.reduce((acc, x) => acc + num(x["Невалидные_лиды"]), 0);
-        monthRow["Сделок_с_выручкой"] = monthItems.reduce((acc, x) => acc + num(x["Сделок_с_выручкой"]), 0);
-        monthRow["Выручка"] = monthItems.reduce((acc, x) => acc + num(x["Выручка"]), 0);
-        monthRow = addKpi(monthRow);
-        out.push(monthRow);
-        for (const r of monthItems) {
-          out.push({
-            ...r,
-            Level: "Код курса",
-            "__node": "code",
-            "__funnel": funnel,
-            "__month": month,
-          });
-        }
-      }
-    }
-    return out;
-  }
   return clean;
 }
 
@@ -1467,7 +1414,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const isYandexProjectHierarchy = view === "media_yandex" && viewRows.some((r) => num(r["__yandex_project_detail"]) > 0);
   const isManagerHierarchy = view.startsWith("managers_");
   const isManagerCourseView = isManagerHierarchy && view.endsWith("_course");
-  const isFunnelHierarchy = view === "funnels_hierarchy";
+  const isFunnelHierarchy = false;
   const isBudgetHierarchy = view === "budget_monthly";
   const dateWindowCol = isManagerCourseView
     ? "month"
@@ -1475,7 +1422,8 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     ? (allCols.includes("month") ? "month" : "")
     : (["month", "\u041f\u0435\u0440\u0438\u043e\u0434", "\u041c\u0435\u0441\u044f\u0446", "\u0413\u043e\u0434"].find((c) => allCols.includes(c)) || "");
   const isAssocDynamic = view === "assoc_dynamic";
-  const hasDateWindowControl = !!dateWindowCol || isAssocDynamic;
+  const isLeadsBreakdown = view === "leads_by_course" || view === "leads_by_project" || view === "leads_by_medium";
+  const hasDateWindowControl = !!dateWindowCol || isAssocDynamic || isLeadsBreakdown;
   const hasPnlToggle = supportsPnlMode(view);
   const canSaveViewJson = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   let visibleRows: Record<string, unknown>[] = [];
@@ -1923,9 +1871,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     }
 
     const kpiRows =
-      view === "funnels_hierarchy"
-        ? kpiBaseRows.filter((r) => String(r["__node"] ?? "").trim() === "code")
-        : isManagerHierarchy
+      isManagerHierarchy
           ? kpiBaseRows.filter((r) => String(r["Level"] ?? "").trim() === "Manager")
         : isAssocEmailHierarchy
           ? kpiBaseRows.filter((r) => num(r["__assoc_email_detail"]) === 0)
@@ -2280,9 +2226,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   };
 
   const kpiRows =
-    view === "funnels_hierarchy"
-      ? viewRows.filter((r) => String(r["__node"] ?? "").trim() === "code")
-      : isManagerHierarchy
+    isManagerHierarchy
         ? viewRows.filter((r) => String(r["Level"] ?? "").trim() === "Manager")
       : isAssocEmailHierarchy
         ? viewRows.filter((r) => num(r["__assoc_email_detail"]) === 0)
@@ -2314,7 +2258,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
         <button class="tab-btn ${tab === "yandex" ? "active" : ""}" data-tab="yandex">Yandex</button>
         <button class="tab-btn ${tab === "budget" ? "active" : ""}" data-tab="budget">Бюджет</button>
         <button class="tab-btn ${tab === "managers" ? "active" : ""}" data-tab="managers">По менеджерам</button>
-        <button class="tab-btn ${tab === "funnels" ? "active" : ""}" data-tab="funnels">По воронкам</button>
+        <button class="tab-btn ${tab === "leads" ? "active" : ""}" data-tab="leads">По лидам</button>
         <button class="tab-btn ${tab === "contacts" ? "active" : ""}" data-tab="contacts">Уникальные контакты</button>
         <button class="tab-btn ${tab === "qa" ? "active" : ""}" data-tab="qa">Контроль качества</button>
         <button class="tab-btn ${tab === "year" ? "active" : ""}" data-tab="year">Отчет за год</button>
@@ -2480,14 +2424,14 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   if (dateFromInput) {
     dateFromInput.onchange = () => {
       dateFrom = dateFromInput.value || "";
-      if (isAssocDynamic) void rerenderForCurrentState();
+      if (isAssocDynamic || isLeadsBreakdown) void rerenderForCurrentState();
       else draw();
     };
   }
   if (dateToInput) {
     dateToInput.onchange = () => {
       dateTo = dateToInput.value || "";
-      if (isAssocDynamic) void rerenderForCurrentState();
+      if (isAssocDynamic || isLeadsBreakdown) void rerenderForCurrentState();
       else draw();
     };
   }
