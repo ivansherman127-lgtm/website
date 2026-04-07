@@ -3047,7 +3047,6 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
           <p class="sub">Срез: последние 7 дней от последней доступной записи</p>
         </header>
         <div class="kpi-grid">
-          <div class="kpi"><div class="label">Уникальных контактов</div><div class="value">${totalContactsActual.toLocaleString("ru-RU")}</div></div>
           <div class="kpi"><div class="label">Контакты Bitrix</div><div class="value">${bitrixContactsActual.toLocaleString("ru-RU")}</div></div>
           <div class="kpi"><div class="label">Контакты Email</div><div class="value">${emailContactsActual.toLocaleString("ru-RU")}</div></div>
           <div class="kpi"><div class="label">Последняя запись Bitrix</div><div class="value">${escapeHtml(latestBitrixRecordDate)}</div></div>
