@@ -64,7 +64,8 @@ label {
 .label-text {
   display: flex;
   align-items: center;
-  gap: 0.2rem;
+  justify-content: space-between;
+  gap: 0.4rem;
 }
 
 .required-marker {
