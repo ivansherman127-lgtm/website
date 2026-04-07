@@ -27,6 +27,9 @@ import {
   onRequestGet as cohortDealsGet,
 } from "../functions/api/cohort-deals.js";
 import {
+  onRequestGet as leadsBreakdownGet,
+} from "../functions/api/leads-breakdown.js";
+import {
   onRequestPost as analyticsRebuildPost,
 } from "../functions/api/analytics/rebuild.js";
 import {
@@ -313,6 +316,30 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       if (webRes.status === 200) {
         const body = await webRes.text();
         datasetCache.set("/api/cohort-deals", body);
+        res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+        res.end(body);
+      } else {
+        await sendWebResponse(webRes, res);
+      }
+      return;
+    }
+
+    if (pathname === "/api/leads-breakdown") {
+      if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
+      if (!isAnalyticsAuthenticated(req)) { jsonRes(res, 401, { ok: false, error: "unauthorized" }); return; }
+      const cacheKey = rawUrl;
+      const cached = datasetCache.get(cacheKey);
+      if (cached !== undefined) {
+        res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+        res.end(cached);
+        return;
+      }
+      const webReq = toWebRequest(req);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const webRes = await leadsBreakdownGet({ request: webReq, env: { DB: WEBSITEDB } as any });
+      if (webRes.status === 200) {
+        const body = await webRes.text();
+        datasetCache.set(cacheKey, body);
         res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
         res.end(body);
       } else {
