@@ -103,10 +103,7 @@ export async function onRequestGet(context: { request: Request; env: Env }): Pro
 
   const funnelPivotSql = funnels
     .map((f) => {
-      const matchExpr =
-        f === "(без воронки)"
-          ? `COALESCE(NULLIF(TRIM("Воронка"), ''), '(без воронки)') = '(без воронки)'`
-          : `COALESCE(NULLIF(TRIM("Воронка"), ''), '(без воронки)') = ${sqlQuote(f)}`;
+      const matchExpr = `funnel_name = ${sqlQuote(f)}`;
       return `SUM(CASE WHEN ${matchExpr} THEN 1 ELSE 0 END) AS ${sqlIdent("Лиды: " + f)}`;
     })
     .join(",\n       ");
@@ -118,7 +115,8 @@ export async function onRequestGet(context: { request: Request; env: Env }): Pro
         ${ll.qual} AS is_qual,
         ${ll.refusal} AS is_refusal,
         ${ll.invalid} AS is_invalid,
-        CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN COALESCE(revenue_amount, 0) ELSE 0 END AS rev
+        CASE WHEN COALESCE(is_revenue_variant3, 0) = 1 THEN COALESCE(revenue_amount, 0) ELSE 0 END AS rev,
+        COALESCE(NULLIF(TRIM("Воронка"), ''), '(без воронки)') AS funnel_name
       FROM mart_deals_enriched
       WHERE COALESCE(month, '') <> ''
         AND month >= ? AND month <= ?
