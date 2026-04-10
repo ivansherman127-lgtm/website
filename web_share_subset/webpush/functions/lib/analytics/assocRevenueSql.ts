@@ -3,6 +3,12 @@
  *
  * Extracted from materializeDatasets.ts to reduce file size.
  * Each builder accepts pre-computed SQL expression strings via AssocRevenueExprs.
+ *
+ * Associated-revenue definition:
+ *   A paid deal (is_revenue_variant3=1) is counted for a project if:
+ *   1. The contact appears in a Yandex-sourced deal for that project.
+ *   2. The deal's payment date (Дата оплаты) is strictly AFTER the contact's
+ *      earliest registration date for that project (creation date of the Yandex deal).
  */
 
 export type AssocRevenueExprs = {
@@ -15,6 +21,24 @@ export type AssocRevenueExprs = {
   /** SQL boolean condition validating a Yandex ad ID (11-digit, starts with "17"). */
   validSourceYandexAdExpr: string;
 };
+
+// ---------------------------------------------------------------------------
+// Shared date-normalization SQL snippets
+// ---------------------------------------------------------------------------
+
+/** Normalise src."Дата создания" → ISO YYYY-MM-DD (or '' if unrecognised). */
+const SRC_REG_DATE = `CASE
+           WHEN COALESCE(src."Дата создания", '') LIKE '____-__-__%' THEN SUBSTR(src."Дата создания", 1, 10)
+           WHEN COALESCE(src."Дата создания", '') LIKE '__.__.____%' THEN SUBSTR(src."Дата создания", 7, 4) || '-' || SUBSTR(src."Дата создания", 4, 2) || '-' || SUBSTR(src."Дата создания", 1, 2)
+           ELSE ''
+         END`;
+
+/** Normalise d."Дата оплаты" → ISO YYYY-MM-DD (or '' if unrecognised). */
+const DEAL_PAID_DATE = `CASE
+           WHEN COALESCE(d."Дата оплаты", '') LIKE '____-__-__%' THEN SUBSTR(d."Дата оплаты", 1, 10)
+           WHEN COALESCE(d."Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR(d."Дата оплаты", 7, 4) || '-' || SUBSTR(d."Дата оплаты", 4, 2) || '-' || SUBSTR(d."Дата оплаты", 1, 2)
+           ELSE ''
+         END`;
 
 /**
  * Builds the per-project associated-revenue QA SQL.
@@ -34,13 +58,13 @@ export function buildAssocQaSql(hasContactsUid: boolean, exprs: AssocRevenueExpr
          WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
          GROUP BY 1
        ),
-       -- All Yandex-sourced deals with their mapped project name.
-       -- contact_id is normalized (strip trailing ".0") so that IDs stored as floats
-       -- (e.g. "12345.0" from Excel/CSV import) match integer-formatted IDs in paid deals.
+       -- All Yandex-sourced deals with their mapped project name and registration date.
+       -- reg_date = creation date of this Yandex-sourced deal (ISO YYYY-MM-DD).
        yandex_source_deals AS (
          SELECT
            REPLACE(TRIM(COALESCE(src."Контакт: ID", '')), '.0', '') AS contact_id,
-           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name
+           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name,
+           ${SRC_REG_DATE} AS reg_date
          FROM mart_deals_enriched src
          LEFT JOIN yandex_map ym
            ON ym.ad_id = ${sourceYandexAdExpr}
@@ -53,40 +77,37 @@ export function buildAssocQaSql(hasContactsUid: boolean, exprs: AssocRevenueExpr
          GROUP BY project_name
        ),
        -- Step 1: For each Yandex deal's contact_id, find the canonical contact_uid.
-       --   Uses a LEFT JOIN so that contacts not in stg_contacts_uid still appear
-       --   (they fall back to using their contact_id directly as the uid).
+       --   Track earliest reg_date per project+uid (first touch across all linked contact_ids).
        campaign_uid_pool AS (
-         SELECT DISTINCT
+         SELECT
            ysd.project_name,
-           COALESCE(cu.contact_uid, ysd.contact_id) AS contact_uid
+           COALESCE(cu.contact_uid, ysd.contact_id) AS contact_uid,
+           MIN(CASE WHEN ysd.reg_date <> '' THEN ysd.reg_date ELSE NULL END) AS reg_date
          FROM yandex_source_deals ysd
          LEFT JOIN stg_contacts_uid cu ON cu.contact_id = ysd.contact_id
          WHERE ysd.contact_id <> ''
+         GROUP BY ysd.project_name, COALESCE(cu.contact_uid, ysd.contact_id)
        ),
        -- Step 2: Expand each contact_uid to ALL of its associated Bitrix contact_ids.
-       --   For UIDs found in stg_contacts_uid: cu2 returns every linked contact_id.
-       --   For IDs used as fallback UIDs: cu2 returns NULL, so we keep the original
-       --   contact_id (stored in contact_uid column) via COALESCE.
-       --   Normalize the resulting contact_id to handle float-formatted IDs.
        all_pool_contact_ids AS (
          SELECT DISTINCT
            cup.project_name,
-           REPLACE(TRIM(COALESCE(cu2.contact_id, cup.contact_uid)), '.0', '') AS contact_id
+           REPLACE(TRIM(COALESCE(cu2.contact_id, cup.contact_uid)), '.0', '') AS contact_id,
+           cup.reg_date
          FROM campaign_uid_pool cup
          LEFT JOIN stg_contacts_uid cu2 ON cu2.contact_uid = cup.contact_uid
          WHERE REPLACE(TRIM(COALESCE(cu2.contact_id, cup.contact_uid)), '.0', '') <> ''
        ),
-       -- Step 3: All variant3 Bitrix deals for the full contact pool.
-       -- Normalize mart_deals_enriched contact IDs on the join to handle float formats.
+       -- Step 3: Paid deals where payment date is AFTER the contact's registration date.
        contact_deals AS (
-         SELECT apc.project_name, d.ID AS deal_id, d.revenue_amount
+         SELECT apc.project_name, d."ID" AS deal_id, d.revenue_amount
          FROM all_pool_contact_ids apc
          JOIN mart_deals_enriched d
            ON REPLACE(TRIM(COALESCE(d."Контакт: ID", '')), '.0', '') = apc.contact_id
          WHERE d.is_revenue_variant3 = 1
+           AND apc.reg_date IS NOT NULL
+           AND (${DEAL_PAID_DATE}) > apc.reg_date
        ),
-       -- Pre-aggregate revenue per project to avoid Cartesian-product overcounting
-       -- when joining campaign_uid_pool (many contacts) with contact_deals (many deals).
        project_assoc_revenue AS (
          SELECT
            project_name,
@@ -118,13 +139,12 @@ export function buildAssocQaSql(hasContactsUid: boolean, exprs: AssocRevenueExpr
          WHERE REPLACE(TRIM(COALESCE("№ Объявления", '')), '.0', '') <> ''
          GROUP BY 1
        ),
-       -- All Yandex-sourced deals with their mapped project name.
-       -- contact_id is normalized (strip trailing ".0") so that IDs stored as floats
-       -- (e.g. "12345.0" from Excel/CSV import) match integer-formatted IDs in paid deals.
+       -- All Yandex-sourced deals with their mapped project name and registration date.
        yandex_source_deals AS (
          SELECT
            REPLACE(TRIM(COALESCE(src."Контакт: ID", '')), '.0', '') AS contact_id,
-           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name
+           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name,
+           ${SRC_REG_DATE} AS reg_date
          FROM mart_deals_enriched src
          LEFT JOIN yandex_map ym
            ON ym.ad_id = ${sourceYandexAdExpr}
@@ -136,23 +156,26 @@ export function buildAssocQaSql(hasContactsUid: boolean, exprs: AssocRevenueExpr
          FROM yandex_source_deals
          GROUP BY project_name
        ),
-       -- Step 1: Unique contact_ids per project from Yandex-sourced deals.
+       -- Step 1: Earliest registration date per project+contact.
        campaign_contacts AS (
-         SELECT DISTINCT project_name, contact_id
+         SELECT
+           project_name,
+           contact_id,
+           MIN(CASE WHEN reg_date <> '' THEN reg_date ELSE NULL END) AS reg_date
          FROM yandex_source_deals
          WHERE contact_id <> ''
+         GROUP BY project_name, contact_id
        ),
-       -- Step 2: All variant3 Bitrix deals for those contacts (entire Bitrix history).
-       -- Normalize mart_deals_enriched contact IDs on the join to handle float formats.
+       -- Step 2: Paid deals where payment date is AFTER the contact's registration date.
        contact_deals AS (
-         SELECT cc.project_name, d.ID AS deal_id, d.revenue_amount
+         SELECT cc.project_name, d."ID" AS deal_id, d.revenue_amount
          FROM campaign_contacts cc
          JOIN mart_deals_enriched d
            ON REPLACE(TRIM(COALESCE(d."Контакт: ID", '')), '.0', '') = cc.contact_id
          WHERE d.is_revenue_variant3 = 1
+           AND cc.reg_date IS NOT NULL
+           AND (${DEAL_PAID_DATE}) > cc.reg_date
        ),
-       -- Pre-aggregate revenue per project to avoid Cartesian-product overcounting
-       -- when joining campaign_contacts (many contacts) with contact_deals (many deals).
        project_assoc_revenue AS (
          SELECT
            project_name,
@@ -194,7 +217,8 @@ export function buildAssocQaByAdSql(hasContactsUid: boolean, exprs: AssocRevenue
          SELECT
            REPLACE(TRIM(COALESCE(src."Контакт: ID", '')), '.0', '') AS contact_id,
            ${sourceYandexAdExpr} AS ad_id,
-           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name
+           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name,
+           ${SRC_REG_DATE} AS reg_date
          FROM mart_deals_enriched src
          LEFT JOIN yandex_map ym
            ON ym.ad_id = ${sourceYandexAdExpr}
@@ -208,29 +232,34 @@ export function buildAssocQaByAdSql(hasContactsUid: boolean, exprs: AssocRevenue
          GROUP BY project_name, ad_id
        ),
        campaign_uid_pool AS (
-         SELECT DISTINCT
+         SELECT
            ysd.project_name,
            ysd.ad_id,
-           COALESCE(cu.contact_uid, ysd.contact_id) AS contact_uid
+           COALESCE(cu.contact_uid, ysd.contact_id) AS contact_uid,
+           MIN(CASE WHEN ysd.reg_date <> '' THEN ysd.reg_date ELSE NULL END) AS reg_date
          FROM yandex_source_deals ysd
          LEFT JOIN stg_contacts_uid cu ON cu.contact_id = ysd.contact_id
          WHERE ysd.contact_id <> ''
+         GROUP BY ysd.project_name, ysd.ad_id, COALESCE(cu.contact_uid, ysd.contact_id)
        ),
        all_pool_contact_ids AS (
          SELECT DISTINCT
            cup.project_name,
            cup.ad_id,
-           REPLACE(TRIM(COALESCE(cu2.contact_id, cup.contact_uid)), '.0', '') AS contact_id
+           REPLACE(TRIM(COALESCE(cu2.contact_id, cup.contact_uid)), '.0', '') AS contact_id,
+           cup.reg_date
          FROM campaign_uid_pool cup
          LEFT JOIN stg_contacts_uid cu2 ON cu2.contact_uid = cup.contact_uid
          WHERE REPLACE(TRIM(COALESCE(cu2.contact_id, cup.contact_uid)), '.0', '') <> ''
        ),
        contact_deals AS (
-         SELECT apc.project_name, apc.ad_id, d.ID AS deal_id, d.revenue_amount
+         SELECT apc.project_name, apc.ad_id, d."ID" AS deal_id, d.revenue_amount
          FROM all_pool_contact_ids apc
          JOIN mart_deals_enriched d
            ON REPLACE(TRIM(COALESCE(d."Контакт: ID", '')), '.0', '') = apc.contact_id
          WHERE d.is_revenue_variant3 = 1
+           AND apc.reg_date IS NOT NULL
+           AND (${DEAL_PAID_DATE}) > apc.reg_date
        ),
        ad_assoc_revenue AS (
          SELECT
@@ -270,7 +299,8 @@ export function buildAssocQaByAdSql(hasContactsUid: boolean, exprs: AssocRevenue
          SELECT
            REPLACE(TRIM(COALESCE(src."Контакт: ID", '')), '.0', '') AS contact_id,
            ${sourceYandexAdExpr} AS ad_id,
-           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name
+           COALESCE(${groupedMappedProjectExpr}, 'UNMAPPED') AS project_name,
+           ${SRC_REG_DATE} AS reg_date
          FROM mart_deals_enriched src
          LEFT JOIN yandex_map ym
            ON ym.ad_id = ${sourceYandexAdExpr}
@@ -284,16 +314,23 @@ export function buildAssocQaByAdSql(hasContactsUid: boolean, exprs: AssocRevenue
          GROUP BY project_name, ad_id
        ),
        campaign_contacts AS (
-         SELECT DISTINCT project_name, ad_id, contact_id
+         SELECT
+           project_name,
+           ad_id,
+           contact_id,
+           MIN(CASE WHEN reg_date <> '' THEN reg_date ELSE NULL END) AS reg_date
          FROM yandex_source_deals
          WHERE contact_id <> ''
+         GROUP BY project_name, ad_id, contact_id
        ),
        contact_deals AS (
-         SELECT cc.project_name, cc.ad_id, d.ID AS deal_id, d.revenue_amount
+         SELECT cc.project_name, cc.ad_id, d."ID" AS deal_id, d.revenue_amount
          FROM campaign_contacts cc
          JOIN mart_deals_enriched d
            ON REPLACE(TRIM(COALESCE(d."Контакт: ID", '')), '.0', '') = cc.contact_id
          WHERE d.is_revenue_variant3 = 1
+           AND cc.reg_date IS NOT NULL
+           AND (${DEAL_PAID_DATE}) > cc.reg_date
        ),
        ad_assoc_revenue AS (
          SELECT

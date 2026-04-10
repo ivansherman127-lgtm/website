@@ -379,6 +379,23 @@ export async function onRequestGet(context: {
   const dimColumns = specs.map((_, i) => `d${i + 1}`).join(", ");
   const dimColumnsQualified = specs.map((_, i) => `s.d${i + 1}`).join(", ");
   const emailSourceExpr = "LOWER(TRIM(COALESCE(\"UTM Source\", ''))) = 'sendsay'";
+  // paid_date on pd alias — used in paid_by_contact CTE
+  const paidDateIsoPd = `CASE
+    WHEN COALESCE(pd."Дата оплаты", '') LIKE '____-__-__%' THEN SUBSTR(pd."Дата оплаты", 1, 10)
+    WHEN COALESCE(pd."Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR(pd."Дата оплаты", 7, 4) || '-' || SUBSTR(pd."Дата оплаты", 4, 2) || '-' || SUBSTR(pd."Дата оплаты", 1, 2)
+    ELSE ''
+  END`;
+  const payMonthExprPd = `CASE
+    WHEN COALESCE(pd."Дата оплаты", '') LIKE '____-__%' THEN SUBSTR(pd."Дата оплаты", 1, 7)
+    WHEN COALESCE(pd."Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR(pd."Дата оплаты", 7, 4) || '-' || SUBSTR(pd."Дата оплаты", 4, 2)
+    ELSE ''
+  END`;
+  // reg_date — normalised ISO date from source_scoped."Дата создания"
+  const regDateIsoSc = `MIN(CASE
+    WHEN COALESCE(sc."Дата создания", '') LIKE '____-__-__%' THEN SUBSTR(sc."Дата создания", 1, 10)
+    WHEN COALESCE(sc."Дата создания", '') LIKE '__.__.____%' THEN SUBSTR(sc."Дата создания", 7, 4) || '-' || SUBSTR(sc."Дата создания", 4, 2) || '-' || SUBSTR(sc."Дата создания", 1, 2)
+    ELSE NULL
+  END)`;
   const payMonthExprSource = `CASE
     WHEN COALESCE(src."Дата оплаты", '') LIKE '____-__%' THEN SUBSTR(src."Дата оплаты", 1, 7)
     WHEN COALESCE(src."Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR(src."Дата оплаты", 7, 4) || '-' || SUBSTR(src."Дата оплаты", 4, 2)
@@ -610,51 +627,73 @@ export async function onRequestGet(context: {
     const sourceContactExpr = `REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '')`;
     const contactPoolCteSql = hasContactsUid
       ? `contact_pool AS (
-        SELECT DISTINCT
+        SELECT
           ${specs.map((_, i) => `sc.d${i + 1}`).join(",\n          ")},
-          COALESCE(cu.contact_uid, sc.contact_id) AS contact_key
+          COALESCE(cu.contact_uid, sc.contact_id) AS contact_key,
+          ${regDateIsoSc} AS reg_date
         FROM source_scoped sc
         LEFT JOIN stg_contacts_uid cu ON cu.contact_id = sc.contact_id
         WHERE sc.contact_id <> ''
+        GROUP BY ${specs.map((_, i) => `sc.d${i + 1}`).join(",\n          ")}, COALESCE(cu.contact_uid, sc.contact_id)
       )`
       : `contact_pool AS (
-        SELECT DISTINCT
+        SELECT
           ${dimColumns},
-          contact_id AS contact_key
-        FROM source_scoped
+          contact_id AS contact_key,
+          ${regDateIsoSc} AS reg_date
+        FROM source_scoped sc
         WHERE contact_id <> ''
+        GROUP BY ${dimColumns}, contact_id
       )`;
 
+    const dimColsCp = specs.map((_, i) => `cp.d${i + 1}`).join(",\n        ");
+    const dimColsCe = specs.map((_, i) => `ce.d${i + 1}`).join(",\n        ");
     const paidByContactCteSql = hasContactsUid
-      ? `paid_by_contact AS (
+      // uid variant: expand uid → all contact_ids via stg_contacts_uid, then filter paid deals by date
+      ? `contact_expanded AS (
+        SELECT DISTINCT
+          ${dimColsCp},
+          cp.contact_key,
+          cp.reg_date,
+          REPLACE(TRIM(COALESCE(cu2.contact_id, cp.contact_key)), '.0', '') AS leaf_contact_id
+        FROM contact_pool cp
+        LEFT JOIN stg_contacts_uid cu2 ON cu2.contact_uid = cp.contact_key
+        WHERE REPLACE(TRIM(COALESCE(cu2.contact_id, cp.contact_key)), '.0', '') <> ''
+      ),
+      paid_by_contact AS (
         SELECT
-          COALESCE(cu.contact_uid, pd.contact_id) AS contact_key,
-          COUNT(*) AS paid_deals,
+          ${dimColsCe},
+          ce.contact_key,
+          COUNT(DISTINCT pd."ID") AS paid_deals,
           COALESCE(SUM(pd.revenue_amount), 0) AS revenue
-        FROM (
-          SELECT
-            REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id,
-            COALESCE(revenue_amount, 0) AS revenue_amount,
-            ${payMonthExprPlain} AS pay_month
-          FROM mart_deals_enriched
-          WHERE is_revenue_variant3 = 1
-        ) pd
-        LEFT JOIN stg_contacts_uid cu ON cu.contact_id = pd.contact_id
-        WHERE pd.contact_id <> ''${paidRevenueDateWhereSql}
-        GROUP BY COALESCE(cu.contact_uid, pd.contact_id)
+        FROM contact_expanded ce
+        JOIN mart_deals_enriched pd
+          ON REPLACE(TRIM(COALESCE(pd."Контакт: ID", '')), '.0', '') = ce.leaf_contact_id
+        WHERE pd.is_revenue_variant3 = 1
+          AND ce.reg_date IS NOT NULL
+          AND (${paidDateIsoPd}) > ce.reg_date
+          ${pnlMode === "pnl" ? `AND (${payMonthExprPd}) <> ''` : ""}
+          ${pnlMode === "pnl" && fromMonth ? `AND (${payMonthExprPd}) >= ${sqlQuote(fromMonth)}` : ""}
+          ${pnlMode === "pnl" && toMonth ? `AND (${payMonthExprPd}) <= ${sqlQuote(toMonth)}` : ""}
+        GROUP BY ${dimColsCe}, ce.contact_key
       )`
+      // no-uid variant: contact_pool.contact_key IS the contact_id, join directly
       : `paid_by_contact AS (
         SELECT
-          REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_key,
-          COUNT(*) AS paid_deals,
-          COALESCE(SUM(revenue_amount), 0) AS revenue
-        FROM mart_deals_enriched
-        WHERE is_revenue_variant3 = 1
-          ${pnlMode === "pnl" ? `AND ${payMonthExprPlain} <> ''` : ""}
-          ${pnlMode === "pnl" && fromMonth ? `AND ${payMonthExprPlain} >= ${sqlQuote(fromMonth)}` : ""}
-          ${pnlMode === "pnl" && toMonth ? `AND ${payMonthExprPlain} <= ${sqlQuote(toMonth)}` : ""}
-          AND REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') <> ''
-        GROUP BY REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '')
+          ${dimColsCp},
+          cp.contact_key,
+          COUNT(DISTINCT pd."ID") AS paid_deals,
+          COALESCE(SUM(pd.revenue_amount), 0) AS revenue
+        FROM contact_pool cp
+        JOIN mart_deals_enriched pd
+          ON REPLACE(TRIM(COALESCE(pd."Контакт: ID", '')), '.0', '') = cp.contact_key
+        WHERE pd.is_revenue_variant3 = 1
+          AND cp.reg_date IS NOT NULL
+          AND (${paidDateIsoPd}) > cp.reg_date
+          ${pnlMode === "pnl" ? `AND (${payMonthExprPd}) <> ''` : ""}
+          ${pnlMode === "pnl" && fromMonth ? `AND (${payMonthExprPd}) >= ${sqlQuote(fromMonth)}` : ""}
+          ${pnlMode === "pnl" && toMonth ? `AND (${payMonthExprPd}) <= ${sqlQuote(toMonth)}` : ""}
+        GROUP BY ${dimColsCp}, cp.contact_key
       )`;
 
     const sql = `
@@ -695,6 +734,7 @@ export async function onRequestGet(context: {
         ON ${specs.map((_, i) => `cp.d${i + 1} = s.d${i + 1}`).join(" AND ")}
       LEFT JOIN paid_by_contact p
         ON p.contact_key = cp.contact_key
+        AND ${specs.map((_, i) => `p.d${i + 1} = cp.d${i + 1}`).join(" AND ")}
       ${yandexSpendJoinSql}
       GROUP BY ${dimColumnsQualified}, s.deals_total, s.contacts_in_pool
       ORDER BY revenue DESC, ${dimColumnsQualified}
@@ -727,22 +767,30 @@ export async function onRequestGet(context: {
         source_scoped AS (
           SELECT
             event_group AS parent_event,
-            ${sourceContactExpr} AS contact_id
+            ${sourceContactExpr} AS contact_id,
+            CASE
+              WHEN COALESCE("Дата создания", '') LIKE '____-__-__%' THEN SUBSTR("Дата создания", 1, 10)
+              WHEN COALESCE("Дата создания", '') LIKE '__.__.____%' THEN SUBSTR("Дата создания", 7, 4) || '-' || SUBSTR("Дата создания", 4, 2) || '-' || SUBSTR("Дата создания", 1, 2)
+              ELSE NULL
+            END AS created_date
           FROM source_deals
           ${whereSql}
         ),
         contact_pool AS (
-          SELECT DISTINCT
+          SELECT
             sc.parent_event,
-            ${hasContactsUid ? `COALESCE(cu.contact_uid, sc.contact_id)` : `sc.contact_id`} AS contact_key
+            ${hasContactsUid ? `COALESCE(cu.contact_uid, sc.contact_id)` : `sc.contact_id`} AS contact_key,
+            MIN(sc.created_date) AS reg_date
           FROM source_scoped sc
           ${hasContactsUid ? `LEFT JOIN stg_contacts_uid cu ON cu.contact_id = sc.contact_id` : ``}
           WHERE sc.contact_id <> ''
+          GROUP BY sc.parent_event, ${hasContactsUid ? `COALESCE(cu.contact_uid, sc.contact_id)` : `sc.contact_id`}
         ),
         event_paid_deals AS (
           SELECT
             ${hasContactsUid ? `COALESCE(cu.contact_uid, pd.contact_id)` : `pd.contact_id`} AS contact_key,
             pd.revenue,
+            pd.paid_date_iso,
             CASE
               WHEN COALESCE(pd.event_class, '') <> '' AND COALESCE(pd.event_class, '') <> 'Другое' THEN pd.event_class
               WHEN LOWER(TRIM(COALESCE(pd.utm_source, ''))) LIKE 'y%' AND LOWER(TRIM(COALESCE(pd.utm_source, ''))) <> 'yah' THEN 'Yandex'
@@ -754,6 +802,11 @@ export async function onRequestGet(context: {
               REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id,
               COALESCE(revenue_amount, 0) AS revenue,
               ${payMonthExprPlain} AS pay_month,
+              CASE
+                WHEN COALESCE("Дата оплаты", '') LIKE '____-__-__%' THEN SUBSTR("Дата оплаты", 1, 10)
+                WHEN COALESCE("Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR("Дата оплаты", 7, 4) || '-' || SUBSTR("Дата оплаты", 4, 2) || '-' || SUBSTR("Дата оплаты", 1, 2)
+                ELSE ''
+              END AS paid_date_iso,
               COALESCE(event_class, '') AS event_class,
               COALESCE("UTM Source", '') AS utm_source
             FROM mart_deals_enriched
@@ -773,7 +826,10 @@ export async function onRequestGet(context: {
             COUNT(DISTINCT cp.contact_key) AS contacts_in_pool,
             COALESCE(SUM(epd.revenue), 0) AS revenue
           FROM contact_pool cp
-          INNER JOIN event_paid_deals epd ON epd.contact_key = cp.contact_key
+          INNER JOIN event_paid_deals epd
+            ON epd.contact_key = cp.contact_key
+            AND cp.reg_date IS NOT NULL
+            AND epd.paid_date_iso > cp.reg_date
           GROUP BY cp.parent_event, epd.constituent_event
         )
         SELECT
@@ -879,7 +935,12 @@ export async function onRequestGet(context: {
           SELECT
             yandex_campaign_group AS parent_campaign,
             yandex_ad_group AS ad_label,
-            ${sourceContactExpr} AS contact_id
+            ${sourceContactExpr} AS contact_id,
+            CASE
+              WHEN COALESCE("Дата создания", '') LIKE '____-__-__%' THEN SUBSTR("Дата создания", 1, 10)
+              WHEN COALESCE("Дата создания", '') LIKE '__.__.____%' THEN SUBSTR("Дата создания", 7, 4) || '-' || SUBSTR("Дата создания", 4, 2) || '-' || SUBSTR("Дата создания", 1, 2)
+              ELSE NULL
+            END AS created_date
           FROM source_deals
           ${adBreakdownWhereSql}
         ),
@@ -893,30 +954,49 @@ export async function onRequestGet(context: {
           GROUP BY parent_campaign, ad_label
         ),
         contact_pool AS (
-          SELECT DISTINCT
+          SELECT
             sc.parent_campaign,
             sc.ad_label,
-            ${hasContactsUid ? `COALESCE(cu.contact_uid, sc.contact_id)` : `sc.contact_id`} AS contact_key
+            ${hasContactsUid ? `COALESCE(cu.contact_uid, sc.contact_id)` : `sc.contact_id`} AS contact_key,
+            MIN(sc.created_date) AS reg_date
           FROM source_scoped sc
           ${hasContactsUid ? `LEFT JOIN stg_contacts_uid cu ON cu.contact_id = sc.contact_id` : ``}
           WHERE sc.contact_id <> ''
+          GROUP BY sc.parent_campaign, sc.ad_label, ${hasContactsUid ? `COALESCE(cu.contact_uid, sc.contact_id)` : `sc.contact_id`}
+        ),
+        ${hasContactsUid ? `contact_expanded AS (
+          SELECT DISTINCT
+            cp.parent_campaign, cp.ad_label, cp.contact_key, cp.reg_date,
+            REPLACE(TRIM(COALESCE(cu2.contact_id, cp.contact_key)), '.0', '') AS leaf_contact_id
+          FROM contact_pool cp
+          LEFT JOIN stg_contacts_uid cu2 ON cu2.contact_uid = cp.contact_key
+          WHERE REPLACE(TRIM(COALESCE(cu2.contact_id, cp.contact_key)), '.0', '') <> ''
         ),
         paid_by_contact AS (
           SELECT
-            ${hasContactsUid ? `COALESCE(cu.contact_uid, pd.contact_id)` : `pd.contact_id`} AS contact_key,
-            COUNT(*) AS paid_deals,
+            ce.parent_campaign, ce.ad_label, ce.contact_key,
+            COUNT(DISTINCT pd."ID") AS paid_deals,
             COALESCE(SUM(pd.revenue_amount), 0) AS revenue
-          FROM (
-            SELECT
-              REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id,
-              COALESCE(revenue_amount, 0) AS revenue_amount
-            FROM mart_deals_enriched
-            WHERE is_revenue_variant3 = 1
-          ) pd
-          ${hasContactsUid ? `LEFT JOIN stg_contacts_uid cu ON cu.contact_id = pd.contact_id` : ``}
-          WHERE pd.contact_id <> ''
-          GROUP BY ${hasContactsUid ? `COALESCE(cu.contact_uid, pd.contact_id)` : `pd.contact_id`}
-        )
+          FROM contact_expanded ce
+          JOIN mart_deals_enriched pd
+            ON REPLACE(TRIM(COALESCE(pd."Контакт: ID", '')), '.0', '') = ce.leaf_contact_id
+          WHERE pd.is_revenue_variant3 = 1
+            AND ce.reg_date IS NOT NULL
+            AND (${paidDateIsoPd}) > ce.reg_date
+          GROUP BY ce.parent_campaign, ce.ad_label, ce.contact_key
+        )` : `paid_by_contact AS (
+          SELECT
+            cp.parent_campaign, cp.ad_label, cp.contact_key,
+            COUNT(DISTINCT pd."ID") AS paid_deals,
+            COALESCE(SUM(pd.revenue_amount), 0) AS revenue
+          FROM contact_pool cp
+          JOIN mart_deals_enriched pd
+            ON REPLACE(TRIM(COALESCE(pd."Контакт: ID", '')), '.0', '') = cp.contact_key
+          WHERE pd.is_revenue_variant3 = 1
+            AND cp.reg_date IS NOT NULL
+            AND (${paidDateIsoPd}) > cp.reg_date
+          GROUP BY cp.parent_campaign, cp.ad_label, cp.contact_key
+        )`}
         SELECT
           c.parent_campaign,
           c.ad_label,
@@ -935,6 +1015,8 @@ export async function onRequestGet(context: {
          AND cp.ad_label = c.ad_label
         LEFT JOIN paid_by_contact p
           ON p.contact_key = cp.contact_key
+         AND p.parent_campaign = cp.parent_campaign
+         AND p.ad_label = cp.ad_label
         GROUP BY c.parent_campaign, c.ad_label, s.deals_total, s.contacts_in_pool
         ORDER BY c.parent_campaign, revenue DESC, c.ad_label
       `;

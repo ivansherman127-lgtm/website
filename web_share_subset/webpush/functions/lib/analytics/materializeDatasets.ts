@@ -794,15 +794,23 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     ).all<RR>(),
     db.prepare(
       `WITH email_pools AS (
-         SELECT DISTINCT
+         -- Earliest registration date per utm_campaign+contact (Sendsay deal creation date).
+         SELECT
            lower(trim(COALESCE("UTM Campaign", ''))) AS utm_key,
-           REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id
+           REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') AS contact_id,
+           MIN(CASE
+             WHEN COALESCE("Дата создания", '') LIKE '____-__-__%' THEN SUBSTR("Дата создания", 1, 10)
+             WHEN COALESCE("Дата создания", '') LIKE '__.__.____%' THEN SUBSTR("Дата создания", 7, 4) || '-' || SUBSTR("Дата создания", 4, 2) || '-' || SUBSTR("Дата создания", 1, 2)
+             ELSE NULL
+           END) AS reg_date
          FROM mart_deals_enriched
          WHERE LOWER(TRIM(COALESCE("UTM Source", ''))) = 'sendsay'
            AND lower(trim(COALESCE("UTM Campaign", ''))) <> ''
            AND REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') <> ''
+         GROUP BY 1, 2
        ),
        assoc_rev AS (
+         -- Only count paid deals whose payment date is AFTER the contact's registration date.
          SELECT
            ep.utm_key,
            COUNT(DISTINCT rev."ID") AS assoc_deals,
@@ -811,6 +819,12 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          JOIN mart_deals_enriched rev
            ON REPLACE(TRIM(COALESCE(rev."Контакт: ID", '')), '.0', '') = ep.contact_id
          WHERE rev.is_revenue_variant3 = 1
+           AND ep.reg_date IS NOT NULL
+           AND (CASE
+             WHEN COALESCE(rev."Дата оплаты", '') LIKE '____-__-__%' THEN SUBSTR(rev."Дата оплаты", 1, 10)
+             WHEN COALESCE(rev."Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR(rev."Дата оплаты", 7, 4) || '-' || SUBSTR(rev."Дата оплаты", 4, 2) || '-' || SUBSTR(rev."Дата оплаты", 1, 2)
+             ELSE ''
+           END) > ep.reg_date
          GROUP BY ep.utm_key
        ),
        deals_by_campaign AS (
