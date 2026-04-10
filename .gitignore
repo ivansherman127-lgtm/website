@@ -46,3 +46,8 @@ keys.json
 .yandex_session.json
 .yandex_last_sync
 .yandex_browser_profile/
+website.db-shm
+website.db-shm
+website.db-shm
+website.db-wal
+*.db-wal
