@@ -14,7 +14,8 @@
     "worker:deploy": "npm run build && wrangler deploy",
     "start:server": "node --import tsx/esm server/index.ts",
     "dev:datepicker": "vite --config vite.config.datepicker.ts",
-    "build:datepicker": "vite build --config vite.config.datepicker.ts"
+    "build:datepicker": "vite build --config vite.config.datepicker.ts",
+    "refresh:analytics-utm": "bash ./scripts/refresh_analytics_utm.sh"
   },
   "dependencies": {
     "@radix-ui/react-icons": "^1.3.2",

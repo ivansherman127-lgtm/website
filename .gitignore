@@ -34,6 +34,10 @@ __pycache__/
 web_share_subset/webpush/public/data/attacking_january_associative_deals_base.json
 # Local SQLite DB used for ad-hoc testing inside webpush
 /website.db
+/website.db-shm
+/website.db-wal
+website.db-shm
+website.db-wal
 web_share_subset/webpush/deved.db
 deved.db
 *.csv
