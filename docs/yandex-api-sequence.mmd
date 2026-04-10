@@ -1,0 +1,42 @@
+sequenceDiagram
+    autonumber
+    participant SCH as Scheduler (every 180 min)
+    participant SYNC as yandex-sync worker
+    participant OAUTH as Yandex OAuth
+    participant REP as Direct API Reports
+    participant ADS as Direct API Ads.get
+    participant DB as SQLite (website.db)
+    participant REB as Analytics Rebuild API
+    participant UI as Analytics UI/API
+
+    Note over SYNC,OAUTH: One-time token setup
+    SYNC->>OAUTH: Exchange auth code for access_token
+    OAUTH-->>SYNC: access_token (Bearer)
+    SYNC->>DB: Save token metadata (env/config)
+
+    loop Periodic sync (single process, sequential calls)
+        SCH->>SYNC: Trigger run
+        SYNC->>REP: POST /json/v5/reports (date range, ad stats)
+        alt Report queued/in progress
+            REP-->>SYNC: 201/202 (processing)
+            SYNC->>REP: Poll report status (with delay)
+        end
+        REP-->>SYNC: 200 TSV report
+        SYNC->>DB: Upsert stg_yandex_stats
+
+        opt Metadata enrichment
+            SYNC->>ADS: POST /json/v5/ads (Ads.get by ids)
+            ADS-->>SYNC: Ad metadata payload
+            SYNC->>DB: Upsert ad metadata tables
+        end
+
+        SYNC->>DB: Build/update mart tables
+        SYNC->>REB: POST /api/analytics/rebuild
+        REB-->>SYNC: rebuild status
+    end
+
+    UI->>DB: Read prepared marts/datasets
+    DB-->>UI: Aggregated analytics data
+
+    Note over SYNC,REP: Error handling: retry/backoff on 429/5xx, single-threaded calls
+    Note over SYNC,DB: Incremental mode preferred after first successful full sync

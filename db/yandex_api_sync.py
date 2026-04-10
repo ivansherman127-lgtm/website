@@ -50,8 +50,8 @@ DIRECT_REPORTS_URL = "https://api.direct.yandex.com/json/v5/reports"
 DIRECT_ADS_URL     = "https://api.direct.yandex.com/json/v5/ads"
 TOKEN_URL          = "https://oauth.yandex.ru/token"
 
-OAUTH_CLIENT_ID     = "c0519acddcac4f1797a5414762522492"
-OAUTH_CLIENT_SECRET = "57d8bde7268d49518e635dd087413204"
+OAUTH_CLIENT_ID = os.environ.get("YANDEX_CLIENT_ID", "c0519acddcac4f1797a5414762522492").strip()
+OAUTH_CLIENT_SECRET = os.environ.get("YANDEX_CLIENT_SECRET", "57d8bde7268d49518e635dd087413204").strip()
 
 # Optional: agency/representative account login.
 # Set YANDEX_CLIENT_LOGIN to the advertiser's Yandex login when the token
@@ -100,6 +100,10 @@ def _days_ago(n: int) -> str:
 
 def exchange_code_for_token(code: str) -> str:
     """Exchange an OAuth authorisation code for an access token."""
+    if not OAUTH_CLIENT_ID or not OAUTH_CLIENT_SECRET:
+        raise RuntimeError(
+            "YANDEX_CLIENT_ID / YANDEX_CLIENT_SECRET are required for token exchange"
+        )
     body = urllib.parse.urlencode({
         "grant_type":    "authorization_code",
         "code":          code,
@@ -885,7 +889,7 @@ def main() -> None:
             "First-time setup:\n"
             "  1. Open in browser:\n"
             "     https://oauth.yandex.ru/authorize"
-            "?response_type=code&client_id=c0519acddcac4f1797a5414762522492\n"
+            f"?response_type=code&client_id={OAUTH_CLIENT_ID}\n"
             "  2. Authorise and copy the verification code.\n"
             "  3. python -m db.yandex_api_sync --get-token <CODE>",
             file=sys.stderr,
