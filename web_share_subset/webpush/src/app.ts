@@ -2,6 +2,7 @@ import "./style.css";
 import Chart from "chart.js/auto";
 import { dataUrl, staticUrl } from "./data-source";
 import { mapYandexProjectGroup } from "./yandexProjectGroups";
+import { getDashboardSummaryKpiPairs } from "../shared/dashboardSummaryKpi";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const columnAliasesByView = new Map<string, Record<string, string>>();
 
@@ -538,6 +539,8 @@ type ViewKey =
   | "leads_by_medium"
   | "contacts_unique"
   | "year_total"
+  | "report_q1_2026"
+  | "report_last_full_day"
   | "email_ops_summary"
   | "qa_dedup_check"
   | "qa_raw_vs_dedup"
@@ -573,6 +576,8 @@ const VIEW_META: Record<ViewKey, ViewMeta> = {
   leads_by_medium: { tab: "leads", label: "По UTM Medium", path: "/api/leads-breakdown?dim=medium", rowsLabel: "Каналов", title: "Отчеты по источникам" },
   contacts_unique: { tab: "contacts", label: "Уникальные контакты", path: "data/bitrix_contacts_uid.json", rowsLabel: "Контактов", title: "Уникальные контакты" },
   year_total: { tab: "year", label: "Итоги по годам", path: "data/bitrix_month_total_full.json", rowsLabel: "Лет", title: "Отчет за год" },
+  report_q1_2026: { tab: "months", label: "Q1 2026 (сводка)", path: "data/reports/q1_2026_dashboard_summary.json", rowsLabel: "Строк", title: "Отчеты по месяцам" },
+  report_last_full_day: { tab: "months", label: "Последний полный день", path: "data/reports/last_full_day_dashboard_summary.json", rowsLabel: "Строк", title: "Отчеты по месяцам" },
   qa_dedup_check: { tab: "qa", label: "Дедупликация: итог", path: "data/qa/dedup_check.json", rowsLabel: "Строк", title: "Контроль качества" },
   qa_raw_vs_dedup: { tab: "qa", label: "Raw vs Dedup: дельта", path: "data/qa/yandex_raw_vs_dedup_delta.json", rowsLabel: "Строк", title: "Контроль качества" },
   qa_unmatched: { tab: "qa", label: "Yandex: несопоставленные кампании", path: "data/qa/yandex_unmatched_to_bitrix.json", rowsLabel: "Строк", title: "Контроль качества" },
@@ -582,7 +587,7 @@ const VIEW_META: Record<ViewKey, ViewMeta> = {
   qa_share_global: { tab: "qa", label: "Доля прочих (глобально)", path: "data/qa/other_share_global.json", rowsLabel: "Строк", title: "Контроль качества" },
 };
 const ALL_VIEWS = Object.keys(VIEW_META) as ViewKey[];
-type MenuMode = "dashboard" | "reports" | "charts";
+type MenuMode = "dashboard" | "reports";
 
 const PNL_PATH_BY_VIEW: Partial<Record<ViewKey, string>> = {
   managers_sales_month: "data/manager_sales_by_month_pnl.json",
@@ -601,7 +606,7 @@ function readUrlState(): { menu: MenuMode; view?: ViewKey } {
   const q = new URLSearchParams(window.location.search);
   const m = (q.get("m") || "").trim().toLowerCase();
   const v = (q.get("v") || "").trim();
-  const menu: MenuMode = m === "reports" ? "reports" : m === "charts" ? "charts" : "dashboard";
+  const menu: MenuMode = m === "reports" ? "reports" : "dashboard";
   return { menu, view: isViewKey(v) ? v : undefined };
 }
 
@@ -649,7 +654,6 @@ async function openTableView(view: ViewKey, dealsIndex: DealsIndex): Promise<voi
       <aside class="side-menu">
         <button class="side-btn" data-menu="dashboard">Главная</button>
         <button class="side-btn active" data-menu="reports">Детальные отчеты</button>
-        <button class="side-btn" data-menu="charts">Графики</button>
       </aside>
       <main class="main-content">
         <div class="err">Ошибка загрузки данных: ${escapeHtml(String(e))}</div>
@@ -660,7 +664,6 @@ async function openTableView(view: ViewKey, dealsIndex: DealsIndex): Promise<voi
         const m = btn.getAttribute("data-menu");
         if (m === "dashboard") await openMenu("dashboard", dealsIndex, view);
         else if (m === "reports") await openMenu("reports", dealsIndex, view);
-        else if (m === "charts") await openMenu("charts", dealsIndex, view);
       };
     });
     return;
@@ -671,10 +674,6 @@ async function openTableView(view: ViewKey, dealsIndex: DealsIndex): Promise<voi
 async function openMenu(menu: MenuMode, dealsIndex: DealsIndex, currentView?: ViewKey): Promise<void> {
   if (menu === "dashboard") {
     await renderDashboard(dealsIndex);
-    return;
-  }
-  if (menu === "charts") {
-    await renderCharts(dealsIndex);
     return;
   }
   await openTableView(currentView && currentView ? currentView : "months_total", dealsIndex);
@@ -984,6 +983,7 @@ function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown
   const spend = m.spend > 0 ? m.spend : num(raw["spend"]);
   const clicks = m.clicks > 0 ? m.clicks : num(raw["clicks"]);
   const assocRevenue = Math.max(num(raw["assoc_revenue"]), revenue);
+  const clicksPerUniquePaid = paid > 0 ? clicks / paid : 0;
   return {
     "Yandex кампания": project,
     "Yandex объявление": "-",
@@ -1002,6 +1002,7 @@ function buildMediaYandexProjectRow(project: string, raw: Record<string, unknown
     "Расход, ₽": spend,
     "Оплаты": paid,
     "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
+    "Кликов на 1 уник. оплату": clicksPerUniquePaid,
     "Выручка": revenue,
     "Прибыль": revenue - spend,
     "Ассоц. Выручка": assocRevenue,
@@ -1020,7 +1021,9 @@ function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): R
   const paid = num(raw["payments_count"] ?? raw["paid_deals_raw"]);
   const revenue = num(raw["revenue_raw"]);
   const spend = num(raw["spend"]);
+  const clicks = num(raw["clicks"]);
   const assocRevenue = Math.max(num(raw["assoc_revenue"]), revenue);
+  const clicksPerUniquePaid = paid > 0 ? clicks / paid : 0;
   return {
     "Yandex кампания": project,
     "Yandex объявление": adId,
@@ -1035,10 +1038,11 @@ function buildMediaYandexAdRow(project: string, raw: Record<string, unknown>): R
     "Неизвестно": unknown,
     "Отказы": refusal,
     "Конверсия в Отказ": leads > 0 ? refusal / leads : 0,
-    "Клики": num(raw["clicks"]),
+    "Клики": clicks,
     "Расход, ₽": spend,
     "Оплаты": paid,
     "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
+    "Кликов на 1 уник. оплату": clicksPerUniquePaid,
     "Выручка": revenue,
     "Прибыль": revenue - spend,
     "Ассоц. Выручка": assocRevenue,
@@ -1184,6 +1188,14 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
       delete out["Лиды с некорр. email"];
       delete out["Лидов с некорр. email"];
       delete out["Доля некорр. email (лиды)"];
+      delete out["Leads"];
+      delete out["Qual"];
+      delete out["Unqual"];
+      delete out["Refusal"];
+      const assocUniquePaid = num(out["Ассоц. Сделок"]);
+      out["Уник. оплат (ассоц.)"] = assocUniquePaid;
+      out["Лидов на 1 уник. оплату (ассоц.)"] = assocUniquePaid > 0 ? num(out["Лиды"]) / assocUniquePaid : 0;
+      out["Открытий на 1 уник. оплату (ассоц.)"] = assocUniquePaid > 0 ? num(out["Открытий"]) / assocUniquePaid : 0;
       return out;
     });
   }
@@ -1207,6 +1219,7 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
       const paid = projectRows.reduce((s, r) => s + num(r["Оплаты"]), 0);
       const revenue = projectRows.reduce((s, r) => s + num(r["Выручка"]), 0);
       const assocRevenue = projectRows.reduce((s, r) => s + num(r["Ассоц. Выручка"]), 0);
+      const clicksPerUniquePaid = paid > 0 ? clicks / paid : 0;
       return {
         "Yandex кампания": "Итого",
         "Yandex объявление": "",
@@ -1225,6 +1238,7 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
         "Расход, ₽": spend,
         "Оплаты": paid,
         "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
+        "Кликов на 1 уник. оплату": clicksPerUniquePaid,
         "Выручка": revenue,
         "Прибыль": revenue - spend,
         "Ассоц. Выручка": assocRevenue,
@@ -1317,6 +1331,7 @@ function toViewRows(view: ViewKey, rows: Record<string, unknown>[]): Record<stri
         "Расход, ₽": spend,
         "Оплаты": paid,
         "Конверсия в Оплаты": leads > 0 ? paid / leads : 0,
+        "Кликов на 1 уник. оплату": paid > 0 ? m.clicks / paid : 0,
         "Выручка": revenue,
         "Прибыль": profit,
         "Ассоц. Выручка": assocRevenue,
@@ -1529,6 +1544,26 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     const effectiveDateCol = (pnlMode === "pnl" && allCols.includes("__pay_month")) ? "__pay_month" : dateWindowCol;
     if (hasDateWindowControl && effectiveDateCol && !isManagerCourseView) {
       data = filterRowsByDateRange(data, effectiveDateCol, dateFrom, dateTo);
+    }
+    if ((view === "media_yandex_month" || view === "media_yandex") && data.length === 0 && viewRows.length > 0) {
+      // Keep Yandex blocks visible when date controls filter out the only available month.
+      data = [...viewRows];
+    }
+    if (view === "media_yandex_month" && data.length > 0 && viewRows.length > 0) {
+      const latestAll = viewRows
+        .map((r) => String(r["month"] ?? "").trim())
+        .filter((m) => /^\d{4}-\d{2}$/.test(m))
+        .sort()
+        .slice(-1)[0] || "";
+      const latestShown = data
+        .map((r) => String(r["month"] ?? "").trim())
+        .filter((m) => /^\d{4}-\d{2}$/.test(m))
+        .sort()
+        .slice(-1)[0] || "";
+      if (latestAll && latestShown && latestShown < latestAll) {
+        // If a stale date window hides the newest month, fall back to full month list.
+        data = [...viewRows];
+      }
     }
 
     if (view === "media_yandex" && hasDateWindowControl) {
@@ -2294,7 +2329,6 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     <aside class="side-menu">
       <button class="side-btn" data-menu="dashboard">Главная</button>
       <button class="side-btn active" data-menu="reports">Детальные отчеты</button>
-      <button class="side-btn" data-menu="charts">Графики</button>
     </aside>
     <main class="main-content">
     <header><h1>${escapeHtml(meta.title)}</h1><p class="sub">${escapeHtml(resolvedPath)} · ${viewRows.length} строк</p></header>
@@ -2328,6 +2362,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
       }
       <button class="copy-table-btn">Скопировать таблицу</button>
       <button class="download-table-btn">Загрузить таблицу</button>
+      <button class="export-sheets-btn">Export to Sheets</button>
       ${
         view === "contacts_unique"
           ? `<button class="contacts-full-btn">Контакты: имя + телефон + email (${contactsFullOnly ? "on" : "off"})</button>`
@@ -2369,6 +2404,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   const contactsFullBtn = app.querySelector<HTMLButtonElement>(".contacts-full-btn");
   const copyTableBtn = app.querySelector<HTMLButtonElement>(".copy-table-btn");
   const downloadTableBtn = app.querySelector<HTMLButtonElement>(".download-table-btn");
+  const exportSheetsBtn = app.querySelector<HTMLButtonElement>(".export-sheets-btn");
   const status = app.querySelector<HTMLDivElement>(".push-status");
 
   app.querySelectorAll<HTMLButtonElement>(".top-tabs .tab-btn").forEach((btn) => {
@@ -2492,7 +2528,7 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
   app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
     btn.onclick = async () => {
       const m = btn.getAttribute("data-menu");
-      if (m === "dashboard" || m === "reports" || m === "charts") {
+      if (m === "dashboard" || m === "reports") {
         await openMenu(m, dealsIndex, view);
       }
     };
@@ -2586,6 +2622,69 @@ async function renderTable(view: ViewKey, rows: Record<string, unknown>[], deals
     URL.revokeObjectURL(a.href);
     if (status) status.textContent = `Скачано: ${visibleRows.length.toLocaleString("ru-RU")} строк`;
   };
+  if (exportSheetsBtn) exportSheetsBtn.onclick = async () => {
+    const gmail = window.prompt("Введите Gmail для доступа к таблице", "")?.trim() ?? "";
+    if (!gmail) return;
+    if (!/^[^\s@]+@gmail\.com$/i.test(gmail)) {
+      if (status) status.textContent = "Нужен корректный Gmail адрес (example@gmail.com)";
+      return;
+    }
+    const showCtrl = isEmailHierarchy || isManagerHierarchy || isFunnelHierarchy || isYandexHierarchy || isYandexProjectHierarchy || isAssocEmailHierarchy || isAssocEventHierarchy || isAssocYandexHierarchy || isBudgetHierarchy;
+    const headers = (showCtrl ? ["#"] : []).concat(cols.map((c) => displayColName(view, c)));
+    const controlStateForRow = (r: Record<string, unknown>): string => {
+      if (!showCtrl) return "";
+      const lvl = String(r["Level"] ?? "").trim();
+      const month = String(r["Месяц"] ?? "").trim();
+      if (isEmailHierarchy && lvl === "Month") return expandedEmailMonths.has(month) ? "−" : "+";
+      if (isEmailHierarchy && num(r["__email_other_group"]) > 0) return expandedAssocOtherRows.has(`email-month||${month}`) ? "−" : "+";
+      const mgr = String(r["Менеджер"] ?? "");
+      if (isManagerHierarchy && lvl === "Manager") return expandedManagers.has(mgr) ? "−" : "+";
+      const fNode = String(r["__node"] ?? "").trim();
+      const fFunnel = String(r["__funnel"] ?? r["Воронка"] ?? "").trim();
+      const fMonth2 = String(r["__month"] ?? r["Месяц"] ?? "").trim();
+      const fm = `${fFunnel}||${fMonth2}`;
+      if (isFunnelHierarchy && fNode === "funnel") return expandedFunnels.has(fFunnel) ? "−" : "+";
+      if (isFunnelHierarchy && fNode === "month") return expandedFunnelMonths.has(fm) ? "−" : "+";
+      const yMonth = String(r["Месяц"] ?? "").trim();
+      const yCamp = String(r["№ Кампании"] ?? "").trim();
+      const yMc = `${yMonth}||${yCamp}`;
+      const yLevel = String(r["Level"] ?? "").trim();
+      if (isYandexHierarchy && yLevel === "Month") return expandedYandexMonths.has(yMonth) ? "−" : "+";
+      if (isYandexHierarchy && yLevel === "Campaign") return expandedYandexCampaigns.has(yMc) ? "−" : "+";
+      const assocCtx = String(r["__assoc_email_ctx"] ?? "");
+      const assocCtxToken = assocCtx || "__root__";
+      if (isAssocEmailHierarchy && num(r["__assoc_email_other_group"]) > 0 && num(r["__assoc_email_has_details"]) > 0) return expandedAssocOtherRows.has(`assoc||${assocCtxToken}`) ? "−" : "+";
+      const assocEventCtx = String(r["__assoc_event_ctx"] ?? r["Проект"] ?? r["Мероприятие"] ?? "").trim();
+      if (isAssocEventHierarchy && num(r["__assoc_event_detail"]) === 0 && num(r["__assoc_event_has_details"]) > 0) return expandedAssocEventRows.has(assocEventCtx) ? "−" : "+";
+      const assocYandexCtx = String(r["__assoc_yandex_ctx"] ?? r["Yandex кампания"] ?? "").trim();
+      if (isAssocYandexHierarchy && num(r["__assoc_yandex_detail"]) === 0 && num(r["__assoc_yandex_has_details"]) > 0) return expandedAssocYandexRows.has(assocYandexCtx) ? "−" : "+";
+      const yProjectCtx = String(r["__yandex_project_ctx"] ?? r["Yandex кампания"] ?? r["Проект"] ?? "").trim();
+      if (isYandexProjectHierarchy && num(r["__yandex_project_detail"]) === 0 && num(r["__yandex_project_has_details"]) > 0) return expandedYandexProjectRows.has(`${view}||${yProjectCtx}`) ? "−" : "+";
+      const budgetPayMonth = budgetPayMonthKey(r);
+      if (isBudgetHierarchy && lvl === "Month") return expandedBudget.has(budgetPayMonth) ? "−" : "+";
+      return "";
+    };
+    const rowsForExport = viewRows.map((r) => (showCtrl ? [controlStateForRow(r)] : []).concat(cols.map((c) => String(r[c] ?? ""))));
+    try {
+      if (status) status.textContent = "Экспортирую в Google Sheets...";
+      const resp = await fetch("/api/export-sheets", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          gmail,
+          title: `${VIEW_META[view].label} — ${new Date().toISOString().slice(0, 19).replace("T", " ")}`,
+          headers,
+          rows: rowsForExport,
+        }),
+      });
+      const data = await resp.json() as { ok?: boolean; url?: string; error?: string; message?: string };
+      if (!resp.ok || !data?.ok) throw new Error(data?.message || data?.error || `HTTP ${resp.status}`);
+      if (status && data.url) status.innerHTML = `Готово: <a href="${data.url}" target="_blank" rel="noopener">открыть таблицу</a>`;
+      else if (status) status.textContent = "Готово";
+    } catch (e) {
+      if (status) status.textContent = `Ошибка экспорта: ${String(e)}`;
+    }
+  };
   draw();
 }
 
@@ -2606,7 +2705,6 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
     <aside class="side-menu">
       <button class="side-btn" data-menu="dashboard">Главная</button>
       <button class="side-btn" data-menu="reports">Детальные отчеты</button>
-      <button class="side-btn active" data-menu="charts">Графики</button>
     </aside>
     <main class="main-content">
       <header>
@@ -2623,7 +2721,7 @@ async function renderCharts(dealsIndex: DealsIndex): Promise<void> {
   app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
     btn.onclick = async () => {
       const m = btn.getAttribute("data-menu");
-      if (m === "dashboard" || m === "reports" || m === "charts") {
+      if (m === "dashboard" || m === "reports") {
         await openMenu(m, dealsIndex, "year_total");
       }
     };
@@ -3029,16 +3127,12 @@ async function boot(): Promise<void> {
     const dealsIndex: DealsIndex = { month: new Map(), event: new Map(), course: new Map() };
     const state = readUrlState();
     if (state.menu === "reports") {
-      const v: ViewKey = state.view || "year_total";
+      const v: ViewKey = "year_total";
       await openTableView(v, dealsIndex);
       return;
     }
     if (state.menu === "utm") {
       await openTableView("utm_constructor", dealsIndex);
-      return;
-    }
-    if (state.menu === "charts") {
-      await renderCharts(dealsIndex);
       return;
     }
     await renderDashboard(dealsIndex);
@@ -3048,31 +3142,15 @@ async function boot(): Promise<void> {
 }
 
 function renderWeeklySummaryTable(s: Record<string, unknown>): string {
-  const mon = String(s["week_mon"] ?? "").trim();
-  const sun = String(s["week_sun"] ?? "").trim();
+  const serverHtml = s["__weekly_summary_html"];
+  if (typeof serverHtml === "string" && serverHtml.trim() !== "") {
+    return serverHtml;
+  }
+  const mon = String(s["week_mon"] ?? s["date_from"] ?? "").trim();
+  const sun = String(s["week_sun"] ?? s["date_to"] ?? "").trim();
   const fmt = (d: string) => d ? d.split("-").reverse().join(".") : "—";
-  const fmtNum = (v: unknown) => v != null && v !== "" ? Number(v).toLocaleString("ru-RU") : "—";
-  const fmtMoney = (v: unknown) => v != null && v !== "" ? "р." + Math.round(Number(v)).toLocaleString("ru-RU") : "—";
-  const fmtPct = (v: unknown) => v != null && v !== "" ? Number(v).toLocaleString("ru-RU") + "%" : "—";
 
-  const rows: [string, string][] = [
-    ["Всего заявок",                fmtNum(s["Всего заявок"])],
-    ["Конверсия сайта",             "—"],
-    ["Кол-во квал лидов",           fmtNum(s["Квал лидов"])],
-    ["Конверсия в квал. лиды",      fmtPct(s["Конверсия в квал %"])],
-    ["Кол-во оплат",                fmtNum(s["Оплат"])],
-    ["Конверсия в оплату из квал",  fmtPct(s["Конверсия в оплату из квал %"])],
-    ["Выручка",                     fmtMoney(s["Выручка"])],
-    ["Средний чек",                 fmtMoney(s["Средний чек"])],
-    ["Бюджет на рекламу",           fmtMoney(s["Бюджет на рекламу"])],
-    ["Лидов с рекламы",             fmtNum(s["Лидов с рекламы"])],
-    ["Стоимость лида",              fmtMoney(s["Стоимость лида"])],
-    ["Рассылок",                    fmtNum(s["Рассылок"])],
-    ["Открытий email",              fmtNum(s["Открытий email"])],
-    ["Заявок email",                fmtNum(s["Заявок email"])],
-    ["Рег на ПБХ",                  fmtNum(s["Рег на ПБХ"])],
-    ["Рег на Старт в ИБ",           fmtNum(s["Рег на Старт в ИБ"])],
-  ];
+  const rows = getDashboardSummaryKpiPairs(s);
 
   const rowsHtml = rows.map(([label, value]) =>
     `<tr><td class="ws-label">${escapeHtml(label)}</td><td class="ws-value">${escapeHtml(value)}</td></tr>`
@@ -3092,14 +3170,26 @@ function renderWeeklySummaryTable(s: Record<string, unknown>): string {
 
 async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
   writeUrlState("dashboard");
-  const [contacts, bitrixWeekFunnel, yandexWeekCampaign, contactsTotals, weeklySummaryArr] = await Promise.all([
+  const [contacts, bitrixWeekFunnel, yandexWeekCampaign, contactsTotals, weeklySummaryDynamic] = await Promise.all([
     fetchJson<Record<string, unknown>[]>("data/bitrix_contacts_uid.json").catch(() => []),
     fetchJson<Record<string, unknown>[]>("data/bitrix_week_funnel_total.json").catch(() => []),
     fetchJson<Record<string, unknown>[]>("data/yandex_week_campaign_total.json").catch(() => []),
     fetchJson<Record<string, unknown>[]>("data/dashboard_contacts_total.json").catch(() => []),
-    fetchJson<Record<string, unknown>[]>("data/weekly_summary.json").catch(() => []),
+    (async (): Promise<Record<string, unknown>> => {
+      try {
+        const resp = await fetch("/api/data?path=dashboard_summary_dynamic.json&preset=last_week&h2_style=week", { cache: "no-store" });
+        const rows = (await resp.json()) as Record<string, unknown>[];
+        if (!resp.ok || !Array.isArray(rows) || !rows[0]) return {};
+        const row = rows[0];
+        const df = String(row["date_from"] ?? "").trim();
+        const dt = String(row["date_to"] ?? "").trim();
+        return { ...row, week_mon: df, week_sun: dt };
+      } catch {
+        return {};
+      }
+    })(),
   ]);
-  const weeklySummary = weeklySummaryArr[0] ?? {};
+  const weeklySummary = weeklySummaryDynamic;
 
   const expandedWeeks = new Set<string>();
   const expandedYandexWeeks = new Set<string>();
@@ -3130,18 +3220,29 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
       maxIsoDate(yandexWeekCampaign, "Дата_последней_записи_Yandex") ||
       maxIsoDate(yandexWeekCampaign, "Макс_дата_в_строке") ||
       "-";
+    const summaryDefaultFrom = /^\d{4}-\d{2}-\d{2}$/.test(String(weeklySummary["week_mon"] ?? "")) ? String(weeklySummary["week_mon"]) : "";
+    const summaryDefaultTo = /^\d{4}-\d{2}-\d{2}$/.test(String(weeklySummary["week_sun"] ?? "")) ? String(weeklySummary["week_sun"]) : "";
 
     app.innerHTML = `<div class="app-layout">
       <aside class="side-menu">
         <button class="side-btn active" data-menu="dashboard">Главная</button>
         <button class="side-btn" data-menu="reports">Детальные отчеты</button>
-        <button class="side-btn" data-menu="charts">Графики</button>
       </aside>
       <main class="main-content">
         <header>
           <h1>Главный дашборд</h1>
           <p class="sub">Срез: последние 7 дней от последней доступной записи</p>
         </header>
+        <div class="toolbar">
+          <input class="dashboard-summary-from" type="date" value="${escapeHtml(summaryDefaultFrom)}" />
+          <input class="dashboard-summary-to" type="date" value="${escapeHtml(summaryDefaultTo)}" />
+          <button class="dashboard-build-summary-btn">Сформировать сводку</button>
+          <button class="dashboard-copy-summary-btn">Скопировать Weekly Summary (период)</button>
+          <button class="dashboard-copy-week-btn">Скопировать неделю 30.03.2026 — 05.04.2026</button>
+          <button class="dashboard-export-sheets-btn">Export dashboard to Sheets</button>
+          <div class="push-status muted"></div>
+        </div>
+        <div class="dashboard-dynamic-summary"></div>
         <div class="kpi-grid">
           <div class="kpi"><div class="label">Контакты Bitrix</div><div class="value">${bitrixContactsActual.toLocaleString("ru-RU")}</div></div>
           <div class="kpi"><div class="label">Контакты Email</div><div class="value">${emailContactsActual.toLocaleString("ru-RU")}</div></div>
@@ -3211,11 +3312,310 @@ async function renderDashboard(dealsIndex: DealsIndex): Promise<void> {
     app.querySelectorAll<HTMLButtonElement>(".side-btn").forEach((btn) => {
       btn.onclick = async () => {
         const m = btn.getAttribute("data-menu");
-        if (m === "dashboard" || m === "reports" || m === "charts") {
+        if (m === "dashboard" || m === "reports") {
           await openMenu(m, dealsIndex, "year_total");
         }
       };
     });
+
+    const exportBtn = app.querySelector<HTMLButtonElement>(".dashboard-export-sheets-btn");
+    const copyWeekBtn = app.querySelector<HTMLButtonElement>(".dashboard-copy-week-btn");
+    const copySummaryBtn = app.querySelector<HTMLButtonElement>(".dashboard-copy-summary-btn");
+    const buildSummaryBtn = app.querySelector<HTMLButtonElement>(".dashboard-build-summary-btn");
+    const summaryFromInput = app.querySelector<HTMLInputElement>(".dashboard-summary-from");
+    const summaryToInput = app.querySelector<HTMLInputElement>(".dashboard-summary-to");
+    const dynamicSummaryWrap = app.querySelector<HTMLDivElement>(".dashboard-dynamic-summary");
+    const status = app.querySelector<HTMLDivElement>(".push-status");
+    const buildSummaryForRange = async (): Promise<Record<string, unknown> | null> => {
+      const dateFrom = summaryFromInput?.value?.trim() ?? "";
+      const dateTo = summaryToInput?.value?.trim() ?? "";
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFrom) || !/^\d{4}-\d{2}-\d{2}$/.test(dateTo) || dateFrom > dateTo) {
+        if (status) status.textContent = "Выберите корректный период (from <= to)";
+        if (dynamicSummaryWrap) dynamicSummaryWrap.innerHTML = "";
+        return null;
+      }
+      const fmtDate = (d: string) => d.split("-").reverse().join(".");
+      if (status) status.textContent = "Собираю Weekly Summary по выбранному периоду...";
+      const resp = await fetch(
+        `/api/data?path=dashboard_summary_dynamic.json&from=${encodeURIComponent(dateFrom)}&to=${encodeURIComponent(dateTo)}&h2_style=period`,
+        { cache: "no-store" },
+      );
+      const summaryRows = await resp.json() as Record<string, unknown>[];
+      if (!resp.ok || !Array.isArray(summaryRows) || summaryRows.length === 0) throw new Error(`HTTP ${resp.status}`);
+      const row = summaryRows[0];
+      const serverHtml = row["__weekly_summary_html"];
+      if (dynamicSummaryWrap && typeof serverHtml === "string" && serverHtml.trim() !== "") {
+        dynamicSummaryWrap.innerHTML = serverHtml;
+      } else {
+        const rows = getDashboardSummaryKpiPairs(row);
+        if (dynamicSummaryWrap) {
+          dynamicSummaryWrap.innerHTML = `<section class="weekly-summary">
+          <h2>Период ${escapeHtml(fmtDate(dateFrom))} — ${escapeHtml(fmtDate(dateTo))}</h2>
+          <table class="ws-table"><tbody>${rows.map(([k, v]) => `<tr><td class="ws-label">${escapeHtml(k)}</td><td class="ws-value">${escapeHtml(v)}</td></tr>`).join("")}</tbody></table>
+        </section>`;
+        }
+      }
+      if (status) status.textContent = `Сводка сформирована: ${fmtDate(dateFrom)} — ${fmtDate(dateTo)}`;
+      return row;
+    };
+    if (buildSummaryBtn) buildSummaryBtn.onclick = async () => {
+      try { await buildSummaryForRange(); } catch (e) { if (status) status.textContent = `Ошибка построения: ${String(e)}`; }
+    };
+    if (copySummaryBtn) copySummaryBtn.onclick = async () => {
+      const dateFrom = summaryFromInput?.value?.trim() ?? "";
+      const dateTo = summaryToInput?.value?.trim() ?? "";
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFrom) || !/^\d{4}-\d{2}-\d{2}$/.test(dateTo) || dateFrom > dateTo) {
+        if (status) status.textContent = "Выберите корректный период (from <= to)";
+        return;
+      }
+      const fmtDate = (d: string) => d.split("-").reverse().join(".");
+      try {
+        const row = await buildSummaryForRange();
+        if (!row) return;
+        const tsv = row["__weekly_summary_tsv"];
+        if (typeof tsv === "string" && tsv.trim() !== "") {
+          await navigator.clipboard.writeText(tsv);
+        } else {
+          const header = `Период ${fmtDate(dateFrom)} — ${fmtDate(dateTo)}`;
+          const summaryPairs = getDashboardSummaryKpiPairs(row);
+          const lines = [header, ...summaryPairs.map(([k, v]) => `${k}\t${v}`)];
+          await navigator.clipboard.writeText(lines.join("\n"));
+        }
+        if (status) status.textContent = `Скопировано: Weekly Summary ${fmtDate(dateFrom)} — ${fmtDate(dateTo)}`;
+      } catch (e) {
+        if (status) status.textContent = `Ошибка копирования: ${String(e)}`;
+      }
+    };
+    if (copyWeekBtn) copyWeekBtn.onclick = async () => {
+      const targetWeek = "30.03.2026 — 05.04.2026";
+      const normalizeWeek = (raw: string): string => {
+        const s = String(raw ?? "").trim();
+        if (!s) return "";
+        const m = s.match(/(\d{2}\.\d{2}\.\d{4}).*?(\d{2}\.\d{2}\.\d{4})/);
+        if (!m) return s.replace(/\s+/g, " ").toLowerCase();
+        return `${m[1]}|${m[2]}`;
+      };
+      const targetWeekNorm = normalizeWeek(targetWeek);
+      const bitrixCols = ["Неделя", "Воронка", "Лиды", "Квал", "Конверсия в Квал", "Неквал", "Конверсия в Неквал", "Неизвестно", "Отказы", "Конверсия в Отказ", "В работе", "Конверсия в работе", "Сделок_с_выручкой", "Выручка_сделки_недели", "Выручка_получена_на_неделе"];
+      const yCols = ["Неделя", "Кампания", "ID кампании", "Лиды", "Квал", "Конверсия в Квал", "Неквал", "Конверсия в Неквал", "Неизвестно", "Отказы", "Конверсия в Отказ", "Сделок_с_выручкой", "Ассоц_выручка", "Расход, ₽", "Прибыль"];
+      const lines: string[] = [];
+      lines.push(`Неделя\t${targetWeek}`);
+      lines.push("");
+      lines.push("Bitrix Weeks\t#\t" + bitrixCols.join("\t"));
+      let bitrixItems = bitrixWeekFunnel.filter((r) => normalizeWeek(String(r["Неделя"] ?? "")) === targetWeekNorm);
+      if (bitrixItems.length === 0) {
+        const fallbackWeek = String(bitrixWeekFunnel[0]?.["Неделя"] ?? "").trim();
+        if (fallbackWeek) bitrixItems = bitrixWeekFunnel.filter((r) => String(r["Неделя"] ?? "").trim() === fallbackWeek);
+      }
+      if (bitrixItems.length > 0) {
+        const totals: Record<string, unknown> = {
+          "Неделя": String(bitrixItems[0]?.["Неделя"] ?? targetWeek),
+          "Воронка": "Всего",
+          "Лиды": sumField(bitrixItems, "Лиды"),
+          "Квал": sumField(bitrixItems, "Квал"),
+          "Неквал": sumField(bitrixItems, "Неквал"),
+          "Неизвестно": sumField(bitrixItems, "Неизвестно"),
+          "Отказы": sumField(bitrixItems, "Отказы"),
+          "В работе": sumField(bitrixItems, "В работе"),
+          "Сделок_с_выручкой": sumField(bitrixItems, "Сделок_с_выручкой"),
+          "Выручка_сделки_недели": sumField(bitrixItems, "Выручка_сделки_недели"),
+          "Выручка_получена_на_неделе": sumField(bitrixItems, "Выручка_получена_на_неделе"),
+        };
+        const leads = num(totals["Лиды"]);
+        const qual = num(totals["Квал"]);
+        const unqual = num(totals["Неквал"]);
+        const refusal = num(totals["Отказы"]);
+        const inWork = num(totals["В работе"]);
+        totals["Конверсия в Квал"] = leads > 0 ? qual / leads : 0;
+        totals["Конверсия в Неквал"] = leads > 0 ? unqual / leads : 0;
+        totals["Конверсия в Отказ"] = leads > 0 ? refusal / leads : 0;
+        totals["Конверсия в работе"] = leads > 0 ? inWork / leads : 0;
+        lines.push("Bitrix Weeks\t-\t" + bitrixCols.map((c) => String(totals[c] ?? "")).join("\t"));
+        const sorted = [...bitrixItems].sort((a, b) => String(a["Воронка"] ?? "").localeCompare(String(b["Воронка"] ?? "")));
+        for (const item of sorted) lines.push("Bitrix Weeks\t\t" + bitrixCols.map((c) => String(item[c] ?? "")).join("\t"));
+      } else {
+        lines.push("Bitrix Weeks\t\t(нет данных)");
+      }
+      lines.push("");
+      lines.push("Yandex Weeks\t#\t" + yCols.join("\t"));
+      let yItems = yandexWeekFiltered.filter((r) => normalizeWeek(String(r["Неделя"] ?? "")) === targetWeekNorm);
+      if (yItems.length === 0) {
+        const fallbackWeek = String(yandexWeekFiltered[0]?.["Неделя"] ?? "").trim();
+        if (fallbackWeek) yItems = yandexWeekFiltered.filter((r) => String(r["Неделя"] ?? "").trim() === fallbackWeek);
+      }
+      if (yItems.length > 0) {
+        const totals: Record<string, unknown> = {
+          "Неделя": String(yItems[0]?.["Неделя"] ?? targetWeek),
+          "Кампания": "Всего",
+          "ID кампании": "-",
+          "Лиды": sumField(yItems, "Лиды"),
+          "Квал": sumField(yItems, "Квал"),
+          "Неквал": sumField(yItems, "Неквал"),
+          "Неизвестно": sumField(yItems, "Неизвестно"),
+          "Отказы": sumField(yItems, "Отказы"),
+          "Сделок_с_выручкой": sumField(yItems, "Сделок_с_выручкой"),
+          "Ассоц_выручка": sumField(yItems, "Ассоц_выручка"),
+          "Расход, ₽": sumField(yItems, "Расход, ₽"),
+          "Прибыль": sumField(yItems, "Прибыль"),
+        };
+        const leads = num(totals["Лиды"]);
+        const qual = num(totals["Квал"]);
+        const unqual = num(totals["Неквал"]);
+        const refusal = num(totals["Отказы"]);
+        totals["Конверсия в Квал"] = leads > 0 ? qual / leads : 0;
+        totals["Конверсия в Неквал"] = leads > 0 ? unqual / leads : 0;
+        totals["Конверсия в Отказ"] = leads > 0 ? refusal / leads : 0;
+        lines.push("Yandex Weeks\t-\t" + yCols.map((c) => String(totals[c] ?? "")).join("\t"));
+        const sorted = [...yItems].sort((a, b) => String(a["Кампания"] ?? "").localeCompare(String(b["Кампания"] ?? "")));
+        for (const item of sorted) lines.push("Yandex Weeks\t\t" + yCols.map((c) => String(item[c] ?? "")).join("\t"));
+      } else {
+        lines.push("Yandex Weeks\t\t(нет данных)");
+      }
+      try {
+        await navigator.clipboard.writeText(lines.join("\n"));
+        if (status) status.textContent = "Скопировано в буфер: неделя 30.03.2026 — 05.04.2026";
+      } catch (e) {
+        if (status) status.textContent = `Ошибка копирования: ${String(e)}`;
+      }
+    };
+    if (exportBtn) exportBtn.onclick = async () => {
+      const gmail = window.prompt("Введите Gmail для доступа к таблице", "")?.trim() ?? "";
+      if (!gmail) return;
+      if (!/^[^\s@]+@gmail\.com$/i.test(gmail)) {
+        if (status) status.textContent = "Нужен корректный Gmail адрес (example@gmail.com)";
+        return;
+      }
+      const rows: string[][] = [];
+      rows.push(["KPI", "Контакты Bitrix", String(bitrixContactsActual)]);
+      rows.push(["KPI", "Контакты Email", String(emailContactsActual)]);
+      rows.push(["KPI", "Контакты всего", String(totalContactsActual)]);
+      rows.push(["KPI", "Последняя запись Bitrix", String(latestBitrixRecordDate)]);
+      rows.push(["KPI", "Последняя запись Yandex", String(latestYandexRecordDate)]);
+      rows.push(["", "", ""]);
+
+      const summaryPairs: Array<[string, string]> = [
+        ["Всего заявок", String(weeklySummary["Всего заявок"] ?? "")],
+        ["Кол-во квал лидов", String(weeklySummary["Квал лидов"] ?? "")],
+        ["Конверсия в квал. лиды", String(weeklySummary["Конверсия в квал %"] ?? "")],
+        ["Кол-во оплат", String(weeklySummary["Оплат"] ?? "")],
+        ["Конверсия в оплату из квал", String(weeklySummary["Конверсия в оплату из квал %"] ?? "")],
+        ["Выручка", String(weeklySummary["Выручка"] ?? "")],
+        ["Средний чек", String(weeklySummary["Средний чек"] ?? "")],
+        ["Бюджет на рекламу", String(weeklySummary["Бюджет на рекламу"] ?? "")],
+        ["Кликов из Яндекса", String(weeklySummary["Кликов из Яндекса"] ?? "")],
+        ["Лидов с рекламы", String(weeklySummary["Лидов с рекламы"] ?? "")],
+        ["Стоимость лида", String(weeklySummary["Стоимость лида"] ?? "")],
+        ["Рассылок", String(weeklySummary["Рассылок"] ?? "")],
+        ["Открытий email", String(weeklySummary["Открытий email"] ?? "")],
+        ["Заявок email", String(weeklySummary["Заявок email"] ?? "")],
+        ["Рег на Старт в ИБ", String(weeklySummary["Рег на Старт в ИБ"] ?? "")],
+      ];
+      for (const [k, v] of summaryPairs) rows.push(["Weekly Summary", k, v]);
+      rows.push(["", "", ""]);
+
+      const bitrixCols = ["Неделя", "Воронка", "Лиды", "Квал", "Конверсия в Квал", "Неквал", "Конверсия в Неквал", "Неизвестно", "Отказы", "Конверсия в Отказ", "В работе", "Конверсия в работе", "Сделок_с_выручкой", "Выручка_сделки_недели", "Выручка_получена_на_неделе"];
+      rows.push(["Bitrix Weeks", "#", ...bitrixCols]);
+      const bByWeek = new Map<string, Record<string, unknown>[]>();
+      for (const r of bitrixWeekFunnel) {
+        const week = String(r["Неделя"] ?? "").trim();
+        if (!week) continue;
+        if (!bByWeek.has(week)) bByWeek.set(week, []);
+        bByWeek.get(week)!.push(r);
+      }
+      const bWeeks = [...bByWeek.keys()].sort((a, b) => b.localeCompare(a));
+      for (const week of bWeeks) {
+        const items = bByWeek.get(week) || [];
+        const totals: Record<string, unknown> = {
+          "Неделя": week,
+          "Воронка": "Всего",
+          "Лиды": sumField(items, "Лиды"),
+          "Квал": sumField(items, "Квал"),
+          "Неквал": sumField(items, "Неквал"),
+          "Неизвестно": sumField(items, "Неизвестно"),
+          "Отказы": sumField(items, "Отказы"),
+          "В работе": sumField(items, "В работе"),
+          "Сделок_с_выручкой": sumField(items, "Сделок_с_выручкой"),
+          "Выручка_сделки_недели": sumField(items, "Выручка_сделки_недели"),
+          "Выручка_получена_на_неделе": sumField(items, "Выручка_получена_на_неделе"),
+        };
+        const leads = num(totals["Лиды"]);
+        const qual = num(totals["Квал"]);
+        const unqual = num(totals["Неквал"]);
+        const refusal = num(totals["Отказы"]);
+        const inWork = num(totals["В работе"]);
+        totals["Конверсия в Квал"] = leads > 0 ? qual / leads : 0;
+        totals["Конверсия в Неквал"] = leads > 0 ? unqual / leads : 0;
+        totals["Конверсия в Отказ"] = leads > 0 ? refusal / leads : 0;
+        totals["Конверсия в работе"] = leads > 0 ? inWork / leads : 0;
+        const open = expandedWeeks.has(week);
+        rows.push(["Bitrix Weeks", open ? "−" : "+", ...bitrixCols.map((c) => String(totals[c] ?? ""))]);
+        if (open) {
+          const sorted = [...items].sort((a, b) => String(a["Воронка"] ?? "").localeCompare(String(b["Воронка"] ?? "")));
+          for (const item of sorted) rows.push(["Bitrix Weeks", "", ...bitrixCols.map((c) => String(item[c] ?? ""))]);
+        }
+      }
+      rows.push(["", "", ""]);
+
+      const yCols = ["Неделя", "Кампания", "ID кампании", "Лиды", "Квал", "Конверсия в Квал", "Неквал", "Конверсия в Неквал", "Неизвестно", "Отказы", "Конверсия в Отказ", "Сделок_с_выручкой", "Ассоц_выручка", "Расход, ₽", "Прибыль"];
+      rows.push(["Yandex Weeks", "#", ...yCols]);
+      const yByWeek = new Map<string, Record<string, unknown>[]>();
+      for (const r of yandexWeekFiltered) {
+        const week = String(r["Неделя"] ?? "").trim();
+        if (!week) continue;
+        if (!yByWeek.has(week)) yByWeek.set(week, []);
+        yByWeek.get(week)!.push(r);
+      }
+      const yWeeks = [...yByWeek.keys()].sort((a, b) => b.localeCompare(a));
+      for (const week of yWeeks) {
+        const items = yByWeek.get(week) || [];
+        const totals: Record<string, unknown> = {
+          "Неделя": week,
+          "Кампания": "Всего",
+          "ID кампании": "-",
+          "Лиды": sumField(items, "Лиды"),
+          "Квал": sumField(items, "Квал"),
+          "Неквал": sumField(items, "Неквал"),
+          "Неизвестно": sumField(items, "Неизвестно"),
+          "Отказы": sumField(items, "Отказы"),
+          "Сделок_с_выручкой": sumField(items, "Сделок_с_выручкой"),
+          "Ассоц_выручка": sumField(items, "Ассоц_выручка"),
+          "Расход, ₽": sumField(items, "Расход, ₽"),
+          "Прибыль": sumField(items, "Прибыль"),
+        };
+        const leads = num(totals["Лиды"]);
+        const qual = num(totals["Квал"]);
+        const unqual = num(totals["Неквал"]);
+        const refusal = num(totals["Отказы"]);
+        totals["Конверсия в Квал"] = leads > 0 ? qual / leads : 0;
+        totals["Конверсия в Неквал"] = leads > 0 ? unqual / leads : 0;
+        totals["Конверсия в Отказ"] = leads > 0 ? refusal / leads : 0;
+        const open = expandedYandexWeeks.has(week);
+        rows.push(["Yandex Weeks", open ? "−" : "+", ...yCols.map((c) => String(totals[c] ?? ""))]);
+        if (open) {
+          const sorted = [...items].sort((a, b) => String(a["Кампания"] ?? "").localeCompare(String(b["Кампания"] ?? "")));
+          for (const item of sorted) rows.push(["Yandex Weeks", "", ...yCols.map((c) => String(item[c] ?? ""))]);
+        }
+      }
+      try {
+        if (status) status.textContent = "Экспортирую дашборд в Google Sheets...";
+        const resp = await fetch("/api/export-sheets", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            gmail,
+            title: `Dashboard — ${new Date().toISOString().slice(0, 19).replace("T", " ")}`,
+            headers: ["Section", "#", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17"],
+            rows,
+          }),
+        });
+        const data = await resp.json() as { ok?: boolean; url?: string; error?: string; message?: string };
+        if (!resp.ok || !data?.ok) throw new Error(data?.message || data?.error || `HTTP ${resp.status}`);
+        if (status && data.url) status.innerHTML = `Готово: <a href="${data.url}" target="_blank" rel="noopener">открыть таблицу</a>`;
+        else if (status) status.textContent = "Готово";
+      } catch (e) {
+        if (status) status.textContent = `Ошибка экспорта: ${String(e)}`;
+      }
+    };
   };
 
   drawDashboard();

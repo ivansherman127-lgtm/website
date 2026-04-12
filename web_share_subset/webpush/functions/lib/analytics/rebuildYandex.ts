@@ -107,7 +107,7 @@ export async function rebuildYandexMarts(db: D1Database): Promise<{
     const parsed: YandexRow = {
       ad_id: adId,
       project_name: str(row.project_name),
-      campaign_id: str(row.campaign_id),
+      campaign_id: idNorm(row.campaign_id),
       yandex_month: str(row.yandex_month),
       yandex_spend: parseSpend(row.yandex_spend),
     };
@@ -135,7 +135,7 @@ export async function rebuildYandexMarts(db: D1Database): Promise<{
         deal_month: str(b.month),
         utm_campaign: str(b.utm_campaign),
         project_name: pn === "" ? "UNMAPPED" : pn,
-        campaign_id: str(row.campaign_id),
+        campaign_id: idNorm(row.campaign_id),
         yandex_month: str(row.yandex_month),
         yandex_spend: Math.round(row.yandex_spend),
         deal_name: str(b.deal_name),
@@ -280,13 +280,17 @@ export async function rebuildYandexMarts(db: D1Database): Promise<{
       pm.revenue_raw += r.revenue_amount;
     }
     const campFirst = new Map<string, { project_name: string; yandex_month: string; yandex_spend: number }>();
-    for (const r of rawDeduped) {
-      const ck = `${r.campaign_id}\u0000${r.yandex_month}`;
+    for (const row of yandexRes.results ?? []) {
+      const campaignId = idNorm(row.campaign_id);
+      const projectName = str(row.project_name);
+      const yandexMonth = str(row.yandex_month);
+      if (!campaignId || !projectName || !yandexMonth) continue;
+      const ck = `${campaignId}\u0000${yandexMonth}`;
       if (!campFirst.has(ck)) {
         campFirst.set(ck, {
-          project_name: r.project_name,
-          yandex_month: r.yandex_month,
-          yandex_spend: r.yandex_spend,
+          project_name: projectName,
+          yandex_month: yandexMonth,
+          yandex_spend: parseSpend(row.yandex_spend),
         });
       }
     }

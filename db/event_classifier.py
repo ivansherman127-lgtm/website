@@ -6,16 +6,15 @@ from typing import Iterable
 
 
 TARGET_EVENTS = [
+    "Attacking January",
+    "Старт карьеры в ИБ",
     "Тренд репорты",
     "Демо Ред",
     "Демо Блю",
     "ПБХ",
     "Blue Team Stepik",
-    "Опен дэй 27.10.25",
-    "Опен дэй 28.10.25",
-    "Опен дэй 19.12.25",
-    "Опен дэй 23.12.25",
-    "Опен дэй 25.12.25",
+    "Опен дэй 27-28.10.25",
+    "Опен дэй 12.2025",
     "Опен дэй 24.03.26",
     "Опен дэй",
     "Встреча с экспертом",
@@ -54,6 +53,7 @@ FIELD_PRIORITY = [
 # 'Attacking January' is first so it takes priority over generic event matching.
 EVENT_RULES = [
     ("Attacking January", [r"атакующ\w*\s+январ\w*", r"attacking[_ ]?january"]),
+    ("Старт карьеры в ИБ", [r"старт\s+карьеры", r"start\s+career", r"\bstart\b", r"blue[_\- ]?team"]),
     ("Тренд репорты", [r"\bтренд\b", r"\btrend report"]),
     ("Демо Ред", [r"\bдемо ред\b", r"\bdemo red\b", r"\bprof pentest demo\b"]),
     ("Демо Блю", [r"\bдемо блю\b", r"\bdemo blue\b", r"\bprof soc demo\b"]),
@@ -70,11 +70,11 @@ EVENT_RULES = [
 # Checked BEFORE the field-priority loop so that UTM-tagged rows get specific labels
 # even when the deal name is a generic "Open Day".
 OPEN_DAY_UTM_MAP: list[tuple[str, str]] = [
-    (r"\bopen_day_271025\b", "Опен дэй 27.10.25"),
-    (r"\bopen_day_281025\b", "Опен дэй 28.10.25"),
-    (r"\bopen_day_191225\b", "Опен дэй 19.12.25"),
-    (r"\bopen_day_231225\b", "Опен дэй 23.12.25"),
-    (r"\bopen_day_251225\b", "Опен дэй 25.12.25"),
+    (r"\bopen_day_271025\b", "Опен дэй 27-28.10.25"),
+    (r"\bopen_day_281025\b", "Опен дэй 27-28.10.25"),
+    (r"\bopen_day_191225\b", "Опен дэй 12.2025"),
+    (r"\bopen_day_231225\b", "Опен дэй 12.2025"),
+    (r"\bopen_day_251225\b", "Опен дэй 12.2025"),
 ]
 
 

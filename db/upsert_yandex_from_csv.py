@@ -231,8 +231,20 @@ def upsert_to_sqlite(df: pd.DataFrame, engine) -> int:
     # month helper expected by downstream queries.
     df["month"] = df["Месяц"].map(_normalize_yandex_month)
 
-    months = df["Месяц"].dropna().unique().tolist()
-    print(f"Will replace months in SQLite: {months}", flush=True)
+    # Key-based upsert: replace only rows that match incoming keys.
+    # This avoids overwriting unrelated records in the same month and keeps ingest idempotent.
+    key_cols = [
+        "month",
+        "№ Кампании",
+        "№ Группы",
+        "№ Объявления",
+        "День",
+        "Название кампании",
+        "Название группы",
+    ]
+    for c in key_cols:
+        if c not in df.columns:
+            df[c] = None
 
     with engine.begin() as conn:
         exists = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='stg_yandex_stats'")).fetchone()
@@ -261,12 +273,48 @@ def upsert_to_sqlite(df: pd.DataFrame, engine) -> int:
         else:
             conn.execute(text("ALTER TABLE stg_yandex_stats_new RENAME TO stg_yandex_stats"))
 
-        for m in months:
-            # Delete by both the normalized month col (YYYY-MM) AND the old Russian-format
-            # "Месяц" col so that rows imported before normalization (e.g. "Март, 2026")
-            # are also removed.  Using month satisfies both cases.
-            conn.execute(text('DELETE FROM stg_yandex_stats WHERE month = :m OR "Месяц" = :m'), {"m": m})
-        print(f"Deleted existing rows for {len(months)} month(s)", flush=True)
+        conn.execute(text("DROP TABLE IF EXISTS _yandex_import_keys"))
+        conn.execute(
+            text(
+                """
+                CREATE TEMP TABLE _yandex_import_keys (
+                  month TEXT,
+                  "№ Кампании" REAL,
+                  "№ Группы" REAL,
+                  "№ Объявления" REAL,
+                  "День" TEXT,
+                  "Название кампании" TEXT,
+                  "Название группы" TEXT
+                )
+                """
+            )
+        )
+
+    key_df = df[key_cols].copy()
+    key_chunksize = max(1, 998 // max(1, key_df.shape[1]))
+    key_df.to_sql("_yandex_import_keys", engine, if_exists="append", index=False, chunksize=key_chunksize)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                DELETE FROM stg_yandex_stats
+                WHERE EXISTS (
+                  SELECT 1
+                  FROM _yandex_import_keys k
+                  WHERE COALESCE(stg_yandex_stats.month, '') = COALESCE(k.month, '')
+                    AND COALESCE(stg_yandex_stats."№ Кампании", -1) = COALESCE(k."№ Кампании", -1)
+                    AND COALESCE(stg_yandex_stats."№ Группы", -1) = COALESCE(k."№ Группы", -1)
+                    AND COALESCE(stg_yandex_stats."№ Объявления", -1) = COALESCE(k."№ Объявления", -1)
+                    AND COALESCE(stg_yandex_stats."День", '') = COALESCE(k."День", '')
+                    AND COALESCE(stg_yandex_stats."Название кампании", '') = COALESCE(k."Название кампании", '')
+                    AND COALESCE(stg_yandex_stats."Название группы", '') = COALESCE(k."Название группы", '')
+                )
+                """
+            )
+        )
+        conn.execute(text("DROP TABLE IF EXISTS _yandex_import_keys"))
+    print(f"Deleted existing rows for {len(df)} incoming key(s)", flush=True)
 
     chunksize = max(1, 998 // max(1, df.shape[1]))
     df.to_sql("stg_yandex_stats", engine, if_exists="append", index=False, chunksize=chunksize)

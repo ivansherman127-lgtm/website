@@ -12,11 +12,18 @@ Lead qual/unqual and funnel exclusion — aligned with bitrix_notebook.ipynb (ch
 """
 from __future__ import annotations
 
+import functools
+import json
 import re
+from pathlib import Path
 from typing import FrozenSet
 
 import numpy as np
 import pandas as pd
+
+_LOGIC_JSON_PATH = Path(__file__).resolve().parent.parent / "bitrix_lead_logic.json"
+# Substrings in stage title → treat as invalid (aligned with leadLogicSql.ts INVALID_STAGE_TOKENS).
+_INVALID_STAGE_PARTS = ("неквал", "некачест", "дубл", "спам", "тест", "чс")
 
 # Синхронно с bitrix_funnel_reporting.json (правила отчётных корзин).
 EXCLUDED_FUNNEL_NAMES: FrozenSet[str] = frozenset(
@@ -135,7 +142,7 @@ def invalid_token_mask(df: pd.DataFrame) -> pd.Series:
 
 
 def lead_type_series(funnel: pd.Series, stage: pd.Series) -> pd.Series:
-    """Same branches as check_lead_type in bitrix_notebook.ipynb (vectorized)."""
+    """Legacy notebook-style classifier (устар.). Канон — bitrix_lead_logic.json + apply_notebook_lead_flags."""
     ft = funnel.fillna("").astype(str).str.strip()
     st = stage.fillna("").astype(str).str.strip()
 
@@ -158,6 +165,55 @@ def lead_type_series(funnel: pd.Series, stage: pd.Series) -> pd.Series:
     return pd.Series(out, index=funnel.index, dtype=object)
 
 
+@functools.lru_cache(maxsize=1)
+def _load_lead_logic_config() -> dict:
+    with open(_LOGIC_JSON_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _normalize_funnel_stage(funnel: str, stage: str, config: dict) -> tuple[str, str]:
+    n = config.get("normalization") or {}
+    fa = n.get("funnel_aliases") or {}
+    sa = n.get("stage_aliases") or {}
+    fn = str(funnel).strip()
+    st = str(stage).strip()
+    fn = fa.get(fn, fn)
+    st = sa.get(st, st)
+    return fn, st
+
+
+def _classify_lead_bucket(funnel: str, stage: str, deal_month: str, config: dict) -> str:
+    """Maps JSON rule to legacy bucket: qual | refusal | unqual | unknown."""
+    fn, st = _normalize_funnel_stage(funnel, stage, config)
+    stages_map = (config.get("funnels") or {}).get(fn)
+    if not stages_map:
+        return "unknown"
+    rule = stages_map.get(st)
+    if not rule:
+        return "unknown"
+    qs = rule.get("qual_state")
+    if qs == "qual":
+        return "qual"
+    if qs == "refusal":
+        return "refusal"
+    if qs in ("not_qual", "not_yet"):
+        return "unqual"
+    if qs == "unassigned":
+        return "unknown"
+    if qs == "qual_from_date":
+        cutoff = str(rule.get("qual_from_date") or "").strip()[:7]
+        dm = str(deal_month or "").strip()[:7]
+        if not cutoff:
+            return "unknown"
+        return "qual" if dm >= cutoff else "unqual"
+    return "unknown"
+
+
+def _stage_title_invalid(stage: str) -> bool:
+    s = str(stage).lower()
+    return any(p in s for p in _INVALID_STAGE_PARTS)
+
+
 def in_work_series(df: pd.DataFrame) -> pd.Series:
     """Heuristic «в работе»: не закрыт/не отказ, не помечен невалидом по токенам."""
     stage = coalesce_columns(df, "Стадия сделки").fillna("").astype(str).str.lower()
@@ -168,12 +224,8 @@ def in_work_series(df: pd.DataFrame) -> pd.Series:
 
 def apply_notebook_lead_flags(df: pd.DataFrame) -> pd.DataFrame:
     """Adds Воронка (как в ноутбуке: fl_* или CRM), lead_type, is_qual, …
-    
-    Classification (per bitrix_lead_logic.json):
-    - is_qual: qual + refusal + qual_from_date (all we consider qualified)
-    - is_unqual: not_qual + not_yet (we know they are not qualified)
-    - is_unknown: unassigned (we don't know their qual state)
-    - Total: is_qual + is_unqual + is_unknown = all leads
+
+    Классификация синхронизирована с web_share_subset/.../leadLogicSql.ts (bitrix_lead_logic.json).
     """
     d = df.copy()
     funnel_c = deal_funnel_raw_series(d)
@@ -181,9 +233,20 @@ def apply_notebook_lead_flags(df: pd.DataFrame) -> pd.DataFrame:
     d["Воронка"] = funnel_c
     d["Воронка_группа"] = funnel_report_bucket_series(funnel_c)
 
-    lt = lead_type_series(funnel_c, stage_c)
-    inv = invalid_token_mask(d)
-    lt_arr = lt.astype(str).to_numpy()
+    config = _load_lead_logic_config()
+    if "month" in d.columns:
+        months = d["month"].fillna("").astype(str).str.strip()
+    else:
+        months = pd.Series([""] * len(d), index=d.index, dtype=str)
+
+    lt_list = [
+        _classify_lead_bucket(str(f), str(s), str(m), config)
+        for f, s, m in zip(funnel_c, stage_c, months)
+    ]
+    lt_arr = np.array(lt_list, dtype=object)
+    inv_blob = invalid_token_mask(d)
+    st_inv = stage_c.map(_stage_title_invalid)
+    inv = inv_blob | st_inv
     inv_arr = inv.to_numpy()
     ref_mask = lt_arr == "refusal"
     lt_arr = np.where(inv_arr & ~ref_mask, "unqual", lt_arr)

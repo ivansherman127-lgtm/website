@@ -95,7 +95,7 @@ export async function buildYdHierarchyRows(db: D1Database): Promise<Record<strin
       `WITH ystats AS (
          SELECT
            COALESCE("Название кампании", '') AS campaign_name,
-           COALESCE("№ Кампании", '') AS campaign_id,
+          COALESCE(NULLIF(REPLACE(TRIM(CAST("№ Кампании" AS TEXT)), '.0', ''), ''), '(пусто)') AS campaign_id,
            month,
            SUM(COALESCE("Клики", 0)) AS clicks,
            SUM(COALESCE("Расход, ₽", 0)) AS spend
@@ -106,7 +106,7 @@ export async function buildYdHierarchyRows(db: D1Database): Promise<Record<strin
        lflags AS (
          SELECT
            COALESCE(project_name, '') AS campaign_name,
-           COALESCE(campaign_id, '') AS campaign_id,
+          COALESCE(NULLIF(REPLACE(TRIM(campaign_id), '.0', ''), ''), '(пусто)') AS campaign_id,
            COALESCE(yandex_month, '') AS month,
            ${yandexLeadLogic.qual} AS qual,
            ${yandexLeadLogic.unqual} AS unqual,
@@ -141,9 +141,9 @@ export async function buildYdHierarchyRows(db: D1Database): Promise<Record<strin
          COALESCE(y.spend, 0) AS "Расход, ₽"
        FROM dims d
        LEFT JOIN leads l
-         ON l.campaign_name = d.campaign_name AND l.campaign_id = d.campaign_id AND l.month = d.month
+         ON l.campaign_id = d.campaign_id AND l.month = d.month
        LEFT JOIN ystats y
-         ON y.campaign_name = d.campaign_name AND y.campaign_id = d.campaign_id AND y.month = d.month
+         ON y.campaign_id = d.campaign_id AND y.month = d.month
        ORDER BY d.month, d.campaign_name`,
     )
     .all<Record<string, unknown>>();

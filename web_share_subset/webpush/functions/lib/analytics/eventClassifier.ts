@@ -18,6 +18,17 @@ export const FIELD_PRIORITY = [
 ] as const;
 
 const EVENT_RULES: [string, RegExp[]][] = [
+  ["Attacking January", [/\bатакующ\w*\s+январ\w*\b/i, /\battacking[ _]?january\b/i]],
+  [
+    "Старт карьеры в ИБ",
+    [
+      /\bстарт\s+карьеры\b/i,
+      /\bstart\s+career\b/i,
+      /\bstart\b/i,
+      /\bblue\s*team\b/i,
+      /\bblue[_\- ]team\b/i,
+    ],
+  ],
   ["Тренд репорты", [/\bтренд\b/i, /\btrend report/i]],
   ["Демо Ред", [/\bдемо ред\b/i, /\bdemo red\b/i, /\bprof pentest demo\b/i]],
   ["Демо Блю", [/\bдемо блю\b/i, /\bdemo blue\b/i, /\bprof soc demo\b/i]],
@@ -31,11 +42,11 @@ const EVENT_RULES: [string, RegExp[]][] = [
 // Dated open day UTM campaign patterns — checked before field-priority loop
 // using raw (non-normalized) UTM value to preserve underscores
 const OPEN_DAY_UTM_MAP: [RegExp, string][] = [
-  [/\bopen_day_271025\b/i, "Опен дэй 27.10.25"],
-  [/\bopen_day_281025\b/i, "Опен дэй 28.10.25"],
-  [/\bopen_day_191225\b/i, "Опен дэй 19.12.25"],
-  [/\bopen_day_231225\b/i, "Опен дэй 23.12.25"],
-  [/\bopen_day_251225\b/i, "Опен дэй 25.12.25"],
+  [/\bopen_day_271025\b/i, "Опен дэй 27-28.10.25"],
+  [/\bopen_day_281025\b/i, "Опен дэй 27-28.10.25"],
+  [/\bopen_day_191225\b/i, "Опен дэй 12.2025"],
+  [/\bopen_day_231225\b/i, "Опен дэй 12.2025"],
+  [/\bopen_day_251225\b/i, "Опен дэй 12.2025"],
 ];
 
 export function normalizeText(v: unknown): string {

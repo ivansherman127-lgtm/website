@@ -10,7 +10,7 @@
 
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { createReadStream, existsSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
-import { join, extname, dirname } from "node:path";
+import { join, extname, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
@@ -62,6 +62,8 @@ const _analyticsRebuildSecret: string = _serverSecrets["ANALYTICS_REBUILD_SECRET
 const SENDSAY_LOGIN = _serverSecrets["SENDSAY_LOGIN"] ?? process.env.SENDSAY_LOGIN ?? "";
 const SENDSAY_PASSWORD = _serverSecrets["SENDSAY_PASSWORD"] ?? process.env.SENDSAY_PASSWORD ?? "";
 const SENDSAY_SUBLOGIN = _serverSecrets["SENDSAY_SUBLOGIN"] ?? process.env.SENDSAY_SUBLOGIN ?? "";
+const GOOGLE_APPLICATION_CREDENTIALS = _serverSecrets["GOOGLE_APPLICATION_CREDENTIALS"] ?? process.env.GOOGLE_APPLICATION_CREDENTIALS ?? "";
+const GOOGLE_EXPORT_SHEET_ID = _serverSecrets["GOOGLE_EXPORT_SHEET_ID"] ?? process.env.GOOGLE_EXPORT_SHEET_ID ?? "";
 
 // In-memory cache for dataset_json API responses (path → JSON body string).
 // Populated lazily on first read; cleared whenever rebuild or materialize succeeds.
@@ -175,7 +177,12 @@ function serveAnalytics(res: ServerResponse, urlPath: string): void {
   if (!existsSync(filePath) || filePath.endsWith("/")) filePath = join(ANALYTICS_DIST_DIR, "index.html");
   if (!existsSync(filePath)) { res.writeHead(404); res.end("Not Found"); return; }
   const mime = MIME[extname(filePath)] ?? "application/octet-stream";
-  res.writeHead(200, { "content-type": mime });
+  const headers: Record<string, string> = { "content-type": mime };
+  // Avoid stale index.html referencing an old hashed chunk after deploy (hard refresh was loading cached HTML).
+  if (basename(filePath) === "index.html") {
+    headers["cache-control"] = "no-store, no-cache, must-revalidate";
+  }
+  res.writeHead(200, headers);
   createReadStream(filePath).pipe(res);
 }
 
@@ -259,18 +266,25 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
       if (!isAnalyticsAuthenticated(req)) { jsonRes(res, 401, { ok: false, error: "unauthorized" }); return; }
       const cacheKey = rawUrl;
-      const cached = datasetCache.get(cacheKey);
-      if (cached !== undefined) {
-        res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
-        res.end(cached);
-        return;
+      const apiDataUrl = new URL(rawUrl, "http://localhost");
+      const skipDataCache =
+        apiDataUrl.pathname === "/api/data" &&
+        apiDataUrl.searchParams.get("path") === "dashboard_summary_dynamic.json" &&
+        apiDataUrl.searchParams.get("preset") === "last_week";
+      if (!skipDataCache) {
+        const cached = datasetCache.get(cacheKey);
+        if (cached !== undefined) {
+          res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+          res.end(cached);
+          return;
+        }
       }
       const webReq = toWebRequest(req);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const webRes = await dataGet({ request: webReq, env: { DB: WEBSITEDB } as any });
       if (webRes.status === 200) {
         const body = await webRes.text();
-        datasetCache.set(cacheKey, body);
+        if (!skipDataCache) datasetCache.set(cacheKey, body);
         res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
         res.end(body);
       } else {
@@ -282,6 +296,29 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
     if (pathname === "/api/assoc-revenue") {
       if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
       if (!isAnalyticsAuthenticated(req)) { jsonRes(res, 401, { ok: false, error: "unauthorized" }); return; }
+      const assocUrl = new URL(`http://localhost${rawUrl}`);
+      const recalc = String(assocUrl.searchParams.get("recalc") || "").toLowerCase() === "true";
+      if (!recalc && websiteDb) {
+        const dims = (assocUrl.searchParams.get("dims") || "event").trim();
+        const cohort = (assocUrl.searchParams.get("cohort") || "all").trim();
+        const pnlMode = (assocUrl.searchParams.get("pnlmode") || "cohort").trim();
+        const from = (assocUrl.searchParams.get("from") || "").trim();
+        const to = (assocUrl.searchParams.get("to") || "").trim();
+        const persistedKey = `v14|dims=${dims}|cohort=${cohort}|pnlmode=${pnlMode}|from=${from}|to=${to}`;
+        try {
+          const row = websiteDb.prepare(
+            "SELECT response_json FROM assoc_revenue_reports_cache WHERE cache_key = ? LIMIT 1",
+          ).get(persistedKey) as { response_json?: string } | undefined;
+          if (row?.response_json) {
+            datasetCache.set(rawUrl, row.response_json);
+            res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+            res.end(row.response_json);
+            return;
+          }
+        } catch {
+          // If persisted cache read fails, continue to handler path below.
+        }
+      }
       // Cache key must include query params — assoc-revenue accepts dims/cohort/pnlmode/from/to
       const cacheKey = rawUrl;
       const cached = datasetCache.get(cacheKey);
@@ -365,12 +402,13 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       const urlObj = new URL(req.url || "/", "http://localhost");
       const monthArg = urlObj.searchParams.get("month");
       const extraArgs = monthArg ? ["--month", monthArg] : [];
+      const ingestArgs = ["-m", "db.upsert_yandex_from_csv", tmpCsv, ...extraArgs, "--skip-push", "--skip-rebuild"];
       try {
         writeFileSync(tmpCsv, csvBody);
         await new Promise<void>((resolve, reject) => {
           execFile(
             PYTHON_BIN,
-            ["-m", "db.upsert_yandex_from_csv", tmpCsv, ...extraArgs],
+            ingestArgs,
             { cwd: repoRoot, timeout: 120_000 },
             (err, stdout, stderr) => {
               if (stdout) console.log("[yandex-ingest]", stdout.trim());
@@ -473,6 +511,197 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       return;
     }
 
+    if (pathname === "/api/export-sheets") {
+      if (req.method !== "POST") { jsonRes(res, 405, { ok: false, error: "method_not_allowed" }); return; }
+      if (!isAnalyticsAuthenticated(req)) { jsonRes(res, 401, { ok: false, error: "unauthorized" }); return; }
+      const body = await readBody(req);
+      let payload: { gmail?: string; title?: string; headers?: string[]; rows?: string[][] } = {};
+      try {
+        payload = JSON.parse(body.toString("utf-8"));
+      } catch {
+        jsonRes(res, 400, { ok: false, error: "invalid_json" });
+        return;
+      }
+      const gmail = String(payload.gmail ?? "").trim();
+      const title = String(payload.title ?? "").trim() || `Analytics export ${new Date().toISOString().slice(0, 10)}`;
+      const headers = Array.isArray(payload.headers) ? payload.headers.map((v) => String(v ?? "")) : [];
+      const rows = Array.isArray(payload.rows) ? payload.rows.map((r) => (Array.isArray(r) ? r.map((v) => String(v ?? "")) : [])) : [];
+      if (!gmail || !/^[^\s@]+@gmail\.com$/i.test(gmail)) {
+        jsonRes(res, 400, { ok: false, error: "invalid_gmail", message: "Please provide a valid @gmail.com address" });
+        return;
+      }
+      if (!headers.length) {
+        jsonRes(res, 400, { ok: false, error: "empty_headers" });
+        return;
+      }
+      const tmpJson = `/tmp/sheets_export_${randomUUID()}.json`;
+      try {
+        writeFileSync(tmpJson, JSON.stringify({ headers, rows }), "utf8");
+        const out = await new Promise<string>((resolve, reject) => {
+          execFile(
+            PYTHON_BIN,
+            [
+              "-m",
+              "db.export_table_to_sheets",
+              "--json-file",
+              tmpJson,
+              "--gmail",
+              gmail,
+              "--title",
+              title,
+            ],
+            {
+              cwd: repoRoot,
+              timeout: 180_000,
+              env: {
+                ...process.env,
+                GOOGLE_APPLICATION_CREDENTIALS,
+                GOOGLE_EXPORT_SHEET_ID,
+              },
+            },
+            (err, stdout, stderr) => {
+              if (stderr) console.error("[export-sheets]", stderr.trim());
+              if (err) reject(new Error(stderr?.trim() || err.message));
+              else resolve((stdout || "").trim());
+            }
+          );
+        });
+        let result: { ok?: boolean; url?: string } = {};
+        try {
+          result = JSON.parse(out || "{}");
+        } catch {
+          // Keep going with generic response if python did not emit JSON.
+        }
+        jsonRes(res, 200, {
+          ok: true,
+          url: result.url ?? null,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        jsonRes(res, 500, { ok: false, error: "sheets_export_failed", message: msg });
+      } finally {
+        try { unlinkSync(tmpJson); } catch { /* ignore */ }
+      }
+      return;
+    }
+
+    if (pathname === "/api/dashboard-summary") {
+      if (!WEBSITEDB || !websiteDb) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
+      if (!isAnalyticsAuthenticated(req)) { jsonRes(res, 401, { ok: false, error: "unauthorized" }); return; }
+      const q = new URL(req.url ?? "/", "http://localhost");
+      const dFrom = String(q.searchParams.get("from") ?? "").trim();
+      const dTo = String(q.searchParams.get("to") ?? "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dFrom) || !/^\d{4}-\d{2}-\d{2}$/.test(dTo)) {
+        jsonRes(res, 400, { ok: false, error: "invalid_date_range", message: "Use from/to in YYYY-MM-DD format" });
+        return;
+      }
+      if (dFrom > dTo) {
+        jsonRes(res, 400, { ok: false, error: "invalid_date_range", message: "from must be <= to" });
+        return;
+      }
+      try {
+        const row = websiteDb.prepare(
+          `WITH range AS (
+             SELECT @dFrom AS d_from, @dTo AS d_to
+           ),
+           bitrix_src AS (
+             SELECT
+               CASE
+                 WHEN COALESCE("Дата создания", '') LIKE '____-__-__%' THEN SUBSTR("Дата создания", 1, 10)
+                 WHEN COALESCE("Дата создания", '') LIKE '__.__.____%' THEN SUBSTR("Дата создания", 7, 4) || '-' || SUBSTR("Дата создания", 4, 2) || '-' || SUBSTR("Дата создания", 1, 2)
+                 ELSE ''
+               END AS created_date,
+               COALESCE("Стадия", '') AS stage_name,
+               COALESCE("Стадия сделки", '') AS stage_name_alt,
+               COALESCE("Стадия лида", '') AS stage_name_lead,
+               COALESCE(CAST(is_revenue_variant3 AS INTEGER), 0) AS is_revenue,
+               COALESCE(revenue_amount, 0) AS revenue_amount,
+               LOWER(COALESCE("UTM Source", '')) AS utm_source,
+               LOWER(COALESCE("UTM Medium", '')) AS utm_medium,
+               LOWER(COALESCE(event_class, '')) AS event_class_lc,
+               LOWER(COALESCE("Название сделки", '')) AS deal_name_lower
+             FROM mart_deals_enriched
+           ),
+           bitrix_agg AS (
+             SELECT
+               COUNT(*) AS total_leads,
+               SUM(CASE
+                 WHEN LOWER(TRIM(COALESCE(stage_name, stage_name_alt, stage_name_lead, ''))) LIKE '%квал%' THEN 1
+                 WHEN LOWER(TRIM(COALESCE(stage_name, stage_name_alt, stage_name_lead, ''))) LIKE '%qual%' THEN 1
+                 ELSE 0
+               END) AS qual_leads,
+               SUM(is_revenue) AS payments,
+               SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
+               SUM(CASE WHEN utm_source IN ('email', 'sendsay') OR utm_medium = 'email' THEN 1 ELSE 0 END) AS email_leads,
+               SUM(CASE WHEN event_class_lc = 'пбх' THEN 1 ELSE 0 END) AS pbh_regs,
+               SUM(CASE
+                 WHEN event_class_lc = 'старт карьеры в иб'
+                   OR event_class_lc LIKE 'старт карьеры в иб (%'
+                 THEN 1 ELSE 0
+               END) AS start_ib_regs
+             FROM bitrix_src
+             WHERE created_date BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+           ),
+           yandex_spend AS (
+             SELECT COALESCE(SUM("Расход, ₽"), 0) AS budget
+             FROM stg_yandex_stats
+             WHERE COALESCE(NULLIF(TRIM(COALESCE("День", '')), ''), '') <> ''
+               AND date(NULLIF(TRIM(COALESCE("День", '')), '')) BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+           ),
+           yandex_clicks AS (
+             SELECT COALESCE(SUM(COALESCE("Клики", 0)), 0) AS clicks
+             FROM stg_yandex_stats
+             WHERE COALESCE(NULLIF(TRIM(COALESCE("День", '')), ''), '') <> ''
+               AND date(NULLIF(TRIM(COALESCE("День", '')), '')) BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+           ),
+           yandex_leads AS (
+             SELECT COUNT(*) AS leads
+             FROM mart_yandex_leads_raw l
+             LEFT JOIN mart_deals_enriched m ON m."ID" = l."ID"
+             WHERE (
+               CASE
+                 WHEN COALESCE(m."Дата создания", '') LIKE '____-__-__%' THEN SUBSTR(m."Дата создания", 1, 10)
+                 WHEN COALESCE(m."Дата создания", '') LIKE '__.__.____%' THEN SUBSTR(m."Дата создания", 7, 4) || '-' || SUBSTR(m."Дата создания", 4, 2) || '-' || SUBSTR(m."Дата создания", 1, 2)
+                 ELSE ''
+               END
+             ) BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+           ),
+           email_agg AS (
+             SELECT
+               COUNT(*) AS campaigns,
+               COALESCE(SUM("Открытий"), 0) AS opens
+             FROM stg_email_sends
+             WHERE date("Дата отправки") BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+           )
+           SELECT
+             (SELECT d_from FROM range) AS date_from,
+             (SELECT d_to FROM range) AS date_to,
+             ba.total_leads AS "Всего заявок",
+             ba.qual_leads AS "Квал лидов",
+             CASE WHEN ba.total_leads > 0 THEN ROUND(ba.qual_leads * 100.0 / ba.total_leads, 1) ELSE 0 END AS "Конверсия в квал %",
+             ba.payments AS "Оплат",
+             CASE WHEN ba.qual_leads > 0 THEN ROUND(ba.payments * 100.0 / ba.qual_leads, 1) ELSE 0 END AS "Конверсия в оплату из квал %",
+             ba.revenue AS "Выручка",
+             CASE WHEN ba.payments > 0 THEN ROUND(ba.revenue * 1.0 / ba.payments, 0) ELSE 0 END AS "Средний чек",
+             ys.budget AS "Бюджет на рекламу",
+             yc.clicks AS "Кликов из Яндекса",
+             yl.leads AS "Лидов с рекламы",
+             CASE WHEN yl.leads > 0 THEN ROUND(ys.budget * 1.0 / yl.leads, 0) ELSE 0 END AS "Стоимость лида",
+             ea.campaigns AS "Рассылок",
+             ea.opens AS "Открытий email",
+             ba.email_leads AS "Заявок email",
+             ba.pbh_regs AS "Рег на ПБХ",
+             ba.start_ib_regs AS "Рег на Старт в ИБ",
+             ba.start_ib_regs AS "Рег на ИБ"
+           FROM bitrix_agg ba, yandex_spend ys, yandex_clicks yc, yandex_leads yl, email_agg ea`
+        ).get({ dFrom, dTo }) as Record<string, unknown> | undefined;
+        jsonRes(res, 200, { ok: true, row: row ?? null });
+      } catch (e) {
+        jsonRes(res, 500, { ok: false, error: String(e) });
+      }
+      return;
+    }
+
     if (pathname === "/api/analytics/rebuild") {
       if (!WEBSITEDB) { jsonRes(res, 503, { ok: false, error: "analytics_db_unavailable" }); return; }
       if (req.method !== "POST") { jsonRes(res, 405, { ok: false, error: "method_not_allowed" }); return; }
@@ -535,28 +764,7 @@ server.listen(PORT, () => {
   console.log(`  Dist: ${ANALYTICS_DIST_DIR}`);
   console.log(`  cwd:  ${process.cwd()}`);
 
-  // Pre-warm the assoc-revenue cache after startup so the first user request
-  // is served from cache instead of running the heavy SQL query cold.
-  if (WEBSITEDB) {
-    const warmupDims = ["event", "yandex_campaign", "email_campaign"];
-    for (const dims of warmupDims) {
-      const warmReq = new Request(`http://localhost:${PORT}/api/assoc-revenue?dims=${dims}`, {
-        headers: { cookie: `analytics_auth=${analyticsCookieToken()}` },
-      });
-      assocRevenueGet({ request: warmReq, env: { DB: WEBSITEDB } as never })
-        .then((r) => {
-          if (r.status === 200) {
-            return r.text().then((body) => {
-              datasetCache.set(`/api/assoc-revenue?dims=${dims}`, body);
-              console.log(`[warmup] assoc-revenue?dims=${dims} cached (${body.length} bytes)`);
-            });
-          }
-        })
-        .catch((e: unknown) => {
-          console.warn(`[warmup] assoc-revenue?dims=${dims} failed:`, e);
-        });
-    }
-  }
+  // Startup stays lightweight; caches are built lazily per-request.
 });
 
 function shutdown() {

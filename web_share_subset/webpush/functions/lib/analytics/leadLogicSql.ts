@@ -38,7 +38,17 @@ type LeadLogicSql = {
   invalid: string;
 };
 
-const LOGIC = leadLogic as LogicConfig;
+function loadLogicConfig(): LogicConfig {
+  const raw = leadLogic as LogicConfig & { default?: LogicConfig };
+  const cfg = raw?.default ?? raw;
+  const n = cfg?.funnels ? Object.keys(cfg.funnels).length : 0;
+  if (!n) {
+    throw new Error("bitrix_lead_logic.json: empty funnels (broken JSON import?)");
+  }
+  return cfg;
+}
+
+const LOGIC = loadLogicConfig();
 
 const INVALID_STAGE_TOKENS = [
   "неквал",     // Некачественный лид and variants
@@ -121,8 +131,13 @@ export function buildLeadLogicSql(params: SqlBuildParamsWithInvalid): LeadLogicS
   const unknownCondSql = joinConds(unknownConds);
   const refusalCondSql = joinConds(refusalConds);
 
+  // Invalid demotes qual unless refusal (same as Python: inv & ~refusal → unqual).
+  // Use CASE instead of NOT((…)) — some SQLite builds mishandle NOT on huge nested ORs (D1).
+  const notRefusalSql = `CASE WHEN (${refusalCondSql}) THEN 0 ELSE 1 END`;
+  const qualSql = `CASE WHEN (${invalidCond}) AND (${notRefusalSql}) = 1 THEN 0 WHEN (${qualCondSql}) THEN 1 ELSE 0 END`;
+
   return {
-    qual: `CASE WHEN ${qualCondSql} THEN 1 ELSE 0 END`,
+    qual: qualSql,
     unqual: `CASE WHEN ${unqualCondSql} OR (${invalidCond}) THEN 1 ELSE 0 END`,
     unknown: `CASE WHEN ${unknownCondSql} THEN 1 ELSE 0 END`,
     refusal: `CASE WHEN ${refusalCondSql} THEN 1 ELSE 0 END`,

@@ -9,6 +9,7 @@ from pathlib import Path
 import pandas as pd
 from sqlalchemy import text
 
+from b24_semantic_maps import resolve_b24_category_label, resolve_b24_stage_label
 from bitrix_lead_quality import (
     coalesce_columns,
     deal_funnel_raw_series,
@@ -18,7 +19,7 @@ from bitrix_lead_quality import (
 from bitrix_union_io import dedup_bitrix_deals_by_highest_amount, load_bitrix_deals_union
 from conn import get_engine, ensure_schema
 from event_classifier import classify_event_from_row, normalize_course_code
-from revenue_variant3 import variant3_revenue_mask
+from revenue_variant3 import variant3_api_revenue_mask
 from utils import _n, _id, _amt, _month
 
 
@@ -33,6 +34,7 @@ QA_DIR = REPORTS_ROOT / "qa"
 YANDEX_CSV = ROOT / "yandex.csv"
 SENDSAY_CSV = ROOT / "sheets" / "mass_email_good.csv"
 RAW_BITRIX_TABLE = "raw_bitrix_deals"
+RAW_B24_TABLE = "raw_b24_deals"
 RAW_BATCH_TABLE = "raw_source_batches"
 
 
@@ -110,22 +112,98 @@ def _load_bitrix_from_raw_sql(engine) -> pd.DataFrame | None:
     return out.reset_index(drop=True)
 
 
-def load_bitrix_deals_db_first(engine) -> tuple[pd.DataFrame, str]:
-    raw = _load_bitrix_from_raw_sql(engine)
-    if raw is not None and not raw.empty:
-        return raw, RAW_BITRIX_TABLE
+def _load_bitrix_from_raw_b24_sql(engine) -> pd.DataFrame | None:
+    """Load canonical Bitrix deals from raw_b24_deals snapshots (API source)."""
+    with engine.connect() as conn:
+        if not _table_exists(conn, RAW_B24_TABLE):
+            return None
+        raw = pd.read_sql_query(
+            text(
+                f"""
+                SELECT *
+                FROM {RAW_B24_TABLE}
+                """
+            ),
+            conn,
+        )
+    if raw.empty:
+        return None
 
-    union = load_bitrix_deals_union()
-    batch = f"csv_union_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
-    rows = _persist_raw_bitrix_snapshot(
-        engine,
-        union,
-        source_batch=batch,
-        source_type="csv_union",
-        source_ref="bitrix_19.03.26.csv + bitrix_60_days_03.04.2026.csv",
+    # Keep latest snapshot per deal ID.
+    out = raw.copy()
+    out["ID"] = out.get("ID", "").map(_id)
+    out = out.loc[out["ID"] != ""].copy()
+    if out.empty:
+        return None
+    if "DATE_MODIFY" in out.columns:
+        out["_sort_ts"] = out["DATE_MODIFY"].fillna("").astype(str)
+    elif "ingested_at" in out.columns:
+        out["_sort_ts"] = out["ingested_at"].fillna("").astype(str)
+    else:
+        out["_sort_ts"] = ""
+    out = (
+        out.sort_values(["ID", "_sort_ts"])
+        .drop_duplicates(subset=["ID"], keep="last")
+        .drop(columns=["_sort_ts"])
     )
-    print(f"Backfilled {RAW_BITRIX_TABLE}: {rows} rows from CSV union", flush=True)
-    return union, "csv_union_auto_backfill"
+
+    # Map API field names to analytics pipeline column names.
+    def _col(name: str) -> pd.Series:
+        if name in out.columns:
+            return out[name].fillna("").astype(str)
+        return pd.Series([""] * len(out), index=out.index, dtype="object")
+
+    pay_date_series = _col("UF_CRM_1744103866937")
+    close_date_series = _col("CLOSEDATE")
+    pay_date_series = pay_date_series.mask(pay_date_series.astype(str).str.strip().eq(""), close_date_series)
+
+    mapped = pd.DataFrame({
+        "ID": out["ID"].astype(str),
+        "Контакт: ID": _col("CONTACT_ID"),
+        "Дата создания": _col("DATE_CREATE"),
+        "Стадия сделки": _col("STAGE_ID"),
+        "Воронка": _col("CATEGORY_ID"),
+        "Сделка закрыта": _col("CLOSED"),
+        "Дата оплаты": pay_date_series,
+        "Сумма": _col("OPPORTUNITY"),
+        "UTM Source": _col("UTM_SOURCE"),
+        "UTM Medium": _col("UTM_MEDIUM"),
+        "UTM Campaign": _col("UTM_CAMPAIGN"),
+        "UTM Content": _col("UTM_CONTENT"),
+        "Название сделки": _col("TITLE"),
+        "Код_курса_сайт": _col("UF_CRM_1683566516628"),
+        "Код курса": _col("UF_CRM_1674206786569"),
+        "Источник (подробно)": _col("SOURCE_DESCRIPTION"),
+        "Источник обращения": _col("SOURCE_ID"),
+        "Дополнительно об источнике": _col("SOURCE_DESCRIPTION"),
+        "UF_CRM_FORMNAME": _col("UF_CRM_FORMNAME"),
+        "Даты платежей по рассрочке ": _col("UF_CRM_1709817732193"),
+        "Типы некачественного лида": _col("UF_CRM_1755599565032"),
+        "Типы некачественных лидов": _col("UF_CRM_1755599720607"),
+        "Ответственный": _col("ASSIGNED_BY_ID"),
+    })
+
+    # Keep columns required downstream and normalize IDs.
+    mapped["Контакт: ID"] = mapped["Контакт: ID"].map(_id)
+    mapped["ID"] = mapped["ID"].map(_id)
+    # API stores CATEGORY_ID / STAGE_ID codes; lead logic + CSV use Russian titles.
+    try:
+        mapped = mapped.copy()
+        mapped["Воронка"] = mapped["Воронка"].map(lambda x: resolve_b24_category_label(str(x)))
+        mapped["Стадия сделки"] = mapped["Стадия сделки"].map(lambda x: resolve_b24_stage_label(str(x)))
+    except (OSError, ValueError, KeyError, json.JSONDecodeError):
+        pass
+    return mapped.reset_index(drop=True)
+
+
+def load_bitrix_deals_db_first(engine) -> tuple[pd.DataFrame, str]:
+    raw_b24 = _load_bitrix_from_raw_b24_sql(engine)
+    if raw_b24 is not None and not raw_b24.empty:
+        return raw_b24, RAW_B24_TABLE
+    raise RuntimeError(
+        "raw_b24_deals is empty or unavailable. "
+        "Bitrix pipeline is now API-only and no longer falls back to raw_bitrix_deals/CSV union."
+    )
 
 
 def _normalize_yandex_month(v: object) -> str:
@@ -205,7 +283,12 @@ def build_marts(engine) -> dict:
     bitrix["Воронка"] = deal_funnel_raw_series(bitrix)
     bitrix["funnel_group"] = funnel_report_bucket_series(bitrix["Воронка"])
 
-    bitrix["is_revenue_variant3"] = variant3_revenue_mask(bitrix).astype(int)
+    # API revenue aligned with CSV variant3: STAGE_ID …:WON / WON / extra (рассрочка) + Russian labels.
+    # Calibrated against bitrix-march-26.csv (March 2026) vs raw_b24_deals STAGE_ID.
+    # Keep is_revenue_variant3 as a compatibility alias so downstream SQL keeps working.
+    is_revenue_api_v1 = variant3_api_revenue_mask(bitrix)
+    bitrix["is_revenue_api_v1"] = is_revenue_api_v1.astype(int)
+    bitrix["is_revenue_variant3"] = bitrix["is_revenue_api_v1"]
     bitrix["revenue_amount"] = bitrix["Сумма"].map(_amt).where(bitrix["is_revenue_variant3"].eq(1), 0.0)
     bitrix["month"] = bitrix["Дата создания"].map(_month)
 
@@ -258,6 +341,7 @@ def build_marts(engine) -> dict:
         "Сумма",
         "revenue_amount",
         "is_revenue_variant3",
+        "is_revenue_api_v1",
         "UTM Source",
         "UTM Medium",
         "UTM Campaign",
@@ -409,7 +493,7 @@ def build_yandex_dedup_marts(engine) -> dict:
 
     yandex = yandex.copy()
     yandex["ad_id"] = yandex.get("№ Объявления", "").map(_id)
-    yandex["campaign_id"] = yandex.get("№ Кампании", "").map(_n)
+    yandex["campaign_id"] = yandex.get("№ Кампании", "").map(_id)
     yandex["project_name"] = yandex.get("Название кампании", "").map(_n)
     yandex["yandex_month"] = yandex.get("month", yandex.get("Месяц", "")).map(_normalize_yandex_month)
     yandex["yandex_spend"] = pd.to_numeric(yandex.get("Расход, ₽", 0), errors="coerce").fillna(0.0)
@@ -476,9 +560,7 @@ def build_yandex_dedup_marts(engine) -> dict:
             )
             .reset_index()
         )
-        camp_spend = raw.drop_duplicates(subset=["campaign_id", "yandex_month"], keep="first")[[
-            "project_name", "yandex_month", "yandex_spend"
-        ]]
+        camp_spend = yandex[["project_name", "yandex_month", "yandex_spend"]].copy()
         spend_by_proj = (
             camp_spend.groupby(["project_name", "yandex_month"], dropna=False)["yandex_spend"]
             .sum()

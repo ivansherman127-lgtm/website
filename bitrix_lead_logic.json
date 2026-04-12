@@ -1,12 +1,13 @@
 {
-  "schema_version": "2026-03-19",
+  "schema_version": "2026-04-10",
   "source_document": "documents/Логика квал_не квал в битриксе (19.03.26).docx",
   "source_pdf": "bitrix_logic.pdf",
   "refusal_tracking_from": "2026-03-01",
   "notes": [
     "Extracted and cross-checked against bitrix_logic.pdf (9 pages)",
     "B2B отказ in Реактивация becomes qual from 2026-03-18",
-    "Холодная воронка / Получившие демо-доступ becomes qual from 2026-02-09"
+    "Холодная воронка / Получившие демо-доступ becomes qual from 2026-02-09",
+    "2026-04-10: добавлены воронки Community, Карьерная консультация, Кастомные продажи, Заказ оформлен, Отказ (по фактическим стадиям в mart)"
   ],
   "normalization": {
     "funnel_aliases": {
@@ -19,7 +20,10 @@
       "Бесплатники": "Беплатники",
       "В проработке нет ответа": "В проработке, нет ответа",
       "Консультация назначена ": "Консультация назначена",
-      "Новая сделка ": "Новая сделка"
+      "Новая сделка ": "Новая сделка",
+      "В2С отказ": "B2C отказ",
+      "В2В отказ": "B2B отказ",
+      "Возобновить В2С": "Возобновить B2C"
     }
   },
   "value_legend": {
@@ -306,6 +310,136 @@
         "qual_state": "not_qual",
         "working_state": "no",
         "qual_note": "Нет"
+      }
+    },
+    "Карьерная консультация": {
+      "Новая": {
+        "qual_state": "not_yet",
+        "working_state": "yes",
+        "qual_note": "Ещё нет (как ранняя стадия входящей воронки)"
+      },
+      "Сделка успешна": {
+        "qual_state": "qual",
+        "working_state": "no",
+        "qual_note": "Да"
+      },
+      "Сделка провалена": {
+        "qual_state": "refusal",
+        "working_state": "no",
+        "qual_note": "Отказ"
+      }
+    },
+    "Community": {
+      "Новые заявки": {
+        "qual_state": "not_yet",
+        "working_state": "no",
+        "qual_note": "Ещё нет"
+      },
+      "Взято в работу": {
+        "qual_state": "not_yet",
+        "working_state": "yes",
+        "qual_note": "Ещё нет"
+      },
+      "Неквалифицированная заявка": {
+        "qual_state": "not_qual",
+        "working_state": "no",
+        "qual_note": "Нет"
+      },
+      "Заявка квалифицирована (КП Отправлено)": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да"
+      },
+      "Отложенные заявки": {
+        "qual_state": "not_yet",
+        "working_state": "yes",
+        "qual_note": "Ещё нет"
+      },
+      "Перезвонить": {
+        "qual_state": "not_yet",
+        "working_state": "yes",
+        "qual_note": "Ещё нет"
+      },
+      "Недозвон": {
+        "qual_state": "not_yet",
+        "working_state": "yes",
+        "qual_note": "Ещё нет"
+      },
+      "Передача в ОП": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да"
+      }
+    },
+    "Кастомные продажи": {
+      "Новая": {
+        "qual_state": "not_yet",
+        "working_state": "yes",
+        "qual_note": "Ещё нет"
+      },
+      "В работе": {
+        "qual_state": "not_yet",
+        "working_state": "yes",
+        "qual_note": "Ещё нет"
+      },
+      "Подготовить КП": {
+        "qual_state": "not_yet",
+        "working_state": "yes",
+        "qual_note": "Ещё нет"
+      },
+      "Разработать предложение": {
+        "qual_state": "not_yet",
+        "working_state": "yes",
+        "qual_note": "Ещё нет"
+      },
+      "Встреча с клиентом": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да"
+      },
+      "КП на согласовании": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да"
+      },
+      "Согласование договора": {
+        "qual_state": "qual",
+        "working_state": "yes",
+        "qual_note": "Да"
+      },
+      "Сделка успешна": {
+        "qual_state": "qual",
+        "working_state": "no",
+        "qual_note": "Да"
+      },
+      "Сделка провалена": {
+        "qual_state": "refusal",
+        "working_state": "no",
+        "qual_note": "Отказ"
+      },
+      "Анализ причины провала": {
+        "qual_state": "not_qual",
+        "working_state": "no",
+        "qual_note": "Нет"
+      }
+    },
+    "Заказ оформлен": {
+      "Взято в работу": {
+        "qual_state": "not_yet",
+        "working_state": "yes",
+        "qual_note": "Ещё нет"
+      }
+    },
+    "Отказ": {
+      "Рассрочка": {
+        "qual_state": "unassigned",
+        "working_state": "no",
+        "qual_note": "Неизвестно (нестандартная воронка)"
+      },
+      "Запущено оказание услуг": {
+        "qual_state": "unassigned",
+        "working_state": "no",
+        "qual_note": "Неизвестно (нестандартная воронка)"
       }
     }
   }

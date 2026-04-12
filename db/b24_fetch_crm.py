@@ -38,6 +38,7 @@ import argparse
 import json
 import os
 import sqlite3
+import subprocess
 import sys
 import time
 import urllib.error
@@ -54,10 +55,10 @@ DEFAULT_DB_PATH = os.environ.get(
     "WEBSITE_DB_PATH",
     str(Path(__file__).resolve().parent.parent / "website.db"),
 )
-PAGE_SIZE = int(os.environ.get("B24_PAGE_SIZE", "50"))
-THROTTLE = float(os.environ.get("B24_THROTTLE", "0.3"))
-MAX_RETRIES = 3
-RETRY_DELAY = 5.0  # seconds before retrying after a rate-limit or 5xx error
+PAGE_SIZE = int(os.environ.get("B24_PAGE_SIZE", "25"))
+THROTTLE = float(os.environ.get("B24_THROTTLE", "1.2"))
+MAX_RETRIES = int(os.environ.get("B24_MAX_RETRIES", "8"))
+RETRY_DELAY = float(os.environ.get("B24_RETRY_DELAY", "12"))  # seconds before retrying after a rate-limit or 5xx error
 
 
 # ---------------------------------------------------------------------------
@@ -79,15 +80,17 @@ def _call(webhook_url: str, method: str, params: Dict[str, Any] = {}) -> Dict[st
                 code = body.get("error", "")
                 desc = body.get("error_description", body.get("error", ""))
                 if "LIMIT" in str(code).upper() and attempt < MAX_RETRIES:
-                    print(f"  [rate limit] sleeping {RETRY_DELAY}s before retry {attempt}/{MAX_RETRIES}…")
-                    time.sleep(RETRY_DELAY)
+                    sleep_s = RETRY_DELAY * attempt
+                    print(f"  [rate limit] sleeping {sleep_s:.1f}s before retry {attempt}/{MAX_RETRIES}…")
+                    time.sleep(sleep_s)
                     continue
                 raise RuntimeError(f"B24 API error [{code}]: {desc}")
             return body
         except urllib.error.HTTPError as exc:
             if exc.code in (429, 500, 502, 503, 504) and attempt < MAX_RETRIES:
-                print(f"  [HTTP {exc.code}] sleeping {RETRY_DELAY}s before retry {attempt}/{MAX_RETRIES}…")
-                time.sleep(RETRY_DELAY)
+                sleep_s = RETRY_DELAY * attempt
+                print(f"  [HTTP {exc.code}] sleeping {sleep_s:.1f}s before retry {attempt}/{MAX_RETRIES}…")
+                time.sleep(sleep_s)
                 continue
             raise
     raise RuntimeError(f"B24 call to {method} failed after {MAX_RETRIES} retries")
@@ -326,6 +329,20 @@ def trigger_analytics_rebuild() -> None:
         print(f"  [rebuild] Warning: analytics rebuild call failed: {exc}", file=sys.stderr)
 
 
+def run_all_slices_refresh() -> bool:
+    """Rebuild staging/marts from current raw source before API rebuild."""
+    try:
+        print("  [slices] Running db.run_all_slices ...")
+        env = os.environ.copy()
+        cmd = [sys.executable, "-m", "db.run_all_slices"]
+        subprocess.run(cmd, check=True, env=env)
+        print("  [slices] run_all_slices completed.")
+        return True
+    except Exception as exc:
+        print(f"  [slices] ERROR: {exc}", file=sys.stderr)
+        return False
+
+
 def run_once(webhook_url: str, conn: sqlite3.Connection, entity: str, full: bool) -> int:
     """Returns total number of new rows written across entities."""
     t0 = time.time()
@@ -410,8 +427,10 @@ def main() -> None:
             try:
                 run_once_result = run_once(webhook_url, conn, args.entity, args.full)
                 if run_once_result > 0:
-                    print(f"  [rebuild] {run_once_result} new rows — triggering analytics rebuild…")
-                    trigger_analytics_rebuild()
+                    print(f"  [pipeline] {run_once_result} new rows — rebuilding slices from raw_b24_deals …")
+                    if run_all_slices_refresh():
+                        print("  [rebuild] Triggering analytics rebuild…")
+                        trigger_analytics_rebuild()
                 # After first run in watch mode, always incremental
                 args.full = False
             except Exception as exc:

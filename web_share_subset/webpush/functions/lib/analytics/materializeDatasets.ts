@@ -604,7 +604,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
       `WITH ysrc AS (
          SELECT
            ${buildYandexProjectGroupSqlExpr("l.project_name")} AS campaign_name,
-           COALESCE(NULLIF(TRIM(l.campaign_id), ''), '(пусто)') AS campaign_id,
+           COALESCE(NULLIF(REPLACE(TRIM(l.campaign_id), '.0', ''), ''), '(пусто)') AS campaign_id,
            COALESCE(NULLIF(TRIM(l.yandex_month), ''), '') AS month,
            CASE
              WHEN COALESCE(m."Дата создания", '') LIKE '____-__-__%' THEN SUBSTR(m."Дата создания", 1, 10)
@@ -722,7 +722,6 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
        FROM base b
        LEFT JOIN spend_alloc sa
          ON sa.week_start = b.week_start
-        AND sa.campaign_name = b.campaign_name
         AND sa.campaign_id = b.campaign_id
        WHERE b.created_dt IS NOT NULL
          AND b.week_start IS NOT NULL
@@ -1139,11 +1138,22 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
            SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
            SUM(CASE WHEN utm_source IN ('email', 'sendsay') OR utm_medium = 'email' THEN 1 ELSE 0 END) AS email_leads,
            SUM(CASE WHEN event_class = 'ПБХ' THEN 1 ELSE 0 END) AS pbh_regs,
-           SUM(CASE WHEN deal_name_lower LIKE '%старт%иб%' OR deal_name_lower LIKE '%start%ib%' THEN 1 ELSE 0 END) AS start_ib_regs
+          SUM(CASE
+            WHEN LOWER(COALESCE(event_class, '')) = 'старт карьеры в иб'
+              OR LOWER(COALESCE(event_class, '')) LIKE 'старт карьеры в иб (%'
+            THEN 1 ELSE 0
+          END) AS start_ib_regs
          FROM bitrix_week
        ),
        yandex_spend AS (
          SELECT COALESCE(SUM("Расход, ₽"), 0) AS budget
+         FROM stg_yandex_stats
+         WHERE COALESCE(NULLIF(TRIM(COALESCE("День", '')), ''), '') <> ''
+           AND date(NULLIF(TRIM(COALESCE("День", '')), '')) >= (SELECT mon FROM last_week)
+           AND date(NULLIF(TRIM(COALESCE("День", '')), '')) <= (SELECT sun FROM last_week)
+       ),
+       yandex_clicks AS (
+         SELECT COALESCE(SUM(COALESCE("Клики", 0)), 0) AS clicks
          FROM stg_yandex_stats
          WHERE COALESCE(NULLIF(TRIM(COALESCE("День", '')), ''), '') <> ''
            AND date(NULLIF(TRIM(COALESCE("День", '')), '')) >= (SELECT mon FROM last_week)
@@ -1180,6 +1190,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          ba.revenue AS "Выручка",
          CASE WHEN ba.payments > 0 THEN ROUND(ba.revenue * 1.0 / ba.payments, 0) ELSE 0 END AS "Средний чек",
          ys.budget AS "Бюджет на рекламу",
+         yc.clicks AS "Кликов из Яндекса",
          yl.leads AS "Лидов с рекламы",
          CASE WHEN yl.leads > 0 THEN ROUND(ys.budget * 1.0 / yl.leads, 0) ELSE 0 END AS "Стоимость лида",
          ea.campaigns AS "Рассылок",
@@ -1187,7 +1198,7 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
          ba.email_leads AS "Заявок email",
          ba.pbh_regs AS "Рег на ПБХ",
          ba.start_ib_regs AS "Рег на Старт в ИБ"
-       FROM bitrix_agg ba, yandex_spend ys, yandex_leads yl, email_agg ea`,
+       FROM bitrix_agg ba, yandex_spend ys, yandex_clicks yc, yandex_leads yl, email_agg ea`,
     ).first<RR>(),
   ]);
 
@@ -1221,6 +1232,193 @@ export async function materializeSliceDatasets(db: D1Database): Promise<{ paths:
     "bitrix_new_event_contacts_by_event.json",
     "weekly_summary.json",
   );
+
+  // ── Additional dashboard-like summary reports ───────────────────────────────
+  const [rQ12026Summary, rLastFullDaySummary] = await Promise.all([
+    db.prepare(
+      `WITH range AS (
+         SELECT '2026-01-01' AS d_from, '2026-03-31' AS d_to
+       ),
+       bitrix_src AS (
+         SELECT
+           CASE
+             WHEN COALESCE("Дата создания", '') LIKE '____-__-__%' THEN SUBSTR("Дата создания", 1, 10)
+             WHEN COALESCE("Дата создания", '') LIKE '__.__.____%' THEN SUBSTR("Дата создания", 7, 4) || '-' || SUBSTR("Дата создания", 4, 2) || '-' || SUBSTR("Дата создания", 1, 2)
+             ELSE ''
+           END AS created_date,
+           ${bitrixLeadLogic.qual} AS is_qual,
+           COALESCE(is_revenue_variant3, 0) AS is_revenue,
+           COALESCE(revenue_amount, 0) AS revenue_amount,
+           LOWER(COALESCE("UTM Source", '')) AS utm_source,
+           LOWER(COALESCE("UTM Medium", '')) AS utm_medium,
+           COALESCE(event_class, '') AS event_class,
+           LOWER(COALESCE("Название сделки", '')) AS deal_name_lower
+         FROM mart_deals_enriched
+       ),
+       bitrix_agg AS (
+         SELECT
+           COUNT(*) AS total_leads,
+           SUM(is_qual) AS qual_leads,
+           SUM(is_revenue) AS payments,
+           SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
+           SUM(CASE WHEN utm_source IN ('email', 'sendsay') OR utm_medium = 'email' THEN 1 ELSE 0 END) AS email_leads,
+           SUM(CASE WHEN event_class = 'ПБХ' THEN 1 ELSE 0 END) AS pbh_regs,
+          SUM(CASE
+            WHEN LOWER(COALESCE(event_class, '')) = 'старт карьеры в иб'
+              OR LOWER(COALESCE(event_class, '')) LIKE 'старт карьеры в иб (%'
+            THEN 1 ELSE 0
+          END) AS start_ib_regs
+         FROM bitrix_src
+         WHERE created_date BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+       ),
+       yandex_spend AS (
+         SELECT COALESCE(SUM("Расход, ₽"), 0) AS budget
+         FROM stg_yandex_stats
+         WHERE COALESCE(NULLIF(TRIM(COALESCE("День", '')), ''), '') <> ''
+           AND date(NULLIF(TRIM(COALESCE("День", '')), '')) BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+       ),
+       yandex_clicks AS (
+         SELECT COALESCE(SUM(COALESCE("Клики", 0)), 0) AS clicks
+         FROM stg_yandex_stats
+         WHERE COALESCE(NULLIF(TRIM(COALESCE("День", '')), ''), '') <> ''
+           AND date(NULLIF(TRIM(COALESCE("День", '')), '')) BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+       ),
+       yandex_leads AS (
+         SELECT COUNT(*) AS leads
+         FROM mart_yandex_leads_raw l
+         LEFT JOIN mart_deals_enriched m ON m."ID" = l."ID"
+         WHERE (
+           CASE
+             WHEN COALESCE(m."Дата создания", '') LIKE '____-__-__%' THEN SUBSTR(m."Дата создания", 1, 10)
+             WHEN COALESCE(m."Дата создания", '') LIKE '__.__.____%' THEN SUBSTR(m."Дата создания", 7, 4) || '-' || SUBSTR(m."Дата создания", 4, 2) || '-' || SUBSTR(m."Дата создания", 1, 2)
+             ELSE ''
+           END
+         ) BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+       ),
+       email_agg AS (
+         SELECT
+           COUNT(*) AS campaigns,
+           COALESCE(SUM("Открытий"), 0) AS opens
+         FROM stg_email_sends
+         WHERE date("Дата отправки") BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+       )
+       SELECT
+         '2026-Q1' AS period_label,
+         (SELECT d_from FROM range) AS date_from,
+         (SELECT d_to FROM range) AS date_to,
+         ba.total_leads AS "Всего заявок",
+         ba.qual_leads AS "Квал лидов",
+         CASE WHEN ba.total_leads > 0 THEN ROUND(ba.qual_leads * 100.0 / ba.total_leads, 1) ELSE 0 END AS "Конверсия в квал %",
+         ba.payments AS "Оплат",
+         CASE WHEN ba.qual_leads > 0 THEN ROUND(ba.payments * 100.0 / ba.qual_leads, 1) ELSE 0 END AS "Конверсия в оплату из квал %",
+         ba.revenue AS "Выручка",
+         CASE WHEN ba.payments > 0 THEN ROUND(ba.revenue * 1.0 / ba.payments, 0) ELSE 0 END AS "Средний чек",
+         ys.budget AS "Бюджет на рекламу",
+         yc.clicks AS "Кликов из Яндекса",
+         yl.leads AS "Лидов с рекламы",
+         CASE WHEN yl.leads > 0 THEN ROUND(ys.budget * 1.0 / yl.leads, 0) ELSE 0 END AS "Стоимость лида",
+         ea.campaigns AS "Рассылок",
+         ea.opens AS "Открытий email",
+         ba.email_leads AS "Заявок email",
+         ba.pbh_regs AS "Рег на ПБХ",
+         ba.start_ib_regs AS "Рег на Старт в ИБ"
+       FROM bitrix_agg ba, yandex_spend ys, yandex_clicks yc, yandex_leads yl, email_agg ea`,
+    ).all<RR>(),
+    db.prepare(
+      `WITH range AS (
+         SELECT date('now', '-1 day') AS d_from, date('now', '-1 day') AS d_to
+       ),
+       bitrix_src AS (
+         SELECT
+           CASE
+             WHEN COALESCE("Дата создания", '') LIKE '____-__-__%' THEN SUBSTR("Дата создания", 1, 10)
+             WHEN COALESCE("Дата создания", '') LIKE '__.__.____%' THEN SUBSTR("Дата создания", 7, 4) || '-' || SUBSTR("Дата создания", 4, 2) || '-' || SUBSTR("Дата создания", 1, 2)
+             ELSE ''
+           END AS created_date,
+           ${bitrixLeadLogic.qual} AS is_qual,
+           COALESCE(is_revenue_variant3, 0) AS is_revenue,
+           COALESCE(revenue_amount, 0) AS revenue_amount,
+           LOWER(COALESCE("UTM Source", '')) AS utm_source,
+           LOWER(COALESCE("UTM Medium", '')) AS utm_medium,
+           COALESCE(event_class, '') AS event_class,
+           LOWER(COALESCE("Название сделки", '')) AS deal_name_lower
+         FROM mart_deals_enriched
+       ),
+       bitrix_agg AS (
+         SELECT
+           COUNT(*) AS total_leads,
+           SUM(is_qual) AS qual_leads,
+           SUM(is_revenue) AS payments,
+           SUM(CASE WHEN is_revenue = 1 THEN revenue_amount ELSE 0 END) AS revenue,
+           SUM(CASE WHEN utm_source IN ('email', 'sendsay') OR utm_medium = 'email' THEN 1 ELSE 0 END) AS email_leads,
+           SUM(CASE WHEN event_class = 'ПБХ' THEN 1 ELSE 0 END) AS pbh_regs,
+          SUM(CASE
+            WHEN LOWER(COALESCE(event_class, '')) = 'старт карьеры в иб'
+              OR LOWER(COALESCE(event_class, '')) LIKE 'старт карьеры в иб (%'
+            THEN 1 ELSE 0
+          END) AS start_ib_regs
+         FROM bitrix_src
+         WHERE created_date BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+       ),
+       yandex_spend AS (
+         SELECT COALESCE(SUM("Расход, ₽"), 0) AS budget
+         FROM stg_yandex_stats
+         WHERE COALESCE(NULLIF(TRIM(COALESCE("День", '')), ''), '') <> ''
+           AND date(NULLIF(TRIM(COALESCE("День", '')), '')) BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+       ),
+       yandex_clicks AS (
+         SELECT COALESCE(SUM(COALESCE("Клики", 0)), 0) AS clicks
+         FROM stg_yandex_stats
+         WHERE COALESCE(NULLIF(TRIM(COALESCE("День", '')), ''), '') <> ''
+           AND date(NULLIF(TRIM(COALESCE("День", '')), '')) BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+       ),
+       yandex_leads AS (
+         SELECT COUNT(*) AS leads
+         FROM mart_yandex_leads_raw l
+         LEFT JOIN mart_deals_enriched m ON m."ID" = l."ID"
+         WHERE (
+           CASE
+             WHEN COALESCE(m."Дата создания", '') LIKE '____-__-__%' THEN SUBSTR(m."Дата создания", 1, 10)
+             WHEN COALESCE(m."Дата создания", '') LIKE '__.__.____%' THEN SUBSTR(m."Дата создания", 7, 4) || '-' || SUBSTR(m."Дата создания", 4, 2) || '-' || SUBSTR(m."Дата создания", 1, 2)
+             ELSE ''
+           END
+         ) BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+       ),
+       email_agg AS (
+         SELECT
+           COUNT(*) AS campaigns,
+           COALESCE(SUM("Открытий"), 0) AS opens
+         FROM stg_email_sends
+         WHERE date("Дата отправки") BETWEEN (SELECT d_from FROM range) AND (SELECT d_to FROM range)
+       )
+       SELECT
+         (SELECT d_from FROM range) AS period_label,
+         (SELECT d_from FROM range) AS date_from,
+         (SELECT d_to FROM range) AS date_to,
+         ba.total_leads AS "Всего заявок",
+         ba.qual_leads AS "Квал лидов",
+         CASE WHEN ba.total_leads > 0 THEN ROUND(ba.qual_leads * 100.0 / ba.total_leads, 1) ELSE 0 END AS "Конверсия в квал %",
+         ba.payments AS "Оплат",
+         CASE WHEN ba.qual_leads > 0 THEN ROUND(ba.payments * 100.0 / ba.qual_leads, 1) ELSE 0 END AS "Конверсия в оплату из квал %",
+         ba.revenue AS "Выручка",
+         CASE WHEN ba.payments > 0 THEN ROUND(ba.revenue * 1.0 / ba.payments, 0) ELSE 0 END AS "Средний чек",
+         ys.budget AS "Бюджет на рекламу",
+         yc.clicks AS "Кликов из Яндекса",
+         yl.leads AS "Лидов с рекламы",
+         CASE WHEN yl.leads > 0 THEN ROUND(ys.budget * 1.0 / yl.leads, 0) ELSE 0 END AS "Стоимость лида",
+         ea.campaigns AS "Рассылок",
+         ea.opens AS "Открытий email",
+         ba.email_leads AS "Заявок email",
+         ba.pbh_regs AS "Рег на ПБХ",
+         ba.start_ib_regs AS "Рег на Старт в ИБ"
+       FROM bitrix_agg ba, yandex_spend ys, yandex_clicks yc, yandex_leads yl, email_agg ea`,
+    ).all<RR>(),
+  ]);
+  await Promise.all([
+    upsertDataset(db, "reports/q1_2026_dashboard_summary.json", rowsToJson(rQ12026Summary.results ?? [])),
+    upsertDataset(db, "reports/last_full_day_dashboard_summary.json", rowsToJson(rLastFullDaySummary.results ?? [])),
+  ]);
+  paths.push("reports/q1_2026_dashboard_summary.json", "reports/last_full_day_dashboard_summary.json");
 
   // ── Batch 3: Manager reports — 6 queries in parallel ─────────────────────────
   const [

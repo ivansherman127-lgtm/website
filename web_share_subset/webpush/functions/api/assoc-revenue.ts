@@ -336,7 +336,7 @@ function makeCacheKey(params: {
   toMonth: string | null;
 }): string {
   const { dims, cohort, pnlMode, fromMonth, toMonth } = params;
-  return `v13|dims=${dims.join(",")}|cohort=${cohort}|pnlmode=${pnlMode}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
+  return `v14|dims=${dims.join(",")}|cohort=${cohort}|pnlmode=${pnlMode}|from=${fromMonth ?? ""}|to=${toMonth ?? ""}`;
 }
 
 export async function onRequestGet(context: {
@@ -390,12 +390,8 @@ export async function onRequestGet(context: {
     WHEN COALESCE(pd."Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR(pd."Дата оплаты", 7, 4) || '-' || SUBSTR(pd."Дата оплаты", 4, 2)
     ELSE ''
   END`;
-  // reg_date — normalised ISO date from source_scoped."Дата создания"
-  const regDateIsoSc = `MIN(CASE
-    WHEN COALESCE(sc."Дата создания", '') LIKE '____-__-__%' THEN SUBSTR(sc."Дата создания", 1, 10)
-    WHEN COALESCE(sc."Дата создания", '') LIKE '__.__.____%' THEN SUBSTR(sc."Дата создания", 7, 4) || '-' || SUBSTR(sc."Дата создания", 4, 2) || '-' || SUBSTR(sc."Дата создания", 1, 2)
-    ELSE NULL
-  END)`;
+  // reg_date — normalised ISO date from source_scoped.created_date
+  const regDateIsoSc = `MIN(sc.created_date)`;
   const payMonthExprSource = `CASE
     WHEN COALESCE(src."Дата оплаты", '') LIKE '____-__%' THEN SUBSTR(src."Дата оплаты", 1, 7)
     WHEN COALESCE(src."Дата оплаты", '') LIKE '__.__.____%' THEN SUBSTR(src."Дата оплаты", 7, 4) || '-' || SUBSTR(src."Дата оплаты", 4, 2)
@@ -470,6 +466,9 @@ export async function onRequestGet(context: {
     const hasYandexStats = await tableExists(context.env.DB, "stg_yandex_stats");
     const hasEmailSends = await tableExists(context.env.DB, "stg_email_sends");
     const hasContactsUid = await tableExists(context.env.DB, "stg_contacts_uid");
+    // Some server-side rebuilt marts intermittently lose access to quoted RU column names
+    // through nested CTE aliases. Use month-based fallback date derivation for stability.
+    const hasSourceCreatedAt = false;
     const hasSourceUtmCampaign = await columnExists(context.env.DB, table, "UTM Campaign");
     let yandexCampaignExpr = hasSourceUtmCampaign
       ? buildYandexProjectGroupSqlExpr(`src."UTM Campaign"`)
@@ -577,6 +576,26 @@ export async function onRequestGet(context: {
     const sourceYandexAdExpr = hasSourceUtmContent
       ? sqlExtractYandexAdId(`src."UTM Content"`)
       : "''";
+    const sourceCreatedDateExpr = hasSourceCreatedAt
+      ? `CASE
+          WHEN COALESCE(src."Дата создания", '') LIKE '____-__-__%' THEN SUBSTR(src."Дата создания", 1, 10)
+          WHEN COALESCE(src."Дата создания", '') LIKE '__.__.____%' THEN SUBSTR(src."Дата создания", 7, 4) || '-' || SUBSTR(src."Дата создания", 4, 2) || '-' || SUBSTR(src."Дата создания", 1, 2)
+          ELSE NULL
+        END`
+      : `CASE
+          WHEN COALESCE(src.month, '') LIKE '____-__' THEN src.month || '-01'
+          ELSE NULL
+        END`;
+    const sourceCreatedDateExprNoAlias = hasSourceCreatedAt
+      ? `CASE
+          WHEN COALESCE("Дата создания", '') LIKE '____-__-__%' THEN SUBSTR("Дата создания", 1, 10)
+          WHEN COALESCE("Дата создания", '') LIKE '__.__.____%' THEN SUBSTR("Дата создания", 7, 4) || '-' || SUBSTR("Дата создания", 4, 2) || '-' || SUBSTR("Дата создания", 1, 2)
+          ELSE NULL
+        END`
+      : `CASE
+          WHEN COALESCE(month, '') LIKE '____-__' THEN month || '-01'
+          ELSE NULL
+        END`;
 
     const yandexMapCte = hasYandexStats
       ? `yandex_map AS (
@@ -702,6 +721,7 @@ export async function onRequestGet(context: {
         SELECT
           ${selectParts.join(",\n          ")},
           ${sourceContactExpr} AS contact_id,
+          ${sourceCreatedDateExprNoAlias} AS created_date,
           COALESCE(NULLIF(ID, ''), '') AS source_deal_id
         FROM source_deals
         ${whereSql}
@@ -768,11 +788,7 @@ export async function onRequestGet(context: {
           SELECT
             event_group AS parent_event,
             ${sourceContactExpr} AS contact_id,
-            CASE
-              WHEN COALESCE("Дата создания", '') LIKE '____-__-__%' THEN SUBSTR("Дата создания", 1, 10)
-              WHEN COALESCE("Дата создания", '') LIKE '__.__.____%' THEN SUBSTR("Дата создания", 7, 4) || '-' || SUBSTR("Дата создания", 4, 2) || '-' || SUBSTR("Дата создания", 1, 2)
-              ELSE NULL
-            END AS created_date
+            ${sourceCreatedDateExprNoAlias} AS created_date
           FROM source_deals
           ${whereSql}
         ),
@@ -786,6 +802,14 @@ export async function onRequestGet(context: {
           WHERE sc.contact_id <> ''
           GROUP BY sc.parent_event, ${hasContactsUid ? `COALESCE(cu.contact_uid, sc.contact_id)` : `sc.contact_id`}
         ),
+        ${hasContactsUid ? `uid_map AS (
+          SELECT
+            contact_id,
+            MIN(contact_uid) AS contact_uid
+          FROM stg_contacts_uid
+          WHERE COALESCE(contact_id, '') <> ''
+          GROUP BY contact_id
+        ),` : ``}
         event_paid_deals AS (
           SELECT
             ${hasContactsUid ? `COALESCE(cu.contact_uid, pd.contact_id)` : `pd.contact_id`} AS contact_key,
@@ -816,7 +840,7 @@ export async function onRequestGet(context: {
               ${pnlMode === "pnl" && toMonth ? `AND ${payMonthExprPlain} <= ${sqlQuote(toMonth)}` : ""}
               AND REPLACE(TRIM(COALESCE("Контакт: ID", '')), '.0', '') <> ''
           ) pd
-          ${hasContactsUid ? `LEFT JOIN stg_contacts_uid cu ON cu.contact_id = pd.contact_id` : ``}
+          ${hasContactsUid ? `LEFT JOIN uid_map cu ON cu.contact_id = pd.contact_id` : ``}
         ),
         constituent_totals AS (
           SELECT
@@ -824,6 +848,8 @@ export async function onRequestGet(context: {
             epd.constituent_event AS constituent_event,
             COUNT(*) AS deals_total,
             COUNT(DISTINCT cp.contact_key) AS contacts_in_pool,
+            COUNT(*) AS paid_deals,
+            COUNT(DISTINCT cp.contact_key) AS contacts_with_revenue,
             COALESCE(SUM(epd.revenue), 0) AS revenue
           FROM contact_pool cp
           INNER JOIN event_paid_deals epd
@@ -837,8 +863,8 @@ export async function onRequestGet(context: {
           constituent_event,
           deals_total,
           contacts_in_pool,
-          deals_total AS paid_deals,
-          contacts_in_pool AS contacts_with_revenue,
+          paid_deals,
+          contacts_with_revenue,
           revenue
         FROM constituent_totals
         ORDER BY parent_event, revenue DESC, constituent_event
@@ -855,9 +881,8 @@ export async function onRequestGet(context: {
         const revenue = Number(r.revenue ?? 0);
         const child: Record<string, unknown> = {
           [specs[0].label]: constituentEvent === parentEvent ? `> Прямо: ${constituentEvent}` : `> ${constituentEvent}`,
-          // Сделок_всего and Контактов_в_пуле are intentionally omitted: the breakdown SQL only
-          // joins revenue deals, so these values would equal Сделок_с_выручкой and misleadingly
-          // not sum to the parent's full-pool totals. Leave them empty (renders as blank cell).
+          // Child rows should expose their own associated deal counts.
+          "Сделок_всего": dealsTotal,
           "Сделок_с_выручкой": paidDeals,
           "Выручка": revenue,
           "Средний_чек": paidDeals > 0 ? revenue / paidDeals : 0,
@@ -936,11 +961,7 @@ export async function onRequestGet(context: {
             yandex_campaign_group AS parent_campaign,
             yandex_ad_group AS ad_label,
             ${sourceContactExpr} AS contact_id,
-            CASE
-              WHEN COALESCE("Дата создания", '') LIKE '____-__-__%' THEN SUBSTR("Дата создания", 1, 10)
-              WHEN COALESCE("Дата создания", '') LIKE '__.__.____%' THEN SUBSTR("Дата создания", 7, 4) || '-' || SUBSTR("Дата создания", 4, 2) || '-' || SUBSTR("Дата создания", 1, 2)
-              ELSE NULL
-            END AS created_date
+            ${sourceCreatedDateExprNoAlias} AS created_date
           FROM source_deals
           ${adBreakdownWhereSql}
         ),

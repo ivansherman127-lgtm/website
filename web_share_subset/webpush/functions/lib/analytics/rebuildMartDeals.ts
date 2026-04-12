@@ -6,7 +6,7 @@ import { isAttackingJanuary } from "./isAttackingJanuary";
 import { monthFromCreated } from "./month";
 import { normalizeCourseCode } from "./normalizeCourseCode";
 import { loadCanonicalBitrixRows } from "./rawBitrixSource";
-import { variant3RevenueMask } from "./revenue";
+import { variant3ApiRevenueMask } from "./revenue";
 import { rowForClassifier, type StgDealAnalytics } from "./stagingTypes";
 
 function chunks<T>(arr: T[], size: number): T[][] {
@@ -24,11 +24,9 @@ function buildMartRow(s: StgDealAnalytics) {
   if (!courseRaw) courseRaw = extractCourseCodeFromText(s.utm_campaign);
   if (!courseRaw) courseRaw = extractCourseCodeFromText(s.utm_content);
   const courseNorm = normalizeCourseCode(courseRaw);
-  const revMask = variant3RevenueMask({
+  const revMask = variant3ApiRevenueMask({
+    sum_text: s.sum_text,
     stage_raw: s.stage_raw,
-    closed_yes: s.closed_yes,
-    pay_date: s.pay_date,
-    installment_schedule: s.installment_schedule,
   });
   const amt = parseAmount(s.sum_text);
   const revenue = revMask ? amt : 0;
@@ -69,7 +67,7 @@ function buildMartRow(s: StgDealAnalytics) {
 
 /**
  * Rebuild mart_deals_enriched from canonical raw Bitrix rows.
- * raw_bitrix_deals is the primary source of truth; stg_deals_analytics is only a fallback.
+ * Priority: raw_b24_deals (API) → raw_bitrix_deals (CSV) → stg_deals_analytics.
  */
 export async function rebuildMartDealsFromStaging(db: D1Database): Promise<{ rows: number; source: string }> {
   await db.prepare("DELETE FROM mart_deals_enriched").run();
